@@ -2,8 +2,17 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+// 获取本地时区的今日日期
+function getToday() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 router.get('/', (req, res) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
 
   // 今日销售额和订单数
   const todaySales = db.prepare(`

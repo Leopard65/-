@@ -4,8 +4,13 @@ const db = require('../db');
 
 // 获取所有分类
 router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM categories ORDER BY id').all();
-  res.json(rows);
+  try {
+    const rows = db.prepare('SELECT * FROM categories WHERE status != -1 ORDER BY id').all();
+    res.json(rows);
+  } catch (err) {
+    console.error('获取分类列表失败:', err);
+    res.status(500).json({ error: '获取分类列表失败' });
+  }
 });
 
 // 新增分类
@@ -23,12 +28,17 @@ router.put('/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// 删除分类
+// 删除分类（软删除）
 router.delete('/:id', (req, res) => {
-  const count = db.prepare('SELECT COUNT(*) as c FROM products WHERE category_id=?').get(req.params.id).c;
-  if (count > 0) return res.status(400).json({ error: '该分类下有商品，无法删除' });
-  db.prepare('DELETE FROM categories WHERE id=?').run(req.params.id);
-  res.json({ success: true });
+  try {
+    const count = db.prepare('SELECT COUNT(*) as c FROM products WHERE category_id=? AND status != -1').get(req.params.id).c;
+    if (count > 0) return res.status(400).json({ error: '该分类下有商品，无法删除' });
+    db.prepare('UPDATE categories SET status = -1 WHERE id=?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('删除分类失败:', err);
+    res.status(500).json({ error: '删除分类失败' });
+  }
 });
 
 module.exports = router;

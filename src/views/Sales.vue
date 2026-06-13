@@ -92,7 +92,7 @@
       <!-- 最近销售 -->
       <el-card style="margin-top:20px">
         <template #header><span>📋 最近销售记录</span></template>
-        <el-table :data="recentSales.slice(0, 5)" stripe size="small" style="width:100%">
+        <el-table :data="recentSales" stripe size="small" style="width:100%">
           <el-table-column prop="id" label="单号" width="60" />
           <el-table-column prop="member_name" label="会员" width="80">
             <template #default="{ row }">{{ row.member_name || '-' }}</template>
@@ -102,6 +102,19 @@
           </el-table-column>
           <el-table-column prop="created_at" label="时间" />
         </el-table>
+        <!-- 分页 -->
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <el-pagination
+            v-model:current-page="salesPage"
+            v-model:page-size="salesPageSize"
+            :page-sizes="[5, 10, 20]"
+            :total="salesTotal"
+            layout="total, sizes, prev, pager, next"
+            @size-change="loadSales"
+            @current-change="loadSales"
+            small
+          />
+        </div>
       </el-card>
     </el-col>
   </el-row>
@@ -109,10 +122,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import api from '../api'
+import { printReceipt } from '../utils/receipt'
 
+const router = useRouter()
 const allProducts = ref([])
 const searchKeyword = ref('')
 const searchResults = ref([])
@@ -121,6 +137,9 @@ const members = ref([])
 const memberId = ref(null)
 const payment = ref('cash')
 const recentSales = ref([])
+const salesPage = ref(1)
+const salesPageSize = ref(5)
+const salesTotal = ref(0)
 
 const cartTotal = computed(() => ({
   quantity: cart.value.reduce((s, i) => s + i.quantity, 0),
@@ -154,30 +173,68 @@ const addToCart = (product) => {
   searchResults.value = []
 }
 
+const loadSales = async () => {
+  const res = await api.getSales({ page: salesPage.value, pageSize: salesPageSize.value })
+  recentSales.value = res.data
+  salesTotal.value = res.total
+}
+
 const handleCheckout = async () => {
   if (!cart.value.length) return
   await ElMessageBox.confirm(`确认收取 ¥${cartTotal.value.amount}？`, '结算确认', { type: 'success' })
   try {
-    await api.addSale({
+    const result = await api.addSale({
       member_id: memberId.value || null,
       payment: payment.value,
       items: cart.value.map(c => ({ product_id: c.product_id, quantity: c.quantity, price: c.price }))
     })
+
+    // 准备小票数据
+    const saleData = {
+      ...result,
+      items: cart.value,
+      member_name: memberId.value ? members.value.find(m => m.id === memberId.value)?.name : null,
+      created_at: new Date().toISOString()
+    }
+
+    // 询问是否打印小票
+    try {
+      await ElMessageBox.confirm('是否打印小票？', '提示', {
+        confirmButtonText: '打印',
+        cancelButtonText: '不打印',
+        type: 'info'
+      })
+      printReceipt(saleData)
+    } catch {
+      // 用户选择不打印
+    }
+
     ElMessage.success('结算成功！')
     cart.value = []
     memberId.value = null
     // 刷新数据
-    allProducts.value = await api.getProducts()
-    recentSales.value = await api.getSales()
+    allProducts.value = await api.getProducts({ pageSize: 1000 })
+    loadSales()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '结算失败')
+    // 错误已由拦截器处理
   }
 }
 
 onMounted(async () => {
-  allProducts.value = await api.getProducts()
-  members.value = await api.getMembers()
-  recentSales.value = await api.getSales()
+  allProducts.value = await api.getProducts({ pageSize: 1000 })
+  members.value = await api.getMembers({ pageSize: 1000 })
+  loadSales()
+})
+
+// 离开页面前确认
+onBeforeRouteLeave((to, from, next) => {
+  if (cart.value.length > 0) {
+    ElMessageBox.confirm('购物车中有商品，确定要离开吗？', '提示', {
+      type: 'warning'
+    }).then(() => next()).catch(() => next(false))
+  } else {
+    next()
+  }
 })
 </script>
 

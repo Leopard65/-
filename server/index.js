@@ -1,18 +1,44 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const authMiddleware = require('./middleware/auth');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 挂载路由
-app.use('/api/categories', require('./routes/categories'));
-app.use('/api/products', require('./routes/products'));
-app.use('/api/members', require('./routes/members'));
-app.use('/api/suppliers', require('./routes/suppliers'));
-app.use('/api/purchases', require('./routes/purchases'));
-app.use('/api/sales', require('./routes/sales'));
-app.use('/api/dashboard', require('./routes/dashboard'));
+// 静态文件服务
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// 认证路由（无需登录）
+app.use('/api/auth', require('./routes/auth'));
+
+// 上传路由（需要登录）
+app.use('/api/upload', require('./routes/upload'));
+
+// 以下路由需要登录
+app.use('/api/categories', authMiddleware, require('./routes/categories'));
+app.use('/api/products', authMiddleware, require('./routes/products'));
+app.use('/api/members', authMiddleware, require('./routes/members'));
+app.use('/api/suppliers', authMiddleware, require('./routes/suppliers'));
+app.use('/api/purchases', authMiddleware, require('./routes/purchases'));
+app.use('/api/sales', authMiddleware, require('./routes/sales'));
+app.use('/api/returns', authMiddleware, require('./routes/returns'));
+app.use('/api/member-levels', authMiddleware, require('./routes/member-levels'));
+app.use('/api/logs', authMiddleware, require('./routes/logs'));
+app.use('/api/reports', authMiddleware, require('./routes/reports'));
+app.use('/api/dashboard', authMiddleware, require('./routes/dashboard'));
+
+// 404 处理
+app.use((req, res) => {
+  res.status(404).json({ error: '接口不存在' });
+});
+
+// 全局错误处理
+app.use((err, req, res, next) => {
+  console.error('服务器错误:', err);
+  res.status(500).json({ error: '服务器内部错误' });
+});
 
 const PORT = 3000;
 app.listen(PORT, () => {

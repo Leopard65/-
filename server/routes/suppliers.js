@@ -2,9 +2,26 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// 获取供应商列表
+// 获取供应商列表（支持分页）
 router.get('/', (req, res) => {
-  res.json(db.prepare('SELECT * FROM suppliers ORDER BY id DESC').all());
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 20;
+    const offset = (page - 1) * pageSize;
+
+    const total = db.prepare('SELECT COUNT(*) as count FROM suppliers WHERE status != -1').get().count;
+    const data = db.prepare(`
+      SELECT * FROM suppliers
+      WHERE status != -1
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(pageSize, offset);
+
+    res.json({ data, total, page, pageSize });
+  } catch (err) {
+    console.error('获取供应商列表失败:', err);
+    res.status(500).json({ error: '获取供应商列表失败' });
+  }
 });
 
 // 新增供应商
@@ -25,10 +42,26 @@ router.put('/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// 删除供应商
+// 删除供应商（软删除）
 router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM suppliers WHERE id=?').run(req.params.id);
-  res.json({ success: true });
+  try {
+    db.prepare('UPDATE suppliers SET status = -1 WHERE id=?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('删除供应商失败:', err);
+    res.status(500).json({ error: '删除供应商失败' });
+  }
+});
+
+// 恢复供应商
+router.put('/:id/restore', (req, res) => {
+  try {
+    db.prepare('UPDATE suppliers SET status = 1 WHERE id=?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('恢复供应商失败:', err);
+    res.status(500).json({ error: '恢复供应商失败' });
+  }
 });
 
 module.exports = router;

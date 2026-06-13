@@ -14,6 +14,11 @@
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="name" label="姓名" />
       <el-table-column prop="phone" label="手机号" width="140" />
+      <el-table-column prop="level" label="等级" width="100">
+        <template #default="{ row }">
+          <el-tag :type="levelType(row.level)">{{ levelText(row.level) }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="points" label="积分" width="100">
         <template #default="{ row }">
           <el-tag type="success">{{ row.points }}</el-tag>
@@ -31,12 +36,25 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页 -->
+    <div style="display:flex;justify-content:flex-end;margin-top:15px">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="load"
+        @current-change="load"
+      />
+    </div>
+
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑会员' : '新增会员'" width="400px">
-      <el-form :model="form" label-width="80px">
-        <el-form-item label="姓名" required>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="姓名" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item label="手机号" required>
+        <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" />
         </el-form-item>
       </el-form>
@@ -57,8 +75,36 @@ const members = ref([])
 const keyword = ref('')
 const dialogVisible = ref(false)
 const form = ref({})
+const formRef = ref(null)
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
-const load = async () => { members.value = await api.getMembers({ keyword: keyword.value }) }
+const rules = {
+  name: [
+    { required: true, message: '请输入姓名', trigger: 'blur' }
+  ],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
+  ]
+}
+
+const levelType = (level) => {
+  const map = { normal: 'info', silver: '', gold: 'warning', diamond: 'danger' }
+  return map[level] || 'info'
+}
+
+const levelText = (level) => {
+  const map = { normal: '普通', silver: '银卡', gold: '金卡', diamond: '钻石' }
+  return map[level] || '普通'
+}
+
+const load = async () => {
+  const res = await api.getMembers({ page: page.value, pageSize: pageSize.value, keyword: keyword.value })
+  members.value = res.data
+  total.value = res.total
+}
 
 const openDialog = (row) => {
   form.value = row ? { ...row } : { name: '', phone: '' }
@@ -66,7 +112,13 @@ const openDialog = (row) => {
 }
 
 const handleSave = async () => {
-  if (!form.value.name || !form.value.phone) return ElMessage.warning('请填写完整')
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
   try {
     if (form.value.id) {
       await api.updateMember(form.value.id, form.value)
@@ -77,15 +129,21 @@ const handleSave = async () => {
     dialogVisible.value = false
     load()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '操作失败')
+    // 错误已由拦截器处理
   }
 }
 
 const handleDelete = async (row) => {
-  await ElMessageBox.confirm(`确定删除会员「${row.name}」？`, '提示', { type: 'warning' })
-  await api.deleteMember(row.id)
-  ElMessage.success('已删除')
-  load()
+  try {
+    await ElMessageBox.confirm(`确定删除会员「${row.name}」？删除后可在回收站恢复`, '提示', { type: 'warning' })
+    await api.deleteMember(row.id)
+    ElMessage.success('已删除')
+    load()
+  } catch (err) {
+    if (err !== 'cancel') {
+      // 错误已由拦截器处理
+    }
+  }
 }
 
 onMounted(load)

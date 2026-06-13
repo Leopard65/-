@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/index.js",
-    "start": "node server/index.js & vite"
+    "start": "concurrently \"node server/index.js\" \"vite\""
   },
   "keywords": [],
   "author": "",
@@ -14,11 +14,22 @@
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.17.0",
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",
+    "docx": "^9.7.1",
     "element-plus": "^2.14.1",
     "express": "^5.2.1",
+    "file-saver": "^2.0.5",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
     "vue": "^3.5.35",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "concurrently": "^10.0.3",
+    "vite": "^5.4.21"
   }
 }

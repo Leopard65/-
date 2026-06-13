@@ -21,6 +21,19 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页 -->
+    <div style="display:flex;justify-content:flex-end;margin-top:15px">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="load"
+        @current-change="load"
+      />
+    </div>
+
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑供应商' : '新增供应商'" width="500px">
       <el-form :model="form" label-width="80px">
         <el-form-item label="名称" required>
@@ -52,8 +65,15 @@ import api from '../api'
 const suppliers = ref([])
 const dialogVisible = ref(false)
 const form = ref({})
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
-const load = async () => { suppliers.value = await api.getSuppliers() }
+const load = async () => {
+  const res = await api.getSuppliers({ page: page.value, pageSize: pageSize.value })
+  suppliers.value = res.data
+  total.value = res.total
+}
 
 const openDialog = (row) => {
   form.value = row ? { ...row } : { name: '', contact: '', phone: '', address: '' }
@@ -72,15 +92,21 @@ const handleSave = async () => {
     dialogVisible.value = false
     load()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '操作失败')
+    // 错误已由拦截器处理
   }
 }
 
 const handleDelete = async (row) => {
-  await ElMessageBox.confirm(`确定删除「${row.name}」？`, '提示', { type: 'warning' })
-  await api.deleteSupplier(row.id)
-  ElMessage.success('已删除')
-  load()
+  try {
+    await ElMessageBox.confirm(`确定删除「${row.name}」？删除后可在回收站恢复`, '提示', { type: 'warning' })
+    await api.deleteSupplier(row.id)
+    ElMessage.success('已删除')
+    load()
+  } catch (err) {
+    if (err !== 'cancel') {
+      // 错误已由拦截器处理
+    }
+  }
 }
 
 onMounted(load)

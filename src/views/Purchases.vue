@@ -22,6 +22,19 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页 -->
+    <div style="display:flex;justify-content:flex-end;margin-top:15px">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="load"
+        @current-change="load"
+      />
+    </div>
+
     <!-- 新建进货单弹窗 -->
     <el-dialog v-model="dialogVisible" title="新建进货单" width="700px">
       <el-form :model="form" label-width="80px">
@@ -84,12 +97,19 @@ const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const detailItems = ref([])
 const form = ref({ supplier_id: null, items: [] })
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
 const formTotal = computed(() =>
   form.value.items.reduce((s, i) => s + i.quantity * i.cost, 0).toFixed(2)
 )
 
-const load = async () => { purchases.value = await api.getPurchases() }
+const load = async () => {
+  const res = await api.getPurchases({ page: page.value, pageSize: pageSize.value })
+  purchases.value = res.data
+  total.value = res.total
+}
 
 const openDialog = () => {
   form.value = { supplier_id: null, items: [{ product_id: null, quantity: 1, cost: 0 }] }

@@ -61,18 +61,20 @@ const handleSave = async () => {
     dialogVisible.value = false
     load()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '操作失败')
+    // 错误已由拦截器处理
   }
 }
 
 const handleDelete = async (row) => {
-  await ElMessageBox.confirm(`确定删除「${row.name}」？`, '提示', { type: 'warning' })
   try {
+    await ElMessageBox.confirm(`确定删除「${row.name}」？删除后可在回收站恢复`, '提示', { type: 'warning' })
     await api.deleteCategory(row.id)
     ElMessage.success('已删除')
     load()
-  } catch (e) {
-    ElMessage.error(e.response?.data?.error || '删除失败')
+  } catch (err) {
+    if (err !== 'cancel') {
+      // 错误已由拦截器处理
+    }
   }
 }
 

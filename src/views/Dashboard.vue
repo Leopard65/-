@@ -1,5 +1,14 @@
 <template>
   <div>
+    <!-- 页面标题 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="margin:0">仪表盘</h2>
+      <div style="display:flex;align-items:center;gap:15px">
+        <span style="color:#999;font-size:14px">最后更新: {{ lastUpdated }}</span>
+        <el-button :icon="Refresh" @click="handleRefresh" :loading="fetching">刷新</el-button>
+      </div>
+    </div>
+
     <!-- 统计卡片 -->
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="6">
@@ -86,12 +95,43 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { Refresh } from '@element-plus/icons-vue'
 import api from '../api'
 
 const data = ref({})
-onMounted(async () => {
-  data.value = await api.getDashboard()
+const fetching = ref(false)
+const lastUpdated = ref('--:--:--')
+let refreshInterval = null
+
+const fetchDashboard = async () => {
+  try {
+    data.value = await api.getDashboard()
+    lastUpdated.value = new Date().toLocaleTimeString()
+  } catch (e) {
+    console.error('获取仪表盘数据失败:', e)
+  }
+}
+
+const handleRefresh = async () => {
+  fetching.value = true
+  try {
+    await fetchDashboard()
+  } finally {
+    fetching.value = false
+  }
+}
+
+onMounted(() => {
+  fetchDashboard()
+  // 每5分钟自动刷新
+  refreshInterval = setInterval(fetchDashboard, 5 * 60 * 1000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
 })
 </script>
 

@@ -2,22 +2,44 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// 获取进货记录
+// 获取进货记录（支持分页）
 router.get('/', (req, res) => {
-  const rows = db.prepare(`
-    SELECT p.*, s.name as supplier_name FROM purchases p
-    LEFT JOIN suppliers s ON p.supplier_id = s.id
-    ORDER BY p.id DESC
-  `).all();
-  // 查询每个进货单的明细
-  rows.forEach(row => {
-    row.items = db.prepare(`
-      SELECT pi.*, pr.name as product_name FROM purchase_items pi
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 20;
+    const offset = (page - 1) * pageSize;
+
+    const total = db.prepare('SELECT COUNT(*) as count FROM purchases').get().count;
+    const purchases = db.prepare(`
+      SELECT p.*, s.name as supplier_name,
+        GROUP_CONCAT(
+          pi.id || ',' || pi.product_id || ',' || pr.name || ',' || pi.quantity || ',' || pi.cost
+          SEPARATOR ';'
+        ) as items_str
+      FROM purchases p
+      LEFT JOIN suppliers s ON p.supplier_id = s.id
+      LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
       LEFT JOIN products pr ON pi.product_id = pr.id
-      WHERE pi.purchase_id = ?
-    `).all(row.id);
-  });
-  res.json(rows);
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(pageSize, offset);
+
+    // 解析 items_str 为数组
+    const data = purchases.map(p => ({
+      ...p,
+      items: p.items_str ? p.items_str.split(';').map(item => {
+        const [id, product_id, product_name, quantity, cost] = item.split(',');
+        return { id: +id, product_id: +product_id, product_name, quantity: +quantity, cost: +cost };
+      }) : []
+    }));
+    data.forEach(r => delete r.items_str);
+
+    res.json({ data, total, page, pageSize });
+  } catch (err) {
+    console.error('获取进货记录失败:', err);
+    res.status(500).json({ error: '获取进货记录失败' });
+  }
 });
 
 // 创建进货单
@@ -56,7 +78,8 @@ router.post('/', (req, res) => {
     const id = createPurchase();
     res.json({ id, total });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error('创建进货单失败:', e);
+    res.status(500).json({ error: '创建进货单失败' });
   }
 });
 
