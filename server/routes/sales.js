@@ -13,8 +13,7 @@ router.get('/', (req, res) => {
     const sales = db.prepare(`
       SELECT s.*, m.name as member_name,
         GROUP_CONCAT(
-          si.id || ',' || si.product_id || ',' || p.name || ',' || si.quantity || ',' || si.price
-          SEPARATOR ';'
+          si.id || ',' || si.product_id || ',' || p.name || ',' || si.quantity || ',' || si.price, ';'
         ) as items_str
       FROM sales s
       LEFT JOIN members m ON s.member_id = m.id
@@ -141,7 +140,15 @@ router.post('/', (req, res) => {
       message: discount < 1 ? `会员享 ${discount * 10} 折优惠` : undefined
     });
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    console.error('创建销售单失败:', e);
+    // 返回友好的错误信息，不泄露内部细节
+    if (e.message && e.message.includes('库存不足')) {
+      res.status(400).json({ error: e.message });
+    } else if (e.message && e.message.includes('不存在')) {
+      res.status(400).json({ error: e.message });
+    } else {
+      res.status(500).json({ error: '创建销售单失败' });
+    }
   }
 });
 

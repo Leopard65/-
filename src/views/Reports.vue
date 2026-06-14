@@ -156,63 +156,75 @@ let profitChart = null
 
 // 加载销售数据
 const loadSalesData = async () => {
-  const params = {}
-  if (salesDateRange.value) {
-    params.start_date = salesDateRange.value[0]
-    params.end_date = salesDateRange.value[1]
+  try {
+    const params = {}
+    if (salesDateRange.value) {
+      params.start_date = salesDateRange.value[0]
+      params.end_date = salesDateRange.value[1]
+    }
+
+    const [daily, products, categories, payments] = await Promise.all([
+      api.getDailySales(params),
+      api.getProductSalesRank({ ...params, limit: 10 }),
+      api.getCategorySales(params),
+      api.getPaymentStats(params)
+    ])
+
+    salesData.value = daily
+    productRank.value = products
+    categorySales.value = categories
+
+    // 计算汇总
+    salesSummary.value = {
+      totalAmount: daily.reduce((s, d) => s + (d.total_amount || 0), 0),
+      totalOrders: daily.reduce((s, d) => s + (d.order_count || 0), 0),
+      avgDailyAmount: daily.length > 0 ? daily.reduce((s, d) => s + (d.total_amount || 0), 0) / daily.length : 0
+    }
+
+    nextTick(() => {
+      renderSalesChart()
+      renderCategoryChart()
+    })
+  } catch (e) {
+    console.error('加载销售数据失败:', e)
   }
-
-  const [daily, products, categories, payments] = await Promise.all([
-    api.getDailySales(params),
-    api.getProductSalesRank({ ...params, limit: 10 }),
-    api.getCategorySales(params),
-    api.getPaymentStats(params)
-  ])
-
-  salesData.value = daily
-  productRank.value = products
-  categorySales.value = categories
-
-  // 计算汇总
-  salesSummary.value = {
-    totalAmount: daily.reduce((s, d) => s + (d.total_amount || 0), 0),
-    totalOrders: daily.reduce((s, d) => s + (d.order_count || 0), 0),
-    avgDailyAmount: daily.length > 0 ? daily.reduce((s, d) => s + (d.total_amount || 0), 0) / daily.length : 0
-  }
-
-  nextTick(() => {
-    renderSalesChart()
-    renderCategoryChart()
-  })
 }
 
 // 加载库存数据
 const loadInventoryData = async () => {
-  const [warning, value] = await Promise.all([
-    api.getInventoryWarning(),
-    api.getInventoryValue()
-  ])
-  inventoryWarning.value = warning
-  inventoryValue.value = value
+  try {
+    const [warning, value] = await Promise.all([
+      api.getInventoryWarning(),
+      api.getInventoryValue()
+    ])
+    inventoryWarning.value = warning
+    inventoryValue.value = value
+  } catch (e) {
+    console.error('加载库存数据失败:', e)
+  }
 }
 
 // 加载利润数据
 const loadProfitData = async () => {
-  const params = {}
-  if (profitDateRange.value) {
-    params.start_date = profitDateRange.value[0]
-    params.end_date = profitDateRange.value[1]
+  try {
+    const params = {}
+    if (profitDateRange.value) {
+      params.start_date = profitDateRange.value[0]
+      params.end_date = profitDateRange.value[1]
+    }
+
+    const [gross, monthly] = await Promise.all([
+      api.getGrossProfit(params),
+      api.getMonthlyProfit()
+    ])
+
+    profitData.value = gross
+    monthlyProfit.value = monthly
+
+    nextTick(() => renderProfitChart())
+  } catch (e) {
+    console.error('加载利润数据失败:', e)
   }
-
-  const [gross, monthly] = await Promise.all([
-    api.getGrossProfit(params),
-    api.getMonthlyProfit()
-  ])
-
-  profitData.value = gross
-  monthlyProfit.value = monthly
-
-  nextTick(() => renderProfitChart())
 }
 
 // 渲染销售图表

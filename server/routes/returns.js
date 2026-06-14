@@ -29,8 +29,7 @@ router.get('/', (req, res) => {
     const returns = db.prepare(`
       SELECT r.*, s.total as sale_total, s.payment, m.name as member_name,
         GROUP_CONCAT(
-          ri.id || ',' || ri.product_id || ',' || p.name || ',' || ri.quantity || ',' || ri.price
-          SEPARATOR ';'
+          ri.id || ',' || ri.product_id || ',' || p.name || ',' || ri.quantity || ',' || ri.price, ';'
         ) as items_str
       FROM returns r
       LEFT JOIN sales s ON r.sale_id = s.id

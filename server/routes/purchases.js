@@ -13,8 +13,7 @@ router.get('/', (req, res) => {
     const purchases = db.prepare(`
       SELECT p.*, s.name as supplier_name,
         GROUP_CONCAT(
-          pi.id || ',' || pi.product_id || ',' || pr.name || ',' || pi.quantity || ',' || pi.cost
-          SEPARATOR ';'
+          pi.id || ',' || pi.product_id || ',' || pr.name || ',' || pi.quantity || ',' || pi.cost, ';'
         ) as items_str
       FROM purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id

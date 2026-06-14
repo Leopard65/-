@@ -86,9 +86,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import api from '../api'
+
+const router = useRouter()
 
 const purchases = ref([])
 const suppliers = ref([])
@@ -135,8 +138,22 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
-  suppliers.value = await api.getSuppliers()
-  products.value = await api.getProducts()
-  load()
+  try {
+    const [suppliersRes, productsRes] = await Promise.all([
+      api.getSuppliers(),
+      api.getProducts({ pageSize: 1000 })
+    ])
+    suppliers.value = suppliersRes.data || suppliersRes
+    products.value = productsRes.data || productsRes
+    load()
+
+    // 处理从库存预警页面跳转过来的参数
+    if (router.currentRoute.value.query.product_id) {
+      openDialog()
+      form.value.items[0].product_id = Number(router.currentRoute.value.query.product_id)
+    }
+  } catch (e) {
+    console.error('加载数据失败:', e)
+  }
 })
 </script>

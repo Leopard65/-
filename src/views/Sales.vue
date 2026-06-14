@@ -221,9 +221,13 @@ const handleCheckout = async () => {
 }
 
 onMounted(async () => {
-  allProducts.value = await api.getProducts({ pageSize: 1000 })
-  members.value = await api.getMembers({ pageSize: 1000 })
-  loadSales()
+  try {
+    allProducts.value = await api.getProducts({ pageSize: 1000 })
+    members.value = await api.getMembers({ pageSize: 1000 })
+    loadSales()
+  } catch (e) {
+    console.error('加载数据失败:', e)
+  }
 })
 
 // 离开页面前确认

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/index.js",
-    "start": "concurrently \"node server/index.js\" \"vite\""
+    "start": "concurrently \"node server/index.js\" \"vite\"",
+    "build": "vite build"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +19,7 @@
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",
     "docx": "^9.7.1",
+    "echarts": "^5.5.0",
     "element-plus": "^2.14.1",
     "express": "^5.2.1",
     "file-saver": "^2.0.5",

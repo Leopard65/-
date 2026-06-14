@@ -20,8 +20,8 @@
     </el-table>
 
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑分类' : '新增分类'" width="400px">
-      <el-form :model="form" label-width="80px">
-        <el-form-item label="分类名称" required>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="分类名称" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
       </el-form>
@@ -41,6 +41,13 @@ import api from '../api'
 const categories = ref([])
 const dialogVisible = ref(false)
 const form = ref({})
+const formRef = ref(null)
+
+const rules = {
+  name: [
+    { required: true, message: '请输入分类名称', trigger: 'blur' }
+  ]
+}
 
 const load = async () => { categories.value = await api.getCategories() }
 
@@ -50,7 +57,13 @@ const openDialog = (row) => {
 }
 
 const handleSave = async () => {
-  if (!form.value.name) return ElMessage.warning('请输入分类名称')
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
   try {
     if (form.value.id) {
       await api.updateCategory(form.value.id, form.value)

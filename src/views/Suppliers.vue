@@ -35,17 +35,17 @@
     </div>
 
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑供应商' : '新增供应商'" width="500px">
-      <el-form :model="form" label-width="80px">
-        <el-form-item label="名称" required>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item label="联系人">
+        <el-form-item label="联系人" prop="contact">
           <el-input v-model="form.contact" />
         </el-form-item>
-        <el-form-item label="电话">
+        <el-form-item label="电话" prop="phone">
           <el-input v-model="form.phone" />
         </el-form-item>
-        <el-form-item label="地址">
+        <el-form-item label="地址" prop="address">
           <el-input v-model="form.address" />
         </el-form-item>
       </el-form>
@@ -65,9 +65,16 @@ import api from '../api'
 const suppliers = ref([])
 const dialogVisible = ref(false)
 const form = ref({})
+const formRef = ref(null)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+const rules = {
+  name: [
+    { required: true, message: '请输入供应商名称', trigger: 'blur' }
+  ]
+}
 
 const load = async () => {
   const res = await api.getSuppliers({ page: page.value, pageSize: pageSize.value })
@@ -81,7 +88,13 @@ const openDialog = (row) => {
 }
 
 const handleSave = async () => {
-  if (!form.value.name) return ElMessage.warning('请输入供应商名称')
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
   try {
     if (form.value.id) {
       await api.updateSupplier(form.value.id, form.value)
