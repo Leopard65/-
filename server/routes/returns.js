@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { logOperation } = require('../utils/logger');
 
 // 获取退单列表（支持分页）
 router.get('/', (req, res) => {
@@ -118,6 +119,23 @@ router.post('/', (req, res) => {
     });
 
     const id = createReturn();
+
+    // 记录操作日志
+    logOperation({
+      userId: req.user?.id,
+      username: req.user?.username,
+      action: 'create',
+      module: 'returns',
+      targetId: id,
+      detail: {
+        sale_id,
+        items_count: items.length,
+        total,
+        reason
+      },
+      ip: req.ip
+    });
+
     res.json({ id, total, message: '退单已创建，等待审核' });
   } catch (err) {
     console.error('创建退单失败:', err);
@@ -138,6 +156,18 @@ router.put('/:id/approve', (req, res) => {
 
     if (action === 'reject') {
       db.prepare('UPDATE returns SET status = ? WHERE id = ?').run('rejected', req.params.id);
+
+      // 记录操作日志
+      logOperation({
+        userId: req.user?.id,
+        username: req.user?.username,
+        action: 'reject',
+        module: 'returns',
+        targetId: req.params.id,
+        detail: { sale_id: returnRecord.sale_id, total: returnRecord.total },
+        ip: req.ip
+      });
+
       return res.json({ message: '退单已拒绝' });
     }
 
@@ -167,6 +197,18 @@ router.put('/:id/approve', (req, res) => {
     });
 
     approveReturn();
+
+    // 记录操作日志
+    logOperation({
+      userId: req.user?.id,
+      username: req.user?.username,
+      action: 'approve',
+      module: 'returns',
+      targetId: req.params.id,
+      detail: { sale_id: returnRecord.sale_id, total: returnRecord.total },
+      ip: req.ip
+    });
+
     res.json({ message: '退单已审核通过，退款已完成' });
   } catch (err) {
     console.error('审核退单失败:', err);

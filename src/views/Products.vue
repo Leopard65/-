@@ -1,23 +1,36 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span>商品管理</span>
-        <div style="display:flex;gap:10px">
-          <el-input v-model="keyword" placeholder="搜索商品名称/条码" clearable style="width:200px" @clear="load" @keyup.enter="load" />
-          <el-select v-model="filterCategory" placeholder="分类筛选" clearable style="width:140px" @change="load">
-            <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
-          </el-select>
-          <el-button type="success" @click="handleExport">
-            <el-icon style="margin-right:5px"><Download /></el-icon>
-            导出
-          </el-button>
-          <el-button type="primary" @click="openDialog()">新增商品</el-button>
-        </div>
-      </div>
+      <span>商品管理</span>
     </template>
 
-    <el-table :data="products" stripe border style="width:100%">
+    <CrudTable
+      :data="products"
+      :loading="loading"
+      :pagination="{ page, pageSize, total }"
+      action-width="160"
+      @add="openDialog()"
+      @edit="openDialog"
+      @delete="handleDelete"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+      @search="load"
+      @reset="handleReset"
+    >
+      <template #search>
+        <el-input v-model="keyword" placeholder="搜索商品名称/条码" clearable style="width:200px" @clear="load" @keyup.enter="load" />
+        <el-select v-model="filterCategory" placeholder="分类筛选" clearable style="width:140px" @change="load">
+          <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </template>
+
+      <template #actions>
+        <el-button type="success" @click="handleExport">
+          <el-icon style="margin-right:5px"><Download /></el-icon>
+          导出
+        </el-button>
+      </template>
+
       <el-table-column label="图片" width="80">
         <template #default="{ row }">
           <el-image v-if="row.image" :src="row.image" style="width:40px;height:40px;border-radius:4px" fit="cover" />
@@ -39,87 +52,69 @@
           <el-tag :type="row.stock <= row.min_stock ? 'danger' : ''" size="small">{{ row.stock }}{{ row.unit }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="160" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="openDialog(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    </CrudTable>
 
-    <!-- 分页 -->
-    <div style="display:flex;justify-content:flex-end;margin-top:15px">
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="load"
-        @current-change="load"
-      />
-    </div>
-
-    <!-- 弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑商品' : '新增商品'" width="500px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="商品名称" prop="name">
-          <el-input v-model="form.name" />
-        </el-form-item>
-        <el-form-item label="条码" prop="barcode">
-          <el-input v-model="form.barcode" />
-        </el-form-item>
-        <el-form-item label="分类" prop="category_id">
-          <el-select v-model="form.category_id" placeholder="选择分类" clearable style="width:100%">
-            <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
-          </el-select>
-        </el-form-item>
-        <el-row :gutter="10">
-          <el-col :span="12">
-            <el-form-item label="售价" prop="price">
-              <el-input-number v-model="form.price" :min="0" :precision="2" style="width:100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="成本价" prop="cost">
-              <el-input-number v-model="form.cost" :min="0" :precision="2" style="width:100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="10">
-          <el-col :span="12">
-            <el-form-item label="库存" prop="stock">
-              <el-input-number v-model="form.stock" :min="0" style="width:100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="预警值" prop="min_stock">
-              <el-input-number v-model="form.min_stock" :min="0" style="width:100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="单位" prop="unit">
-          <el-input v-model="form.unit" placeholder="个/瓶/袋" />
-        </el-form-item>
-        <el-form-item label="商品图片">
-          <el-upload
-            class="product-uploader"
-            action="/api/upload/image"
-            :headers="uploadHeaders"
-            :show-file-list="false"
-            :on-success="handleImageSuccess"
-            :before-upload="beforeImageUpload"
-          >
-            <img v-if="form.image" :src="form.image" class="product-image" />
-            <el-icon v-else class="upload-icon"><Plus /></el-icon>
-          </el-upload>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
-      </template>
-    </el-dialog>
+    <CrudDialog
+      ref="dialogRef"
+      :title="form.id ? '编辑商品' : '新增商品'"
+      width="500px"
+      label-width="80px"
+      :rules="rules"
+      :submit-fn="handleSave"
+      @success="load"
+    >
+      <el-form-item label="商品名称" prop="name">
+        <el-input v-model="form.name" />
+      </el-form-item>
+      <el-form-item label="条码" prop="barcode">
+        <el-input v-model="form.barcode" />
+      </el-form-item>
+      <el-form-item label="分类" prop="category_id">
+        <el-select v-model="form.category_id" placeholder="选择分类" clearable style="width:100%">
+          <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </el-form-item>
+      <el-row :gutter="10">
+        <el-col :span="12">
+          <el-form-item label="售价" prop="price">
+            <el-input-number v-model="form.price" :min="0" :precision="2" style="width:100%" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="成本价" prop="cost">
+            <el-input-number v-model="form.cost" :min="0" :precision="2" style="width:100%" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="10">
+        <el-col :span="12">
+          <el-form-item label="库存" prop="stock">
+            <el-input-number v-model="form.stock" :min="0" style="width:100%" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="预警值" prop="min_stock">
+            <el-input-number v-model="form.min_stock" :min="0" style="width:100%" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-form-item label="单位" prop="unit">
+        <el-input v-model="form.unit" placeholder="个/瓶/袋" />
+      </el-form-item>
+      <el-form-item label="商品图片">
+        <el-upload
+          class="product-uploader"
+          action="/api/upload/image"
+          :headers="uploadHeaders"
+          :show-file-list="false"
+          :on-success="handleImageSuccess"
+          :before-upload="beforeImageUpload"
+        >
+          <img v-if="form.image" :src="form.image" class="product-image" />
+          <el-icon v-else class="upload-icon"><Plus /></el-icon>
+        </el-upload>
+      </el-form-item>
+    </CrudDialog>
   </el-card>
 </template>
 
@@ -127,22 +122,26 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Download } from '@element-plus/icons-vue'
-import api from '../api'
-import { exportProducts } from '../utils/export'
+import { productsApi, categoriesApi } from '@/api'
+import { useUserStore } from '@/stores/user'
+import { exportProducts } from '@/utils/export'
+import CrudTable from '@/components/CrudTable.vue'
+import CrudDialog from '@/components/CrudDialog.vue'
 
+const userStore = useUserStore()
 const products = ref([])
 const categories = ref([])
 const keyword = ref('')
 const filterCategory = ref('')
-const dialogVisible = ref(false)
+const loading = ref(false)
+const dialogRef = ref(null)
 const form = ref({})
-const formRef = ref(null)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
 const uploadHeaders = computed(() => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`
+  Authorization: `Bearer ${userStore.token}`
 }))
 
 const rules = {
@@ -162,19 +161,42 @@ const rules = {
 }
 
 const load = async () => {
-  const res = await api.getProducts({
-    page: page.value,
-    pageSize: pageSize.value,
-    keyword: keyword.value,
-    category_id: filterCategory.value || undefined
-  })
-  products.value = res.data
-  total.value = res.total
+  loading.value = true
+  try {
+    const res = await productsApi.getProducts({
+      page: page.value,
+      pageSize: pageSize.value,
+      keyword: keyword.value,
+      category_id: filterCategory.value || undefined
+    })
+    products.value = res.data
+    total.value = res.total
+  } finally {
+    loading.value = false
+  }
+}
+
+const handlePageChange = (val) => {
+  page.value = val
+  load()
+}
+
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  page.value = 1
+  load()
+}
+
+const handleReset = () => {
+  keyword.value = ''
+  filterCategory.value = ''
+  page.value = 1
+  load()
 }
 
 const openDialog = (row) => {
   form.value = row ? { ...row } : { name: '', barcode: '', category_id: null, price: 0, cost: 0, stock: 0, min_stock: 10, unit: '个', image: '' }
-  dialogVisible.value = true
+  dialogRef.value?.open(form.value)
 }
 
 const beforeImageUpload = (file) => {
@@ -190,32 +212,18 @@ const handleImageSuccess = (response) => {
   form.value.image = response.url
 }
 
-const handleSave = async () => {
-  if (!formRef.value) return
-  try {
-    await formRef.value.validate()
-  } catch {
-    return
-  }
-
-  try {
-    if (form.value.id) {
-      await api.updateProduct(form.value.id, form.value)
-    } else {
-      await api.addProduct(form.value)
-    }
-    ElMessage.success('保存成功')
-    dialogVisible.value = false
-    load()
-  } catch (e) {
-    // 错误已由拦截器处理
+const handleSave = async (formData) => {
+  if (formData.id) {
+    await productsApi.updateProduct(formData.id, formData)
+  } else {
+    await productsApi.addProduct(formData)
   }
 }
 
 const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm(`确定删除「${row.name}」？删除后可在回收站恢复`, '提示', { type: 'warning' })
-    await api.deleteProduct(row.id)
+    await productsApi.deleteProduct(row.id)
     ElMessage.success('已删除')
     load()
   } catch (err) {
@@ -231,7 +239,7 @@ const handleExport = () => {
 }
 
 onMounted(async () => {
-  categories.value = await api.getCategories()
+  categories.value = await categoriesApi.getCategories()
   load()
 })
 </script>

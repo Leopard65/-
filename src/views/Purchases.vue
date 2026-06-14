@@ -89,7 +89,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
-import api from '../api'
+import { purchasesApi, suppliersApi, productsApi } from '@/api'
 
 const router = useRouter()
 
@@ -109,7 +109,7 @@ const formTotal = computed(() =>
 )
 
 const load = async () => {
-  const res = await api.getPurchases({ page: page.value, pageSize: pageSize.value })
+  const res = await purchasesApi.getPurchases({ page: page.value, pageSize: pageSize.value })
   purchases.value = res.data
   total.value = res.total
 }
@@ -128,7 +128,7 @@ const handleSave = async () => {
   const valid = form.value.items.filter(i => i.product_id && i.quantity > 0)
   if (valid.length === 0) return ElMessage.warning('请添加进货商品')
   try {
-    await api.addPurchase({ supplier_id: form.value.supplier_id, items: valid })
+    await purchasesApi.addPurchase({ supplier_id: form.value.supplier_id, items: valid })
     ElMessage.success('入库成功')
     dialogVisible.value = false
     load()
@@ -140,8 +140,8 @@ const handleSave = async () => {
 onMounted(async () => {
   try {
     const [suppliersRes, productsRes] = await Promise.all([
-      api.getSuppliers(),
-      api.getProducts({ pageSize: 1000 })
+      suppliersApi.getSuppliers(),
+      productsApi.getProducts({ pageSize: 1000 })
     ])
     suppliers.value = suppliersRes.data || suppliersRes
     products.value = productsRes.data || productsRes

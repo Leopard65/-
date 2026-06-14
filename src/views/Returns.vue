@@ -120,8 +120,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
-import api from '../api'
+import { returnsApi, salesApi } from '@/api'
+import { useUserStore } from '@/stores/user'
 
+const userStore = useUserStore()
 const returns = ref([])
 const page = ref(1)
 const pageSize = ref(20)
@@ -133,8 +135,7 @@ const detail = ref({})
 const form = ref({ sale_id: null, items: [], reason: '' })
 const saleItems = ref([])
 
-const user = JSON.parse(localStorage.getItem('user') || '{}')
-const isAdmin = user.role === 'admin'
+const isAdmin = userStore.isAdmin
 
 const formTotal = computed(() =>
   form.value.items.reduce((s, i) => s + i.quantity * i.price, 0).toFixed(2)
@@ -151,7 +152,7 @@ const statusText = (status) => {
 }
 
 const load = async () => {
-  const res = await api.getReturns({
+  const res = await returnsApi.getReturns({
     page: page.value,
     pageSize: pageSize.value,
     status: filterStatus.value || undefined
@@ -169,7 +170,7 @@ const openDialog = () => {
 const loadSaleDetail = async (saleId) => {
   if (!saleId) return
   try {
-    const sale = await api.getSaleDetail(saleId)
+    const sale = await salesApi.getSaleDetail(saleId)
     if (sale && sale.items) {
       saleItems.value = sale.items
     }
@@ -180,7 +181,7 @@ const loadSaleDetail = async (saleId) => {
 
 const showDetail = async (row) => {
   try {
-    const res = await api.getReturnDetail(row.id)
+    const res = await returnsApi.getReturnDetail(row.id)
     detail.value = res
     detailVisible.value = true
   } catch {
@@ -194,7 +195,7 @@ const handleSave = async () => {
   if (valid.length === 0) return ElMessage.warning('请添加退货商品')
 
   try {
-    await api.createReturn({
+    await returnsApi.createReturn({
       sale_id: form.value.sale_id,
       items: valid,
       reason: form.value.reason
@@ -210,7 +211,7 @@ const handleSave = async () => {
 const handleApprove = async (row) => {
   await ElMessageBox.confirm('确定审核通过此退单？', '审核确认', { type: 'success' })
   try {
-    await api.approveReturn(row.id, { action: 'approve' })
+    await returnsApi.approveReturn(row.id, { action: 'approve' })
     ElMessage.success('审核通过')
     load()
   } catch (e) {
@@ -221,7 +222,7 @@ const handleApprove = async (row) => {
 const handleReject = async (row) => {
   await ElMessageBox.confirm('确定拒绝此退单？', '审核确认', { type: 'warning' })
   try {
-    await api.approveReturn(row.id, { action: 'reject' })
+    await returnsApi.approveReturn(row.id, { action: 'reject' })
     ElMessage.success('已拒绝')
     load()
   } catch (e) {

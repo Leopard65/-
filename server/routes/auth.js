@@ -3,10 +3,9 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
+const config = require('../config');
 const authMiddleware = require('../middleware/auth');
 const { logOperation } = require('../utils/logger');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'supermarket-secret-key-2024';
 
 // 登录
 router.post('/login', (req, res) => {
@@ -30,7 +29,7 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: '用户名或密码错误' });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ id: user.id, role: user.role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRES_IN });
 
     // 记录登录成功日志
     logOperation({

@@ -1,71 +1,71 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span>供应商管理</span>
-        <el-button type="primary" @click="openDialog()">新增供应商</el-button>
-      </div>
+      <span>供应商管理</span>
     </template>
 
-    <el-table :data="suppliers" stripe border style="width:100%">
+    <CrudTable
+      :data="suppliers"
+      :loading="loading"
+      :pagination="{ page, pageSize, total }"
+      @add="openDialog()"
+      @edit="openDialog"
+      @delete="handleDelete"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+    >
+      <template #actions>
+        <el-button type="success" @click="handleExport">
+          <el-icon style="margin-right:5px"><Download /></el-icon>
+          导出
+        </el-button>
+      </template>
+
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="name" label="供应商名称" />
       <el-table-column prop="contact" label="联系人" width="120" />
       <el-table-column prop="phone" label="电话" width="140" />
       <el-table-column prop="address" label="地址" />
-      <el-table-column label="操作" width="160">
-        <template #default="{ row }">
-          <el-button size="small" @click="openDialog(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    </CrudTable>
 
-    <!-- 分页 -->
-    <div style="display:flex;justify-content:flex-end;margin-top:15px">
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="load"
-        @current-change="load"
-      />
-    </div>
-
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑供应商' : '新增供应商'" width="500px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" />
-        </el-form-item>
-        <el-form-item label="联系人" prop="contact">
-          <el-input v-model="form.contact" />
-        </el-form-item>
-        <el-form-item label="电话" prop="phone">
-          <el-input v-model="form.phone" />
-        </el-form-item>
-        <el-form-item label="地址" prop="address">
-          <el-input v-model="form.address" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
-      </template>
-    </el-dialog>
+    <CrudDialog
+      ref="dialogRef"
+      :title="form.id ? '编辑供应商' : '新增供应商'"
+      width="500px"
+      label-width="80px"
+      :rules="rules"
+      :submit-fn="handleSave"
+      @success="load"
+    >
+      <el-form-item label="名称" prop="name">
+        <el-input v-model="form.name" />
+      </el-form-item>
+      <el-form-item label="联系人" prop="contact">
+        <el-input v-model="form.contact" />
+      </el-form-item>
+      <el-form-item label="电话" prop="phone">
+        <el-input v-model="form.phone" />
+      </el-form-item>
+      <el-form-item label="地址" prop="address">
+        <el-input v-model="form.address" />
+      </el-form-item>
+    </CrudDialog>
   </el-card>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '../api'
+import { Download } from '@element-plus/icons-vue'
+import { suppliersApi } from '@/api'
+import { exportSuppliers } from '@/utils/export'
+import CrudTable from '@/components/CrudTable.vue'
+import CrudDialog from '@/components/CrudDialog.vue'
 
 const suppliers = ref([])
-const dialogVisible = ref(false)
+const loading = ref(false)
+const dialogRef = ref(null)
 const form = ref({})
-const formRef = ref(null)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -77,42 +77,44 @@ const rules = {
 }
 
 const load = async () => {
-  const res = await api.getSuppliers({ page: page.value, pageSize: pageSize.value })
-  suppliers.value = res.data
-  total.value = res.total
+  loading.value = true
+  try {
+    const res = await suppliersApi.getSuppliers({ page: page.value, pageSize: pageSize.value })
+    suppliers.value = res.data
+    total.value = res.total
+  } finally {
+    loading.value = false
+  }
+}
+
+const handlePageChange = (val) => {
+  page.value = val
+  load()
+}
+
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  page.value = 1
+  load()
 }
 
 const openDialog = (row) => {
   form.value = row ? { ...row } : { name: '', contact: '', phone: '', address: '' }
-  dialogVisible.value = true
+  dialogRef.value?.open(form.value)
 }
 
-const handleSave = async () => {
-  if (!formRef.value) return
-  try {
-    await formRef.value.validate()
-  } catch {
-    return
-  }
-
-  try {
-    if (form.value.id) {
-      await api.updateSupplier(form.value.id, form.value)
-    } else {
-      await api.addSupplier(form.value)
-    }
-    ElMessage.success('保存成功')
-    dialogVisible.value = false
-    load()
-  } catch (e) {
-    // 错误已由拦截器处理
+const handleSave = async (formData) => {
+  if (formData.id) {
+    await suppliersApi.updateSupplier(formData.id, formData)
+  } else {
+    await suppliersApi.addSupplier(formData)
   }
 }
 
 const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm(`确定删除「${row.name}」？删除后可在回收站恢复`, '提示', { type: 'warning' })
-    await api.deleteSupplier(row.id)
+    await suppliersApi.deleteSupplier(row.id)
     ElMessage.success('已删除')
     load()
   } catch (err) {
@@ -120,6 +122,11 @@ const handleDelete = async (row) => {
       // 错误已由拦截器处理
     }
   }
+}
+
+const handleExport = () => {
+  exportSuppliers(suppliers.value)
+  ElMessage.success('导出成功')
 }
 
 onMounted(load)

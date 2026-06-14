@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { logOperation } = require('../utils/logger');
 
 // 获取销售记录（支持分页）
 router.get('/', (req, res) => {
@@ -132,6 +133,25 @@ router.post('/', (req, res) => {
 
   try {
     const { saleId, finalTotal, discount } = createSale();
+
+    // 记录操作日志
+    logOperation({
+      userId: req.user?.id,
+      username: req.user?.username,
+      action: 'create',
+      module: 'sales',
+      targetId: saleId,
+      detail: {
+        member_id,
+        payment,
+        items_count: items.length,
+        original_total: originalTotal,
+        final_total: finalTotal,
+        discount
+      },
+      ip: req.ip
+    });
+
     res.json({
       id: saleId,
       originalTotal,

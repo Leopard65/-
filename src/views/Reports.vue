@@ -125,7 +125,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
-import api from '../api'
+import { reportsApi } from '@/api'
 
 const activeTab = ref('sales')
 const salesDateRange = ref(null)
@@ -164,10 +164,10 @@ const loadSalesData = async () => {
     }
 
     const [daily, products, categories, payments] = await Promise.all([
-      api.getDailySales(params),
-      api.getProductSalesRank({ ...params, limit: 10 }),
-      api.getCategorySales(params),
-      api.getPaymentStats(params)
+      reportsApi.getDailySales(params),
+      reportsApi.getProductSalesRank({ ...params, limit: 10 }),
+      reportsApi.getCategorySales(params),
+      reportsApi.getPaymentStats(params)
     ])
 
     salesData.value = daily
@@ -194,8 +194,8 @@ const loadSalesData = async () => {
 const loadInventoryData = async () => {
   try {
     const [warning, value] = await Promise.all([
-      api.getInventoryWarning(),
-      api.getInventoryValue()
+      reportsApi.getInventoryWarning(),
+      reportsApi.getInventoryValue()
     ])
     inventoryWarning.value = warning
     inventoryValue.value = value
@@ -214,8 +214,8 @@ const loadProfitData = async () => {
     }
 
     const [gross, monthly] = await Promise.all([
-      api.getGrossProfit(params),
-      api.getMonthlyProfit()
+      reportsApi.getGrossProfit(params),
+      reportsApi.getMonthlyProfit()
     ])
 
     profitData.value = gross

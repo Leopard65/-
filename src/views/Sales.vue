@@ -7,11 +7,23 @@
 
         <!-- 搜索商品 -->
         <div style="display:flex;gap:10px;margin-bottom:15px">
-          <el-input v-model="searchKeyword" placeholder="输入商品名称或条码搜索" clearable @keyup.enter="searchProduct" style="flex:1">
+          <el-input
+            ref="searchInputRef"
+            v-model="searchKeyword"
+            placeholder="输入商品名称或条码搜索（支持扫码枪）"
+            clearable
+            @keyup.enter="searchProduct"
+            style="flex:1"
+          >
             <template #append>
               <el-button @click="searchProduct">搜索</el-button>
             </template>
           </el-input>
+        </div>
+
+        <!-- 扫码状态提示 -->
+        <div v-if="scanMode" style="margin-bottom:10px;padding:6px 12px;background:#e6f7ff;border:1px solid #91d5ff;border-radius:4px;font-size:12px;color:#1890ff">
+          📡 扫码枪模式已激活 - 请直接扫描条形码
         </div>
 
         <!-- 搜索结果 -->
@@ -121,14 +133,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
-import api from '../api'
-import { printReceipt } from '../utils/receipt'
+import { productsApi, membersApi, salesApi } from '@/api'
+import { printReceipt } from '@/utils/receipt'
 
 const router = useRouter()
+const searchInputRef = ref(null)
 const allProducts = ref([])
 const searchKeyword = ref('')
 const searchResults = ref([])
@@ -141,6 +154,97 @@ const salesPage = ref(1)
 const salesPageSize = ref(5)
 const salesTotal = ref(0)
 
+// ========== 扫码枪模拟 ==========
+const scanMode = ref(false)
+const scanBuffer = ref('')
+let scanTimer = null
+const SCAN_TIMEOUT = 100 // 扫码枪输入间隔阈值（ms）
+const MIN_BARCODE_LENGTH = 4 // 最短条码长度
+
+/**
+ * 扫码枪识别逻辑：
+ * 扫码枪本质是快速键盘输入，特征为：
+ * 1. 短时间内（<100ms）连续输入多个字符
+ * 2. 最后以 Enter 键结束
+ * 3. 输入速度远快于人工打字
+ */
+const handleKeyDown = (e) => {
+  // 忽略组合键和功能键
+  if (e.ctrlKey || e.altKey || e.metaKey) return
+  if (['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'].includes(e.key)) return
+
+  // 如果焦点在输入框内，不拦截（允许手动输入）
+  const activeEl = document.activeElement
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+    // 但如果是搜索框的 Enter，正常处理
+    return
+  }
+
+  // Enter 键 -> 尝试识别为条码
+  if (e.key === 'Enter') {
+    if (scanBuffer.value.length >= MIN_BARCODE_LENGTH) {
+      e.preventDefault()
+      handleBarcodeScan(scanBuffer.value.trim())
+    }
+    scanBuffer.value = ''
+    scanMode.value = false
+    clearTimeout(scanTimer)
+    return
+  }
+
+  // 普通字符 -> 追加到缓冲区
+  if (e.key.length === 1) {
+    // 检测快速连续输入（扫码枪特征）
+    const now = Date.now()
+    clearTimeout(scanTimer)
+
+    scanBuffer.value += e.key
+    scanMode.value = true
+
+    // 超时未继续输入 -> 判定为人工输入，清空缓冲
+    scanTimer = setTimeout(() => {
+      scanBuffer.value = ''
+      scanMode.value = false
+    }, SCAN_TIMEOUT * 3) // 给扫码枪更多容错时间
+  }
+}
+
+/**
+ * 处理扫码枪读入的条码
+ */
+const handleBarcodeScan = async (barcode) => {
+  if (!barcode) return
+
+  // 在本地商品列表中查找
+  let product = allProducts.value.find(p => p.barcode === barcode)
+
+  // 本地没找到，尝试从服务端精确查询
+  if (!product) {
+    try {
+      const res = await productsApi.getProducts({ keyword: barcode, pageSize: 1 })
+      if (res.data && res.data.length > 0) {
+        product = res.data.find(p => p.barcode === barcode) || res.data[0]
+        // 刷新本地缓存
+        allProducts.value = (await productsApi.getProducts({ pageSize: 1000 })).data
+      }
+    } catch {
+      // 查询失败静默处理
+    }
+  }
+
+  if (product) {
+    if (product.status !== 1) {
+      ElMessage.warning(`商品「${product.name}」已下架`)
+      return
+    }
+    addToCart(product)
+    ElMessage.success(`扫码添加: ${product.name}`)
+  } else {
+    ElMessage.warning(`未找到条码「${barcode}」对应的商品`)
+  }
+}
+
+// ========== 购物车逻辑 ==========
 const cartTotal = computed(() => ({
   quantity: cart.value.reduce((s, i) => s + i.quantity, 0),
   amount: cart.value.reduce((s, i) => s + i.price * i.quantity, 0).toFixed(2)
@@ -174,7 +278,7 @@ const addToCart = (product) => {
 }
 
 const loadSales = async () => {
-  const res = await api.getSales({ page: salesPage.value, pageSize: salesPageSize.value })
+  const res = await salesApi.getSales({ page: salesPage.value, pageSize: salesPageSize.value })
   recentSales.value = res.data
   salesTotal.value = res.total
 }
@@ -183,7 +287,7 @@ const handleCheckout = async () => {
   if (!cart.value.length) return
   await ElMessageBox.confirm(`确认收取 ¥${cartTotal.value.amount}？`, '结算确认', { type: 'success' })
   try {
-    const result = await api.addSale({
+    const result = await salesApi.addSale({
       member_id: memberId.value || null,
       payment: payment.value,
       items: cart.value.map(c => ({ product_id: c.product_id, quantity: c.quantity, price: c.price }))
@@ -213,7 +317,7 @@ const handleCheckout = async () => {
     cart.value = []
     memberId.value = null
     // 刷新数据
-    allProducts.value = await api.getProducts({ pageSize: 1000 })
+    allProducts.value = (await productsApi.getProducts({ pageSize: 1000 })).data
     loadSales()
   } catch (e) {
     // 错误已由拦截器处理
@@ -222,12 +326,21 @@ const handleCheckout = async () => {
 
 onMounted(async () => {
   try {
-    allProducts.value = await api.getProducts({ pageSize: 1000 })
-    members.value = await api.getMembers({ pageSize: 1000 })
+    allProducts.value = (await productsApi.getProducts({ pageSize: 1000 })).data
+    members.value = (await membersApi.getMembers({ pageSize: 1000 })).data
     loadSales()
   } catch (e) {
     console.error('加载数据失败:', e)
   }
+
+  // 注册扫码枪监听
+  document.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  // 清理扫码枪监听
+  document.removeEventListener('keydown', handleKeyDown)
+  clearTimeout(scanTimer)
 })
 
 // 离开页面前确认

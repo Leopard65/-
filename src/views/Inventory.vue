@@ -50,14 +50,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../api'
+import { reportsApi } from '@/api'
 
 const router = useRouter()
 const warnings = ref([])
 
 const loadWarnings = async () => {
   try {
-    warnings.value = await api.getInventoryWarning()
+    warnings.value = await reportsApi.getInventoryWarning()
   } catch (e) {
     console.error('获取库存预警失败:', e)
   }

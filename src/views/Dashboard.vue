@@ -97,7 +97,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
-import api from '../api'
+import { dashboardApi } from '@/api'
 
 const data = ref({})
 const fetching = ref(false)
@@ -106,7 +106,7 @@ let refreshInterval = null
 
 const fetchDashboard = async () => {
   try {
-    data.value = await api.getDashboard()
+    data.value = await dashboardApi.getDashboard()
     lastUpdated.value = new Date().toLocaleTimeString()
   } catch (e) {
     console.error('获取仪表盘数据失败:', e)

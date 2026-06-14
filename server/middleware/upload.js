@@ -1,9 +1,14 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+const UPLOAD_DIR = 'uploads/products/';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/products/');
+    // 确保上传目录存在（首次运行 / 新机器演示时自动创建）
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
     const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;

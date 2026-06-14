@@ -14,7 +14,7 @@ db.pragma('foreign_keys = ON');
 db.exec(`
   CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     status INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now','localtime')),
     updated_at TEXT DEFAULT (datetime('now','localtime'))
@@ -43,7 +43,7 @@ db.exec(`
     phone TEXT UNIQUE,
     points INTEGER DEFAULT 0,
     total_spent REAL DEFAULT 0,
-    level TEXT DEFAULT 'normal',
+    level TEXT DEFAULT '普通会员',
     status INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now','localtime')),
     updated_at TEXT DEFAULT (datetime('now','localtime'))

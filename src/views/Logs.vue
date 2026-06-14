@@ -69,7 +69,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import api from '../api'
+import { logsApi } from '@/api'
 
 const logs = ref([])
 const page = ref(1)
@@ -143,7 +143,7 @@ const handleDateChange = (val) => {
 
 const load = async () => {
   try {
-    const res = await api.getLogs({
+    const res = await logsApi.getLogs({
       page: page.value,
       pageSize: pageSize.value,
       ...filters.value

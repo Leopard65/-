@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { logOperation } = require('../utils/logger');
 
 // 获取进货记录（支持分页）
 router.get('/', (req, res) => {
@@ -75,10 +76,30 @@ router.post('/', (req, res) => {
 
   try {
     const id = createPurchase();
+
+    // 记录操作日志
+    logOperation({
+      userId: req.user?.id,
+      username: req.user?.username,
+      action: 'create',
+      module: 'purchases',
+      targetId: id,
+      detail: {
+        supplier_id,
+        items_count: items.length,
+        total
+      },
+      ip: req.ip
+    });
+
     res.json({ id, total });
   } catch (e) {
     console.error('创建进货单失败:', e);
-    res.status(500).json({ error: '创建进货单失败' });
+    if (e.message && e.message.includes('FOREIGN KEY')) {
+      res.status(400).json({ error: '商品或供应商不存在' });
+    } else {
+      res.status(500).json({ error: '创建进货单失败' });
+    }
   }
 });
 
