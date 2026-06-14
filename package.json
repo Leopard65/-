@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/index.js",
+    "seed:demo": "node server/seed-demo.js",
     "start": "concurrently \"node server/index.js\" \"vite\"",
     "build": "vite build"
   },

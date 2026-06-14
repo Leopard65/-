@@ -2,33 +2,47 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// 日销售报表
+// 日销售报表（含退款与净销售额）
 router.get('/sales/daily', (req, res) => {
   try {
     const { start_date, end_date } = req.query;
-    let where = 'WHERE 1=1';
-    const params = [];
+    let saleWhere = 'WHERE 1=1';
+    let retWhere = "WHERE status = 'completed'";
+    const saleParams = [];
+    const retParams = [];
 
     if (start_date) {
-      where += ' AND DATE(created_at) >= ?';
-      params.push(start_date);
+      saleWhere += ' AND DATE(created_at) >= ?'; saleParams.push(start_date);
+      retWhere += ' AND DATE(created_at) >= ?'; retParams.push(start_date);
     }
     if (end_date) {
-      where += ' AND DATE(created_at) <= ?';
-      params.push(end_date);
+      saleWhere += ' AND DATE(created_at) <= ?'; saleParams.push(end_date);
+      retWhere += ' AND DATE(created_at) <= ?'; retParams.push(end_date);
     }
 
+    // 毛销售额来自 sales，退款来自已审核退货（按退货发生日），净额 = 毛额 - 退款
     const data = db.prepare(`
-      SELECT
-        DATE(created_at) as date,
-        COUNT(*) as order_count,
-        SUM(total) as total_amount,
-        COUNT(DISTINCT member_id) as member_count
-      FROM sales
-      ${where}
-      GROUP BY DATE(created_at)
-      ORDER BY date
-    `).all(...params);
+      SELECT d.date, d.order_count, d.total_amount, d.member_count,
+        COALESCE(rf.refund, 0) as refund_amount,
+        d.total_amount - COALESCE(rf.refund, 0) as net_amount
+      FROM (
+        SELECT
+          DATE(created_at) as date,
+          COUNT(*) as order_count,
+          SUM(total) as total_amount,
+          COUNT(DISTINCT member_id) as member_count
+        FROM sales
+        ${saleWhere}
+        GROUP BY DATE(created_at)
+      ) d
+      LEFT JOIN (
+        SELECT DATE(created_at) as date, SUM(total) as refund
+        FROM returns
+        ${retWhere}
+        GROUP BY DATE(created_at)
+      ) rf ON d.date = rf.date
+      ORDER BY d.date
+    `).all(...saleParams, ...retParams);
 
     res.json(data);
   } catch (err) {
@@ -189,35 +203,50 @@ router.get('/inventory/value', (req, res) => {
   }
 });
 
-// 毛利润报表
+// 毛利润报表（净额：已扣除审核通过的退货）
 router.get('/profit/gross', (req, res) => {
   try {
     const { start_date, end_date } = req.query;
-    let where = 'WHERE 1=1';
-    const params = [];
+    let saleWhere = 'WHERE 1=1';
+    let retWhere = "WHERE r.status = 'completed'";
+    const saleParams = [];
+    const retParams = [];
 
     if (start_date) {
-      where += ' AND DATE(s.created_at) >= ?';
-      params.push(start_date);
+      saleWhere += ' AND DATE(s.created_at) >= ?'; saleParams.push(start_date);
+      retWhere += ' AND DATE(r.created_at) >= ?'; retParams.push(start_date);
     }
     if (end_date) {
-      where += ' AND DATE(s.created_at) <= ?';
-      params.push(end_date);
+      saleWhere += ' AND DATE(s.created_at) <= ?'; saleParams.push(end_date);
+      retWhere += ' AND DATE(r.created_at) <= ?'; retParams.push(end_date);
     }
 
+    // 销售记为正、已审核退货记为负，按日聚合得到净收入/净成本/净毛利
     const data = db.prepare(`
-      SELECT
-        DATE(s.created_at) as date,
-        SUM(si.quantity * si.price) as revenue,
-        SUM(si.quantity * p.cost) as cost,
-        SUM(si.quantity * si.price) - SUM(si.quantity * p.cost) as gross_profit
-      FROM sales s
-      JOIN sale_items si ON s.id = si.sale_id
-      JOIN products p ON si.product_id = p.id
-      ${where}
-      GROUP BY DATE(s.created_at)
+      SELECT date,
+        SUM(revenue) as revenue,
+        SUM(cost) as cost,
+        SUM(revenue) - SUM(cost) as gross_profit
+      FROM (
+        SELECT DATE(s.created_at) as date,
+          si.quantity * si.price as revenue,
+          si.quantity * p.cost as cost
+        FROM sales s
+        JOIN sale_items si ON s.id = si.sale_id
+        JOIN products p ON si.product_id = p.id
+        ${saleWhere}
+        UNION ALL
+        SELECT DATE(r.created_at) as date,
+          -(ri.quantity * ri.price) as revenue,
+          -(ri.quantity * p.cost) as cost
+        FROM returns r
+        JOIN return_items ri ON r.id = ri.return_id
+        JOIN products p ON ri.product_id = p.id
+        ${retWhere}
+      )
+      GROUP BY date
       ORDER BY date
-    `).all(...params);
+    `).all(...saleParams, ...retParams);
 
     res.json(data);
   } catch (err) {
@@ -226,36 +255,50 @@ router.get('/profit/gross', (req, res) => {
   }
 });
 
-// 月度利润汇总
+// 月度利润汇总（净额：已扣除审核通过的退货）
 router.get('/profit/monthly', (req, res) => {
   try {
     const { year } = req.query;
-    let where = 'WHERE 1=1';
-    const params = [];
+    let saleWhere = 'WHERE 1=1';
+    let retWhere = "WHERE r.status = 'completed'";
+    const saleParams = [];
+    const retParams = [];
 
     if (year) {
-      where += ' AND substr(s.created_at, 1, 4) = ?';
-      params.push(year);
+      saleWhere += ' AND substr(s.created_at, 1, 4) = ?'; saleParams.push(year);
+      retWhere += ' AND substr(r.created_at, 1, 4) = ?'; retParams.push(year);
     }
 
     const data = db.prepare(`
-      SELECT
-        substr(s.created_at, 1, 7) as month,
-        SUM(si.quantity * si.price) as revenue,
-        SUM(si.quantity * p.cost) as cost,
-        SUM(si.quantity * si.price) - SUM(si.quantity * p.cost) as gross_profit,
+      SELECT month,
+        SUM(revenue) as revenue,
+        SUM(cost) as cost,
+        SUM(revenue) - SUM(cost) as gross_profit,
         CASE
-          WHEN SUM(si.quantity * si.price) > 0
-          THEN ROUND((SUM(si.quantity * si.price) - SUM(si.quantity * p.cost)) / SUM(si.quantity * si.price) * 100, 2)
+          WHEN SUM(revenue) > 0
+          THEN ROUND((SUM(revenue) - SUM(cost)) / SUM(revenue) * 100, 2)
           ELSE 0
         END as profit_rate
-      FROM sales s
-      JOIN sale_items si ON s.id = si.sale_id
-      JOIN products p ON si.product_id = p.id
-      ${where}
-      GROUP BY substr(s.created_at, 1, 7)
+      FROM (
+        SELECT substr(s.created_at, 1, 7) as month,
+          si.quantity * si.price as revenue,
+          si.quantity * p.cost as cost
+        FROM sales s
+        JOIN sale_items si ON s.id = si.sale_id
+        JOIN products p ON si.product_id = p.id
+        ${saleWhere}
+        UNION ALL
+        SELECT substr(r.created_at, 1, 7) as month,
+          -(ri.quantity * ri.price) as revenue,
+          -(ri.quantity * p.cost) as cost
+        FROM returns r
+        JOIN return_items ri ON r.id = ri.return_id
+        JOIN products p ON ri.product_id = p.id
+        ${retWhere}
+      )
+      GROUP BY month
       ORDER BY month
-    `).all(...params);
+    `).all(...saleParams, ...retParams);
 
     res.json(data);
   } catch (err) {

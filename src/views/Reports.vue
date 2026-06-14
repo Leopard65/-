@@ -18,6 +18,12 @@
             <el-col :span="8">
               <el-descriptions title="汇总数据" :column="1" border>
                 <el-descriptions-item label="总销售额">¥{{ salesSummary.totalAmount?.toFixed(2) || '0.00' }}</el-descriptions-item>
+                <el-descriptions-item label="退款合计">
+                  <span style="color:#F56C6C">-¥{{ salesSummary.totalRefund?.toFixed(2) || '0.00' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="净销售额">
+                  <span style="font-weight:bold;color:#67C23A">¥{{ salesSummary.netAmount?.toFixed(2) || '0.00' }}</span>
+                </el-descriptions-item>
                 <el-descriptions-item label="总订单数">{{ salesSummary.totalOrders || 0 }}</el-descriptions-item>
                 <el-descriptions-item label="日均销售额">¥{{ salesSummary.avgDailyAmount?.toFixed(2) || '0.00' }}</el-descriptions-item>
               </el-descriptions>
@@ -174,11 +180,15 @@ const loadSalesData = async () => {
     productRank.value = products
     categorySales.value = categories
 
-    // 计算汇总
+    // 计算汇总（含退款与净销售额）
+    const grossAmount = daily.reduce((s, d) => s + (d.total_amount || 0), 0)
+    const totalRefund = daily.reduce((s, d) => s + (d.refund_amount || 0), 0)
     salesSummary.value = {
-      totalAmount: daily.reduce((s, d) => s + (d.total_amount || 0), 0),
+      totalAmount: grossAmount,
+      totalRefund,
+      netAmount: grossAmount - totalRefund,
       totalOrders: daily.reduce((s, d) => s + (d.order_count || 0), 0),
-      avgDailyAmount: daily.length > 0 ? daily.reduce((s, d) => s + (d.total_amount || 0), 0) / daily.length : 0
+      avgDailyAmount: daily.length > 0 ? grossAmount / daily.length : 0
     }
 
     nextTick(() => {
@@ -234,6 +244,7 @@ const renderSalesChart = () => {
 
   salesChart.setOption({
     tooltip: { trigger: 'axis' },
+    legend: { data: ['销售额', '净销售额', '订单数'] },
     xAxis: { type: 'category', data: salesData.value.map(d => d.date) },
     yAxis: { type: 'value' },
     series: [
@@ -244,6 +255,13 @@ const renderSalesChart = () => {
         data: salesData.value.map(d => d.total_amount),
         areaStyle: { opacity: 0.3 },
         itemStyle: { color: '#409EFF' }
+      },
+      {
+        name: '净销售额',
+        type: 'line',
+        smooth: true,
+        data: salesData.value.map(d => d.net_amount),
+        itemStyle: { color: '#E6A23C' }
       },
       {
         name: '订单数',
