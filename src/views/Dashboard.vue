@@ -36,10 +36,10 @@
       <el-col :span="6">
         <el-card shadow="hover">
           <div class="stat-card">
-            <div class="stat-icon" style="background:#E6A23C">🏷️</div>
+            <div class="stat-icon" style="background:#E6A23C">🧾</div>
             <div>
-              <div class="stat-label">商品总数</div>
-              <div class="stat-value">{{ data.productCount || 0 }}</div>
+              <div class="stat-label">今日客单价</div>
+              <div class="stat-value">¥{{ avgOrderValue }}</div>
             </div>
           </div>
         </el-card>
@@ -90,27 +90,16 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="20">
-      <!-- 库存预警 -->
-      <el-col :span="12">
+    <!-- 销售趋势 + 热销排行 -->
+    <el-row :gutter="20" style="margin-bottom: 20px">
+      <el-col :span="16">
         <el-card>
-          <template #header><span>⚠️ 库存预警</span></template>
-          <el-table :data="data.lowStock || []" style="width:100%" max-height="300" stripe>
-            <el-table-column prop="name" label="商品" />
-            <el-table-column prop="category_name" label="分类" width="100" />
-            <el-table-column prop="stock" label="库存" width="80">
-              <template #default="{ row }">
-                <el-tag :type="row.stock === 0 ? 'danger' : 'warning'" size="small">{{ row.stock }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="min_stock" label="预警值" width="80" />
-          </el-table>
-          <el-empty v-if="!data.lowStock?.length" description="暂无预警" />
+          <template #header><span>📈 近 7 天销售趋势</span></template>
+          <div v-show="data.trend && data.trend.length" ref="trendChartRef" style="height:300px"></div>
+          <el-empty v-if="!data.trend || !data.trend.length" description="暂无销售数据" :image-size="80" />
         </el-card>
       </el-col>
-
-      <!-- 热销排行 -->
-      <el-col :span="12">
+      <el-col :span="8">
         <el-card>
           <template #header><span>🔥 热销排行 TOP5</span></template>
           <div v-if="data.hotProducts?.length">
@@ -120,7 +109,32 @@
               <span style="color:#409EFF; font-weight:bold">{{ item.total_sold }} 件</span>
             </div>
           </div>
-          <el-empty v-else description="暂无销售数据" />
+          <el-empty v-else description="暂无销售数据" :image-size="80" />
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 库存预警明细 -->
+    <el-row :gutter="20">
+      <el-col :span="24">
+        <el-card>
+          <template #header><span>⚠️ 库存预警</span></template>
+          <el-table :data="data.lowStock || []" style="width:100%" max-height="320" stripe>
+            <el-table-column prop="name" label="商品" />
+            <el-table-column prop="category_name" label="分类" width="120" />
+            <el-table-column prop="stock" label="库存" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.stock === 0 ? 'danger' : 'warning'" size="small">{{ row.stock }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="min_stock" label="预警值" width="100" />
+            <el-table-column label="缺口" width="100">
+              <template #default="{ row }">
+                <span style="color:#F56C6C">{{ row.min_stock - row.stock }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty v-if="!data.lowStock?.length" description="暂无预警" :image-size="80" />
         </el-card>
       </el-col>
     </el-row>
@@ -128,18 +142,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Refresh } from '@element-plus/icons-vue'
+import * as echarts from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import { dashboardApi } from '@/api'
+
+echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const router = useRouter()
 const data = ref({})
 const fetching = ref(false)
 const lastUpdated = ref('--:--:--')
+const trendChartRef = ref(null)
+let trendChart = null
 let refreshInterval = null
 
 const goTo = (path) => router.push(path)
+
+// 今日客单价 = 今日销售额 / 今日订单数
+const avgOrderValue = computed(() => {
+  const s = data.value.todaySales || 0
+  const o = data.value.todayOrders || 0
+  return o > 0 ? (s / o).toFixed(2) : '0.00'
+})
 
 const targetPercent = computed(() => {
   const t = data.value.salesTarget || 0
@@ -155,10 +184,34 @@ const targetColor = computed(() => {
   return '#E6A23C'
 })
 
+const renderTrendChart = () => {
+  const trend = data.value.trend || []
+  if (!trendChartRef.value || !trend.length) return
+  if (!trendChart) trendChart = echarts.init(trendChartRef.value)
+  trendChart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => '¥' + Number(v).toFixed(2) },
+    grid: { left: 56, right: 24, top: 20, bottom: 32 },
+    xAxis: { type: 'category', boundaryGap: false, data: trend.map(d => d.date) },
+    yAxis: { type: 'value' },
+    series: [{
+      name: '销售额',
+      type: 'line',
+      smooth: true,
+      data: trend.map(d => d.amount),
+      areaStyle: { opacity: 0.18 },
+      itemStyle: { color: '#409EFF' },
+      lineStyle: { width: 3 }
+    }]
+  })
+}
+
+const onResize = () => { if (trendChart) trendChart.resize() }
+
 const fetchDashboard = async () => {
   try {
     data.value = await dashboardApi.getDashboard()
     lastUpdated.value = new Date().toLocaleTimeString()
+    nextTick(renderTrendChart)
   } catch (e) {
     console.error('获取仪表盘数据失败:', e)
   }
@@ -175,14 +228,15 @@ const handleRefresh = async () => {
 
 onMounted(() => {
   fetchDashboard()
+  window.addEventListener('resize', onResize)
   // 每5分钟自动刷新
   refreshInterval = setInterval(fetchDashboard, 5 * 60 * 1000)
 })
 
 onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-  }
+  if (refreshInterval) clearInterval(refreshInterval)
+  window.removeEventListener('resize', onResize)
+  if (trendChart) { trendChart.dispose(); trendChart = null }
 })
 </script>
 

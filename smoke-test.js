@@ -127,6 +127,12 @@ async function runChecks() {
   check('复购分析返回 totalBuyers/repurchaseRate', repurch.data && typeof repurch.data.repurchaseRate === 'number');
   check('会员分析对收银员 403(报表 admin 限定)', (await req('GET', '/reports/members/ranking', ctoken)).status === 403);
 
+  // 会员列表带等级折扣/积分倍率（收银台实时预览依赖）
+  const membersList = await req('GET', '/members?pageSize=1000', token);
+  const goldMember = ((membersList.data && membersList.data.data) || []).find(m => m.id === memberId);
+  check('[收银台] 会员列表带 level_discount', goldMember && approx(goldMember.level_discount, gold.discount), `实际 ${goldMember && goldMember.level_discount}`);
+  check('[收银台] 会员列表带 level_points_rate', goldMember && goldMember.level_points_rate === gold.points_rate, `实际 ${goldMember && goldMember.level_points_rate}`);
+
   // ===== P3 商品导入 =====
   console.log('\n[P3] 商品批量导入');
   const imp = await req('POST', '/products/import', token, {

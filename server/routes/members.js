@@ -11,17 +11,21 @@ router.get('/', (req, res) => {
     const offset = (page - 1) * pageSize;
     const { keyword } = req.query;
 
-    let where = 'WHERE status != -1';
+    let where = 'WHERE m.status != -1';
     const params = [];
     if (keyword) {
-      where += ' AND (name LIKE ? OR phone LIKE ?)';
+      where += ' AND (m.name LIKE ? OR m.phone LIKE ?)';
       params.push(`%${keyword}%`, `%${keyword}%`);
     }
 
-    const total = db.prepare(`SELECT COUNT(*) as count FROM members ${where}`).get(...params).count;
+    const total = db.prepare(`SELECT COUNT(*) as count FROM members m ${where}`).get(...params).count;
+    // 关联会员等级，带出折扣与积分倍率（供收银台预览，列表页忽略不影响）
     const data = db.prepare(`
-      SELECT * FROM members ${where}
-      ORDER BY created_at DESC
+      SELECT m.*, ml.discount AS level_discount, ml.points_rate AS level_points_rate
+      FROM members m
+      LEFT JOIN member_levels ml ON m.level = ml.name
+      ${where}
+      ORDER BY m.created_at DESC
       LIMIT ? OFFSET ?
     `).all(...params, pageSize, offset);
 

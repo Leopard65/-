@@ -68,9 +68,23 @@
         <!-- 会员选择 -->
         <div style="margin-bottom:15px">
           <div style="margin-bottom:5px;color:#666">会员（可选）</div>
-          <el-select v-model="memberId" placeholder="选择会员享受积分" clearable filterable style="width:100%">
-            <el-option v-for="m in members" :key="m.id" :label="`${m.name} (${m.phone})`" :value="m.id" />
+          <el-select v-model="memberId" placeholder="选择会员享折扣与积分" clearable filterable style="width:100%">
+            <el-option
+              v-for="m in members"
+              :key="m.id"
+              :label="`${m.name} (${m.phone})`"
+              :value="m.id"
+            >
+              <span style="float:left">{{ m.name }}</span>
+              <span style="float:right;color:#8492a6;font-size:13px">{{ m.level }}</span>
+            </el-option>
           </el-select>
+          <div v-if="selectedMember" class="member-hint">
+            <el-tag size="small" :type="settlement.hasDiscount ? 'warning' : 'info'">{{ selectedMember.level }}</el-tag>
+            <span v-if="settlement.hasDiscount">享 {{ (settlement.discount * 10).toFixed(2) }} 折</span>
+            <span v-else>无折扣</span>
+            <span>· 积分 ×{{ settlement.pointsRate }}</span>
+          </div>
         </div>
 
         <!-- 支付方式 -->
@@ -84,14 +98,26 @@
         </div>
 
         <!-- 合计 -->
-        <div style="background:#f5f7fa;padding:15px;border-radius:8px;margin-bottom:15px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <div class="settle-box">
+          <div class="settle-row">
             <span>商品数量</span>
             <span>{{ cartTotal.quantity }} 件</span>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:24px;font-weight:bold;color:#F56C6C">
-            <span>合计</span>
-            <span>¥{{ cartTotal.amount }}</span>
+          <div class="settle-row">
+            <span>原价小计</span>
+            <span>¥{{ settlement.original.toFixed(2) }}</span>
+          </div>
+          <div v-if="memberId && settlement.hasDiscount" class="settle-row settle-discount">
+            <span>会员优惠（{{ (settlement.discount * 10).toFixed(2) }} 折）</span>
+            <span>-¥{{ settlement.savings.toFixed(2) }}</span>
+          </div>
+          <div class="settle-total">
+            <span>应付金额</span>
+            <span class="settle-amount">¥{{ settlement.payable.toFixed(2) }}</span>
+          </div>
+          <div v-if="memberId" class="settle-row settle-points">
+            <span>预计获得积分</span>
+            <span>+{{ settlement.points }}</span>
           </div>
         </div>
 
@@ -250,6 +276,21 @@ const cartTotal = computed(() => ({
   amount: cart.value.reduce((s, i) => s + i.price * i.quantity, 0).toFixed(2)
 }))
 
+// 当前选中会员
+const selectedMember = computed(() => members.value.find(m => m.id === memberId.value) || null)
+
+// 结算明细预览（口径与服务端一致：应付=round(原价×折扣)，积分=floor(应付×倍率)）
+const settlement = computed(() => {
+  const original = cart.value.reduce((s, i) => s + i.price * i.quantity, 0)
+  const m = selectedMember.value
+  const discount = m && m.level_discount != null ? m.level_discount : 1
+  const pointsRate = m && m.level_points_rate != null ? m.level_points_rate : 1
+  const payable = Math.round(original * discount * 100) / 100
+  const savings = Math.round((original - payable) * 100) / 100
+  const points = m ? Math.floor(payable * pointsRate) : 0
+  return { original, discount, pointsRate, payable, savings, points, hasDiscount: discount < 1 }
+})
+
 const searchProduct = () => {
   const kw = searchKeyword.value.trim().toLowerCase()
   if (!kw) { searchResults.value = []; return }
@@ -285,7 +326,7 @@ const loadSales = async () => {
 
 const handleCheckout = async () => {
   if (!cart.value.length) return
-  await ElMessageBox.confirm(`确认收取 ¥${cartTotal.value.amount}？`, '结算确认', { type: 'success' })
+  await ElMessageBox.confirm(`确认收取 ¥${settlement.value.payable.toFixed(2)}？`, '结算确认', { type: 'success' })
   try {
     const result = await salesApi.addSale({
       member_id: memberId.value || null,
@@ -361,4 +402,25 @@ onBeforeRouteLeave((to, from, next) => {
   padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
 }
 .search-item:hover { background: #f5f7fa; }
+
+.member-hint {
+  margin-top: 8px; font-size: 13px; color: #909399;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.settle-box {
+  background: #f5f7fa; padding: 16px; border-radius: 8px; margin-bottom: 15px;
+}
+.settle-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px; color: #606266; font-size: 14px;
+}
+.settle-discount { color: #E6A23C; }
+.settle-points { color: #67C23A; margin-bottom: 0; margin-top: 8px; }
+.settle-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-top: 10px; border-top: 1px dashed #dcdfe6;
+}
+.settle-total > span:first-child { font-size: 15px; color: #303133; }
+.settle-amount { font-size: 28px; font-weight: bold; color: #F56C6C; }
 </style>
