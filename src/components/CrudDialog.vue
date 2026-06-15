@@ -29,15 +29,17 @@ const formRef = ref(null)
 const submitting = ref(false)
 const form = ref({})
 
-// 双向绑定 visible
-const visible = computed({
-  get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val)
-})
+// 弹窗显隐由内部 ref 驱动：调用方通过 ref 调用 open() 即可打开，
+// 无需在父组件绑定 v-model；同时兼容父组件传入 v-model 的用法。
+const visible = ref(props.modelValue)
+watch(() => props.modelValue, (v) => { visible.value = v })
+watch(visible, (v) => { if (v !== props.modelValue) emit('update:modelValue', v) })
 
 // 打开弹窗
+// 直接复用调用方传入的对象（调用方已传 {...row} 副本），使插槽内 v-model、
+// 表单校验 :model 与 submitFn 操作同一对象，避免编辑值丢失。
 const open = (data) => {
-  form.value = data ? { ...data } : {}
+  form.value = data || {}
   visible.value = true
 }
 
@@ -72,8 +74,4 @@ const handleSubmit = async () => {
 
 // 暴露方法和属性
 defineExpose({ open, form, formRef })
-</script>
-
-<script>
-import { computed } from 'vue'
 </script>

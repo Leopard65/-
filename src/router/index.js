@@ -22,11 +22,13 @@ const routes = [
       { path: 'sales', name: 'Sales', component: () => import('../views/Sales.vue'), meta: { title: '销售收银', icon: 'ShoppingCart', roles: [ROLES.ADMIN, ROLES.CASHIER] } },
       { path: 'purchases', name: 'Purchases', component: () => import('../views/Purchases.vue'), meta: { title: '进货管理', icon: 'Box', roles: [ROLES.ADMIN] } },
       { path: 'members', name: 'Members', component: () => import('../views/Members.vue'), meta: { title: '会员管理', icon: 'User', roles: [ROLES.ADMIN, ROLES.CASHIER] } },
+      { path: 'member-levels', name: 'MemberLevels', component: () => import('../views/MemberLevels.vue'), meta: { title: '会员等级', icon: 'Medal', roles: [ROLES.ADMIN] } },
       { path: 'suppliers', name: 'Suppliers', component: () => import('../views/Suppliers.vue'), meta: { title: '供应商管理', icon: 'Van', roles: [ROLES.ADMIN] } },
       { path: 'returns', name: 'Returns', component: () => import('../views/Returns.vue'), meta: { title: '退换货管理', icon: 'RefreshLeft', roles: [ROLES.ADMIN, ROLES.CASHIER] } },
       { path: 'inventory', name: 'Inventory', component: () => import('../views/Inventory.vue'), meta: { title: '库存预警', icon: 'Warning', roles: [ROLES.ADMIN, ROLES.CASHIER] } },
       { path: 'reports', name: 'Reports', component: () => import('../views/Reports.vue'), meta: { title: '报表统计', icon: 'DataAnalysis', roles: [ROLES.ADMIN] } },
       { path: 'logs', name: 'Logs', component: () => import('../views/Logs.vue'), meta: { title: '操作日志', icon: 'Document', roles: [ROLES.ADMIN] } },
+      { path: 'users', name: 'Users', component: () => import('../views/Users.vue'), meta: { title: '用户管理', icon: 'UserFilled', roles: [ROLES.ADMIN] } },
     ]
   },
   {

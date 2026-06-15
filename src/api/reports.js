@@ -12,4 +12,7 @@ export default {
   getInventoryValue: () => api.get('/reports/inventory/value').then(r => r.data),
   getGrossProfit: params => api.get('/reports/profit/gross', { params }).then(r => r.data),
   getMonthlyProfit: params => api.get('/reports/profit/monthly', { params }).then(r => r.data),
+  getMemberRanking: params => api.get('/reports/members/ranking', { params }).then(r => r.data),
+  getMemberLevelDist: () => api.get('/reports/members/levels').then(r => r.data),
+  getMemberRepurchase: () => api.get('/reports/members/repurchase').then(r => r.data),
 }

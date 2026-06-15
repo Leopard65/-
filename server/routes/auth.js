@@ -29,6 +29,19 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: '用户名或密码错误' });
     }
 
+    // 禁用账号不允许登录
+    if (user.status === 0) {
+      logOperation({
+        userId: user.id,
+        username,
+        action: 'login',
+        module: 'auth',
+        detail: { success: false, reason: '账号已禁用' },
+        ip: req.ip
+      });
+      return res.status(403).json({ error: '账号已被禁用，请联系管理员' });
+    }
+
     const token = jwt.sign({ id: user.id, role: user.role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRES_IN });
 
     // 记录登录成功日志

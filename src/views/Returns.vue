@@ -63,11 +63,11 @@
         <el-form-item label="退货商品">
           <div style="width:100%">
             <div v-for="(item, i) in form.items" :key="i" style="display:flex;gap:10px;margin-bottom:10px;align-items:center">
-              <el-select v-model="item.product_id" placeholder="选择商品" filterable style="flex:2">
+              <el-select v-model="item.product_id" placeholder="选择商品" filterable style="flex:2" @change="onProductChange(item)">
                 <el-option v-for="p in saleItems" :key="p.product_id" :label="`${p.product_name} (购买:${p.quantity})`" :value="p.product_id" />
               </el-select>
               <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="flex:1" />
-              <el-input-number v-model="item.price" :min="0" :precision="2" placeholder="单价" style="flex:1" />
+              <el-input-number v-model="item.price" :precision="2" disabled placeholder="原单价" style="flex:1" />
               <el-button type="danger" :icon="Delete" circle size="small" @click="form.items.splice(i, 1)" />
             </div>
             <el-button @click="form.items.push({ product_id: null, quantity: 1, price: 0 })" style="width:100%">
@@ -80,8 +80,13 @@
           <el-input v-model="form.reason" type="textarea" :rows="3" placeholder="请输入退货原因" />
         </el-form-item>
 
-        <el-form-item label="退款金额">
-          <span style="font-size:20px;font-weight:bold;color:#F56C6C">¥{{ formTotal }}</span>
+        <el-form-item label="预估退款">
+          <div>
+            <span style="font-size:20px;font-weight:bold;color:#F56C6C">¥{{ formTotal }}</span>
+            <span v-if="saleDiscount < 1" style="margin-left:10px;font-size:12px;color:#909399">
+              （原单 {{ (saleDiscount * 10).toFixed(2) }} 折，按折后价退；实际以审核为准）
+            </span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -134,11 +139,12 @@ const detailVisible = ref(false)
 const detail = ref({})
 const form = ref({ sale_id: null, items: [], reason: '' })
 const saleItems = ref([])
+const saleDiscount = ref(1)
 
 const isAdmin = userStore.isAdmin
 
 const formTotal = computed(() =>
-  form.value.items.reduce((s, i) => s + i.quantity * i.price, 0).toFixed(2)
+  (form.value.items.reduce((s, i) => s + i.quantity * i.price, 0) * saleDiscount.value).toFixed(2)
 )
 
 const statusType = (status) => {
@@ -164,6 +170,7 @@ const load = async () => {
 const openDialog = () => {
   form.value = { sale_id: null, items: [{ product_id: null, quantity: 1, price: 0 }], reason: '' }
   saleItems.value = []
+  saleDiscount.value = 1
   dialogVisible.value = true
 }
 
@@ -173,10 +180,22 @@ const loadSaleDetail = async (saleId) => {
     const sale = await salesApi.getSaleDetail(saleId)
     if (sale && sale.items) {
       saleItems.value = sale.items
+      // 原单实际折扣 = 实收总额 / 明细原价合计（与服务端退款口径一致）
+      const lineSum = sale.items.reduce((s, i) => s + i.price * i.quantity, 0)
+      saleDiscount.value = lineSum > 0 ? sale.total / lineSum : 1
     }
+    // 切换订单后清空已选退货商品的单价（待重新选择带出）
+    form.value.items.forEach(it => onProductChange(it))
   } catch {
     saleItems.value = []
+    saleDiscount.value = 1
   }
+}
+
+// 选中退货商品后，自动带出该商品在原单中的单价（服务端权威，禁止手改）
+const onProductChange = (item) => {
+  const matched = saleItems.value.find(p => p.product_id === item.product_id)
+  item.price = matched ? matched.price : 0
 }
 
 const showDetail = async (row) => {
@@ -191,7 +210,7 @@ const showDetail = async (row) => {
 
 const handleSave = async () => {
   if (!form.value.sale_id) return ElMessage.warning('请输入原订单号')
-  const valid = form.value.items.filter(i => i.product_id && i.quantity > 0 && i.price > 0)
+  const valid = form.value.items.filter(i => i.product_id && i.quantity > 0)
   if (valid.length === 0) return ElMessage.warning('请添加退货商品')
 
   try {

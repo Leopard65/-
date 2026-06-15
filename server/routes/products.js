@@ -71,6 +71,55 @@ router.post('/', (req, res) => {
   }
 });
 
+// 批量导入商品（Excel）
+router.post('/import', (req, res) => {
+  const { items } = req.body;
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: '导入数据为空' });
+  }
+
+  const insert = db.prepare(
+    'INSERT INTO products (name,barcode,category_id,price,cost,stock,min_stock,unit) VALUES (?,?,?,?,?,?,?,?)'
+  );
+
+  let successCount = 0;
+  const failed = [];
+
+  items.forEach((item, idx) => {
+    const name = (item.name == null ? '' : String(item.name)).trim();
+    if (!name) {
+      failed.push({ row: idx + 2, name: '', reason: '商品名称为空' });
+      return;
+    }
+    try {
+      insert.run(
+        name,
+        item.barcode ? String(item.barcode).trim() : null,
+        item.category_id || null,
+        Number(item.price) || 0,
+        Number(item.cost) || 0,
+        parseInt(item.stock) || 0,
+        parseInt(item.min_stock) || 10,
+        item.unit ? String(item.unit).trim() : '个'
+      );
+      successCount++;
+    } catch (e) {
+      failed.push({ row: idx + 2, name, reason: e.message.includes('UNIQUE') ? '条码已存在' : '写入失败' });
+    }
+  });
+
+  logOperation({
+    userId: req.user?.id,
+    username: req.user?.username,
+    action: 'import',
+    module: 'products',
+    detail: { total: items.length, success: successCount, failed: failed.length },
+    ip: req.ip
+  });
+
+  res.json({ successCount, failedCount: failed.length, failed });
+});
+
 // 修改商品
 router.put('/:id', (req, res) => {
   try {

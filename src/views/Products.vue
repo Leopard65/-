@@ -29,6 +29,12 @@
           <el-icon style="margin-right:5px"><Download /></el-icon>
           导出
         </el-button>
+        <el-button type="warning" @click="triggerImport">
+          <el-icon style="margin-right:5px"><Upload /></el-icon>
+          导入
+        </el-button>
+        <el-button link type="primary" @click="downloadTemplate">下载模板</el-button>
+        <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="onFileChange" />
       </template>
 
       <el-table-column label="图片" width="80">
@@ -115,16 +121,56 @@
         </el-upload>
       </el-form-item>
     </CrudDialog>
+
+    <!-- Excel 导入预览 -->
+    <el-dialog v-model="importDialogVisible" title="商品导入预览" width="820px">
+      <div style="margin-bottom:10px;color:#666">
+        共解析 <b>{{ importRows.length }}</b> 行；
+        <span v-if="unknownCategoryCount">其中 <b style="color:#F56C6C">{{ unknownCategoryCount }}</b> 行分类未匹配（将留空），</span>
+        确认后写入。
+      </div>
+      <el-table :data="importRows" stripe size="small" max-height="360" border>
+        <el-table-column type="index" label="#" width="50" />
+        <el-table-column prop="name" label="商品名称" />
+        <el-table-column prop="barcode" label="条码" width="130" />
+        <el-table-column label="分类" width="110">
+          <template #default="{ row }">
+            <span :style="{ color: row.category_id ? '' : '#E6A23C' }">
+              {{ row.category_name || '-' }}{{ row.category_name && !row.category_id ? '（未匹配）' : '' }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="price" label="售价" width="80" />
+        <el-table-column prop="cost" label="成本" width="80" />
+        <el-table-column prop="stock" label="库存" width="70" />
+        <el-table-column prop="min_stock" label="预警" width="70" />
+        <el-table-column prop="unit" label="单位" width="70" />
+      </el-table>
+      <el-alert
+        v-if="importResult"
+        :title="importResultText"
+        :type="importResult.failedCount ? 'warning' : 'success'"
+        :closable="false"
+        style="margin-top:10px"
+      />
+      <div v-if="importResult?.failed?.length" style="margin-top:8px;max-height:120px;overflow:auto;font-size:12px;color:#F56C6C">
+        <div v-for="(f, i) in importResult.failed" :key="i">第 {{ f.row }} 行「{{ f.name || '-' }}」：{{ f.reason }}</div>
+      </div>
+      <template #footer>
+        <el-button @click="importDialogVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="importing" :disabled="!importRows.length" @click="confirmImport">确认导入</el-button>
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Download } from '@element-plus/icons-vue'
+import { Plus, Download, Upload } from '@element-plus/icons-vue'
 import { productsApi, categoriesApi } from '@/api'
 import { useUserStore } from '@/stores/user'
-import { exportProducts } from '@/utils/export'
+import { exportProducts, parseProductsExcel, downloadProductTemplate } from '@/utils/export'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
 
@@ -139,6 +185,17 @@ const form = ref({})
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+// Excel 导入
+const fileInputRef = ref(null)
+const importDialogVisible = ref(false)
+const importRows = ref([])
+const importing = ref(false)
+const importResult = ref(null)
+const unknownCategoryCount = computed(() => importRows.value.filter(r => r.category_name && !r.category_id).length)
+const importResultText = computed(() =>
+  importResult.value ? `成功导入 ${importResult.value.successCount} 条，失败 ${importResult.value.failedCount} 条` : ''
+)
 
 const uploadHeaders = computed(() => ({
   Authorization: `Bearer ${userStore.token}`
@@ -236,6 +293,69 @@ const handleDelete = async (row) => {
 const handleExport = () => {
   exportProducts(products.value)
   ElMessage.success('导出成功')
+}
+
+const downloadTemplate = () => downloadProductTemplate()
+
+const triggerImport = () => {
+  importResult.value = null
+  fileInputRef.value?.click()
+}
+
+const onFileChange = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  try {
+    const rows = await parseProductsExcel(file)
+    // 分类名 -> id 映射（未匹配留空）
+    const byName = {}
+    categories.value.forEach(c => { byName[c.name] = c.id })
+    importRows.value = rows
+      .filter(r => (r.name ?? '').toString().trim())
+      .map(r => ({
+        ...r,
+        category_id: r.category_name ? (byName[String(r.category_name).trim()] || null) : null
+      }))
+    importResult.value = null
+    if (!importRows.value.length) {
+      ElMessage.warning('未解析到有效数据（请确认含「商品名称」列）')
+    } else {
+      importDialogVisible.value = true
+    }
+  } catch (err) {
+    ElMessage.error('文件解析失败，请使用模板格式')
+  } finally {
+    e.target.value = '' // 允许再次选择同一文件
+  }
+}
+
+const confirmImport = async () => {
+  importing.value = true
+  try {
+    const payload = importRows.value.map(r => ({
+      name: r.name,
+      barcode: r.barcode,
+      category_id: r.category_id,
+      price: r.price,
+      cost: r.cost,
+      stock: r.stock,
+      min_stock: r.min_stock,
+      unit: r.unit
+    }))
+    const res = await productsApi.importProducts(payload)
+    importResult.value = res
+    load()
+    if (res.failedCount === 0) {
+      ElMessage.success(`成功导入 ${res.successCount} 条`)
+      importDialogVisible.value = false
+    } else {
+      ElMessage.warning(`导入完成：成功 ${res.successCount}，失败 ${res.failedCount}（详见下方）`)
+    }
+  } catch (err) {
+    // 错误已由拦截器处理
+  } finally {
+    importing.value = false
+  }
 }
 
 onMounted(async () => {

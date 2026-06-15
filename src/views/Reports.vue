@@ -124,14 +124,74 @@
           </el-table>
         </el-card>
       </el-tab-pane>
+
+      <!-- 会员分析 -->
+      <el-tab-pane label="会员分析" name="members">
+        <el-row :gutter="20">
+          <el-col :span="14">
+            <el-card>
+              <template #header><span>会员消费排行 TOP10</span></template>
+              <el-table :data="memberRanking" stripe size="small" max-height="360">
+                <el-table-column type="index" label="排名" width="60" />
+                <el-table-column prop="name" label="会员" />
+                <el-table-column prop="level" label="等级" width="100" />
+                <el-table-column prop="order_count" label="订单数" width="80" />
+                <el-table-column prop="total_spent" label="累计消费" width="120">
+                  <template #default="{ row }">¥{{ row.total_spent?.toFixed(2) }}</template>
+                </el-table-column>
+                <el-table-column prop="points" label="积分" width="90" />
+              </el-table>
+              <el-empty v-if="!memberRanking.length" description="暂无会员数据" />
+            </el-card>
+          </el-col>
+          <el-col :span="10">
+            <el-card>
+              <template #header><span>会员等级分布</span></template>
+              <div ref="levelChartRef" style="height:340px"></div>
+            </el-card>
+          </el-col>
+        </el-row>
+
+        <el-card style="margin-top:20px">
+          <template #header><span>复购分析</span></template>
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-descriptions :column="1" border>
+                <el-descriptions-item label="购买会员数">{{ repurchase.totalBuyers || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="复购会员数">{{ repurchase.repeatBuyers || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="复购率">
+                  <span style="font-weight:bold;color:#409EFF">{{ repurchase.repurchaseRate || 0 }}%</span>
+                </el-descriptions-item>
+              </el-descriptions>
+            </el-col>
+            <el-col :span="16">
+              <el-table :data="repurchase.top || []" stripe size="small" max-height="240">
+                <el-table-column type="index" label="排名" width="60" />
+                <el-table-column prop="name" label="会员" />
+                <el-table-column prop="order_count" label="订单数" width="100" />
+                <el-table-column prop="total" label="累计消费" width="120">
+                  <template #default="{ row }">¥{{ row.total?.toFixed(2) }}</template>
+                </el-table-column>
+              </el-table>
+              <el-empty v-if="!repurchase.top?.length" description="暂无复购会员" />
+            </el-col>
+          </el-row>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import * as echarts from 'echarts'
+// echarts 按需引入（仅打包用到的图表/组件，显著减小体积）
+import * as echarts from 'echarts/core'
+import { LineChart, BarChart, PieChart } from 'echarts/charts'
+import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import { reportsApi } from '@/api'
+
+echarts.use([LineChart, BarChart, PieChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
 
 const activeTab = ref('sales')
 const salesDateRange = ref(null)
@@ -151,14 +211,21 @@ const inventoryValue = ref([])
 const profitData = ref([])
 const monthlyProfit = ref([])
 
+// 会员分析数据
+const memberRanking = ref([])
+const levelDist = ref([])
+const repurchase = ref({})
+
 // 图表引用
 const salesChartRef = ref(null)
 const categoryChartRef = ref(null)
 const profitChartRef = ref(null)
+const levelChartRef = ref(null)
 
 let salesChart = null
 let categoryChart = null
 let profitChart = null
+let levelChart = null
 
 // 加载销售数据
 const loadSalesData = async () => {
@@ -311,10 +378,45 @@ const renderProfitChart = () => {
   })
 }
 
+// 加载会员分析数据
+const loadMemberData = async () => {
+  try {
+    const [ranking, levels, repurch] = await Promise.all([
+      reportsApi.getMemberRanking({ limit: 10 }),
+      reportsApi.getMemberLevelDist(),
+      reportsApi.getMemberRepurchase()
+    ])
+    memberRanking.value = ranking
+    levelDist.value = levels
+    repurchase.value = repurch
+    nextTick(() => renderLevelChart())
+  } catch (e) {
+    console.error('加载会员分析失败:', e)
+  }
+}
+
+// 渲染会员等级分布饼图
+const renderLevelChart = () => {
+  if (!levelChartRef.value) return
+  if (!levelChart) levelChart = echarts.init(levelChartRef.value)
+
+  levelChart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} 人 ({d}%)' },
+    legend: { bottom: 0 },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '65%'],
+      data: levelDist.value.map(l => ({ name: l.level, value: l.count })),
+      emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+    }]
+  })
+}
+
 const handleTabChange = (tab) => {
   if (tab === 'sales') loadSalesData()
   else if (tab === 'inventory') loadInventoryData()
   else if (tab === 'profit') loadProfitData()
+  else if (tab === 'members') loadMemberData()
 }
 
 onMounted(() => {

@@ -72,10 +72,23 @@ router.post('/', (req, res) => {
     const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(sale_id);
     if (!sale) return res.status(404).json({ error: '原订单不存在' });
 
-    // 验证退货数量不超过原购买数量
+    // 原订单实际折扣比例 = 实收总额 / 明细原价合计（整单折扣口径）
+    const saleLineSum = db.prepare(
+      'SELECT COALESCE(SUM(price * quantity), 0) AS s FROM sale_items WHERE sale_id = ?'
+    ).get(sale_id).s;
+    const effectiveDiscount = saleLineSum > 0 ? sale.total / saleLineSum : 1;
+
+    // 校验退货数量，并按服务端记录的原单单价计算（不信任前端传入的 price）
+    let originalTotal = 0;
+    const lines = [];
     for (const item of items) {
+      const qty = parseInt(item.quantity);
+      if (!qty || qty <= 0) {
+        return res.status(400).json({ error: '退货数量不合法' });
+      }
+
       const saleItem = db.prepare(
-        'SELECT quantity FROM sale_items WHERE sale_id = ? AND product_id = ?'
+        'SELECT quantity, price FROM sale_items WHERE sale_id = ? AND product_id = ?'
       ).get(sale_id, item.product_id);
 
       if (!saleItem) {
@@ -90,13 +103,17 @@ router.post('/', (req, res) => {
         WHERE r.sale_id = ? AND ri.product_id = ? AND r.status != 'rejected'
       `).get(sale_id, item.product_id).returned;
 
-      if (returnedQty + item.quantity > saleItem.quantity) {
+      if (returnedQty + qty > saleItem.quantity) {
         return res.status(400).json({ error: `退货数量超过购买数量` });
       }
+
+      // 明细记录原单单价，退款金额按整单折扣折算（折后退）
+      originalTotal += saleItem.price * qty;
+      lines.push({ product_id: item.product_id, quantity: qty, price: saleItem.price });
     }
 
-    // 计算退款金额
-    const total = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    // 退款总额 = 原价合计 × 原单折扣
+    const total = Math.round(originalTotal * effectiveDiscount * 100) / 100;
 
     // 使用事务处理
     const createReturn = db.transaction(() => {
@@ -111,8 +128,8 @@ router.post('/', (req, res) => {
       const insertItem = db.prepare(
         'INSERT INTO return_items (return_id, product_id, quantity, price) VALUES (?, ?, ?, ?)'
       );
-      items.forEach(item => {
-        insertItem.run(returnId, item.product_id, item.quantity, item.price);
+      lines.forEach(l => {
+        insertItem.run(returnId, l.product_id, l.quantity, l.price);
       });
 
       return returnId;
@@ -188,10 +205,16 @@ router.put('/:id/approve', (req, res) => {
       // 获取原订单信息
       const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(returnRecord.sale_id);
 
-      // 如果有会员，扣减积分
+      // 如果有会员，回退积分与累计消费（按会员等级倍率，余额不为负）
       if (sale.member_id) {
-        const points = Math.floor(returnRecord.total);
-        db.prepare('UPDATE members SET points = points - ?, total_spent = total_spent - ? WHERE id = ?')
+        let pointsRate = 1;
+        const member = db.prepare('SELECT level FROM members WHERE id = ?').get(sale.member_id);
+        if (member && member.level) {
+          const level = db.prepare('SELECT points_rate FROM member_levels WHERE name = ?').get(member.level);
+          if (level) pointsRate = level.points_rate;
+        }
+        const points = Math.floor(returnRecord.total * pointsRate);
+        db.prepare('UPDATE members SET points = MAX(0, points - ?), total_spent = MAX(0, total_spent - ?) WHERE id = ?')
           .run(points, returnRecord.total, sale.member_id);
       }
     });

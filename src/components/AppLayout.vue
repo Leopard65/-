@@ -65,7 +65,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, Fold, Expand, ArrowDown, RefreshLeft, DataAnalysis, Document, Warning } from '@element-plus/icons-vue'
+import { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, Fold, Expand, ArrowDown, RefreshLeft, DataAnalysis, Document, Warning, Medal, UserFilled } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { reportsApi } from '@/api'
 
@@ -76,7 +76,7 @@ const warningCount = ref(0)
 let warningInterval = null
 
 // 图标映射
-const iconMap = { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, RefreshLeft, Warning, DataAnalysis, Document }
+const iconMap = { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, RefreshLeft, Warning, DataAnalysis, Document, Medal, UserFilled }
 
 // 基于角色过滤菜单
 const menuItems = computed(() => {

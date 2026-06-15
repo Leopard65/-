@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const config = require('./config');
 const authMiddleware = require('./middleware/auth');
 const { roleMiddleware } = require('./middleware/auth');
 
@@ -23,10 +24,11 @@ app.use('/api/products', authMiddleware, require('./routes/products'));
 app.use('/api/members', authMiddleware, require('./routes/members'));
 app.use('/api/sales', authMiddleware, require('./routes/sales'));
 app.use('/api/returns', authMiddleware, require('./routes/returns'));
-app.use('/api/member-levels', authMiddleware, require('./routes/member-levels'));
 app.use('/api/dashboard', authMiddleware, require('./routes/dashboard'));
 
 // 管理员专属路由
+app.use('/api/member-levels', authMiddleware, roleMiddleware('admin'), require('./routes/member-levels'));
+app.use('/api/users', authMiddleware, roleMiddleware('admin'), require('./routes/users'));
 app.use('/api/suppliers', authMiddleware, roleMiddleware('admin'), require('./routes/suppliers'));
 app.use('/api/purchases', authMiddleware, roleMiddleware('admin'), require('./routes/purchases'));
 app.use('/api/reports', authMiddleware, roleMiddleware('admin'), require('./routes/reports'));
@@ -43,7 +45,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || '服务器内部错误' });
 });
 
-const PORT = 3000;
+const PORT = config.PORT;
 app.listen(PORT, () => {
   console.log(`超市管理系统后端已启动: http://localhost:${PORT}`);
 });

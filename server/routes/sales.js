@@ -73,22 +73,29 @@ router.post('/', (req, res) => {
   const { member_id, payment, items } = req.body;
   if (!items || items.length === 0) return res.status(400).json({ error: '销售明细不能为空' });
 
-  const originalTotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-
   const createSale = db.transaction(() => {
-    // 检查库存
+    // 校验商品并按服务端当前价计算（不信任前端传入的 price，避免被篡改）
+    let originalTotal = 0;
+    const lines = [];
     for (const item of items) {
-      const product = db.prepare('SELECT stock, name FROM products WHERE id=?').get(item.product_id);
+      const qty = parseInt(item.quantity);
+      if (!qty || qty <= 0) throw new Error('商品数量不合法');
+
+      const product = db.prepare('SELECT id, name, price, stock, status FROM products WHERE id=?').get(item.product_id);
       if (!product) throw new Error(`商品ID ${item.product_id} 不存在`);
-      if (product.stock < item.quantity) throw new Error(`${product.name} 库存不足（剩余${product.stock}）`);
+      if (product.status !== 1) throw new Error(`${product.name} 已下架`);
+      if (product.stock < qty) throw new Error(`${product.name} 库存不足（剩余${product.stock}）`);
+
+      originalTotal += product.price * qty;
+      lines.push({ product_id: product.id, quantity: qty, price: product.price });
     }
+    originalTotal = Math.round(originalTotal * 100) / 100;
 
     // 获取会员折扣和积分倍率
     let discount = 1;
     let pointsRate = 1;
-    let member = null;
     if (member_id) {
-      member = db.prepare('SELECT * FROM members WHERE id = ?').get(member_id);
+      const member = db.prepare('SELECT * FROM members WHERE id = ?').get(member_id);
       if (member && member.level) {
         const level = db.prepare('SELECT * FROM member_levels WHERE name = ?').get(member.level);
         if (level) {
@@ -113,9 +120,10 @@ router.post('/', (req, res) => {
       'UPDATE products SET stock = stock - ? WHERE id = ?'
     );
 
-    items.forEach(item => {
-      insertItem.run(saleId, item.product_id, item.quantity, item.price);
-      updateStock.run(item.quantity, item.product_id);
+    // 明细单价记录服务端价（折扣为整单口径，不分摊到行）
+    lines.forEach(l => {
+      insertItem.run(saleId, l.product_id, l.quantity, l.price);
+      updateStock.run(l.quantity, l.product_id);
     });
 
     // 会员积分（含倍率）
@@ -128,11 +136,11 @@ router.post('/', (req, res) => {
       updateMemberLevel(member_id);
     }
 
-    return { saleId, finalTotal, discount };
+    return { saleId, originalTotal, finalTotal, discount };
   });
 
   try {
-    const { saleId, finalTotal, discount } = createSale();
+    const { saleId, originalTotal, finalTotal, discount } = createSale();
 
     // 记录操作日志
     logOperation({

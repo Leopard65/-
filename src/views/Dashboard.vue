@@ -57,6 +57,39 @@
       </el-col>
     </el-row>
 
+    <!-- 待办 / 今日目标 -->
+    <el-row :gutter="20" style="margin-bottom: 20px">
+      <el-col :span="8">
+        <el-card shadow="hover" class="todo-card" @click="goTo('/returns')">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#E6A23C">↩️</div>
+            <div>
+              <div class="stat-label">待审核退货</div>
+              <div class="stat-value">{{ data.pendingReturns || 0 }} <small class="unit">单</small></div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover" class="todo-card" @click="goTo('/inventory')">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#F56C6C">⚠️</div>
+            <div>
+              <div class="stat-label">库存预警</div>
+              <div class="stat-value">{{ data.lowStock?.length || 0 }} <small class="unit">种</small></div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover">
+          <div class="stat-label" style="margin-bottom:10px">今日销售目标（近30天日均 ¥{{ data.salesTarget || 0 }}）</div>
+          <el-progress :percentage="targetPercent" :color="targetColor" :stroke-width="16" />
+          <div style="margin-top:8px;font-size:13px;color:#666">今日已达 ¥{{ data.todaySales?.toFixed(2) || '0.00' }}</div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <el-row :gutter="20">
       <!-- 库存预警 -->
       <el-col :span="12">
@@ -95,14 +128,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Refresh } from '@element-plus/icons-vue'
 import { dashboardApi } from '@/api'
 
+const router = useRouter()
 const data = ref({})
 const fetching = ref(false)
 const lastUpdated = ref('--:--:--')
 let refreshInterval = null
+
+const goTo = (path) => router.push(path)
+
+const targetPercent = computed(() => {
+  const t = data.value.salesTarget || 0
+  const s = data.value.todaySales || 0
+  if (t <= 0) return 0
+  return Math.min(100, Math.round((s / t) * 100))
+})
+
+const targetColor = computed(() => {
+  const p = targetPercent.value
+  if (p >= 100) return '#67C23A'
+  if (p >= 60) return '#409EFF'
+  return '#E6A23C'
+})
 
 const fetchDashboard = async () => {
   try {
@@ -140,6 +191,9 @@ onUnmounted(() => {
 .stat-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
 .stat-label { color: #999; font-size: 14px; }
 .stat-value { font-size: 24px; font-weight: bold; color: #333; margin-top: 4px; }
+.stat-value .unit { font-size: 13px; color: #999; font-weight: normal; }
+.todo-card { cursor: pointer; transition: transform 0.15s; }
+.todo-card:hover { transform: translateY(-2px); }
 .hot-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
 .hot-rank { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; margin-right: 10px; background: #999; }
 .rank-1 { background: #F56C6C; }

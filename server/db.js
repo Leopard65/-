@@ -1,8 +1,14 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const config = require('./config');
 
-const db = new Database(path.join(__dirname, 'supermarket.db'));
+// DB_PATH 为相对路径时相对于 server/ 目录解析（默认仍为 server/supermarket.db）
+const dbPath = path.isAbsolute(config.DB_PATH)
+  ? config.DB_PATH
+  : path.resolve(__dirname, config.DB_PATH);
+
+const db = new Database(dbPath);
 
 // 启用 WAL 模式提高性能
 db.pragma('journal_mode = WAL');
@@ -106,6 +112,7 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     role TEXT DEFAULT 'cashier',
+    status INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now','localtime')),
     updated_at TEXT DEFAULT (datetime('now','localtime'))
   );
@@ -205,6 +212,13 @@ db.exec(`
     UPDATE returns SET updated_at = datetime('now','localtime') WHERE id = NEW.id;
   END;
 `);
+
+// 轻量迁移：为旧库补充缺失字段（首次升级时执行，幂等）
+const userColumns = db.prepare("PRAGMA table_info(users)").all();
+if (!userColumns.some(c => c.name === 'status')) {
+  db.exec("ALTER TABLE users ADD COLUMN status INTEGER DEFAULT 1");
+  console.log('已为 users 表新增 status 字段');
+}
 
 // 插入示例数据（仅在表为空时）
 const count = db.prepare('SELECT COUNT(*) as c FROM categories').get().c;

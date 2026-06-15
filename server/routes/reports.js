@@ -307,4 +307,70 @@ router.get('/profit/monthly', (req, res) => {
   }
 });
 
+// ===== 会员画像 =====
+
+// 会员消费排行（按累计消费）
+router.get('/members/ranking', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const data = db.prepare(`
+      SELECT m.id, m.name, m.phone, m.level, m.points, m.total_spent,
+        COUNT(s.id) as order_count
+      FROM members m
+      LEFT JOIN sales s ON s.member_id = m.id
+      WHERE m.status != -1
+      GROUP BY m.id
+      ORDER BY m.total_spent DESC
+      LIMIT ?
+    `).all(limit);
+    res.json(data);
+  } catch (err) {
+    console.error('获取会员消费排行失败:', err);
+    res.status(500).json({ error: '获取会员消费排行失败' });
+  }
+});
+
+// 会员等级分布
+router.get('/members/levels', (req, res) => {
+  try {
+    const data = db.prepare(`
+      SELECT level, COUNT(*) as count
+      FROM members
+      WHERE status != -1
+      GROUP BY level
+      ORDER BY count DESC
+    `).all();
+    res.json(data);
+  } catch (err) {
+    console.error('获取会员等级分布失败:', err);
+    res.status(500).json({ error: '获取会员等级分布失败' });
+  }
+});
+
+// 会员复购分析
+router.get('/members/repurchase', (req, res) => {
+  try {
+    const perMember = db.prepare(`
+      SELECT m.id, m.name, m.phone, COUNT(s.id) as order_count, COALESCE(SUM(s.total), 0) as total
+      FROM members m
+      JOIN sales s ON s.member_id = m.id
+      WHERE m.status != -1
+      GROUP BY m.id
+    `).all();
+
+    const totalBuyers = perMember.length;
+    const repeatBuyers = perMember.filter(m => m.order_count > 1).length;
+    const repurchaseRate = totalBuyers > 0 ? Math.round((repeatBuyers / totalBuyers) * 10000) / 100 : 0;
+    const top = perMember
+      .filter(m => m.order_count > 1)
+      .sort((a, b) => b.order_count - a.order_count)
+      .slice(0, 10);
+
+    res.json({ totalBuyers, repeatBuyers, repurchaseRate, top });
+  } catch (err) {
+    console.error('获取会员复购分析失败:', err);
+    res.status(500).json({ error: '获取会员复购分析失败' });
+  }
+});
+
 module.exports = router;

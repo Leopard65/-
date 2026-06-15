@@ -110,3 +110,63 @@ export function exportSuppliers(suppliers) {
 
   exportToExcel(suppliers, columns, '供应商数据');
 }
+
+// ===== Excel 导入（商品）=====
+
+// 导入模板表头（与导出对称，去掉 ID/创建时间），及到字段的映射
+const PRODUCT_IMPORT_HEADERS = ['商品名称', '条码', '分类', '售价', '成本', '库存', '最低库存', '单位'];
+const PRODUCT_HEADER_MAP = {
+  商品名称: 'name',
+  条码: 'barcode',
+  分类: 'category_name',
+  售价: 'price',
+  成本: 'cost',
+  库存: 'stock',
+  最低库存: 'min_stock',
+  单位: 'unit'
+};
+
+/**
+ * 解析商品 Excel 文件为对象数组（按中文表头映射到字段）
+ * @param {File} file
+ * @returns {Promise<Array>}
+ */
+export function parseProductsExcel(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const rows = json.map(r => {
+          const obj = {};
+          for (const [zh, key] of Object.entries(PRODUCT_HEADER_MAP)) {
+            obj[key] = r[zh] !== undefined ? r[zh] : '';
+          }
+          return obj;
+        });
+        resolve(rows);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/**
+ * 下载商品导入模板
+ */
+export function downloadProductTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    PRODUCT_IMPORT_HEADERS,
+    ['示例可乐 330ml', '6900000000001', '食品饮料', 3.5, 2.0, 100, 20, '瓶']
+  ]);
+  ws['!cols'] = PRODUCT_IMPORT_HEADERS.map(() => ({ wch: 15 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '商品导入模板');
+  const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  saveAs(new Blob([out], { type: 'application/octet-stream' }), '商品导入模板.xlsx');
+}
