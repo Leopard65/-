@@ -150,6 +150,8 @@ onMounted(async () => {
     if (router.currentRoute.value.query.product_id) {
       openDialog()
       form.value.items[0].product_id = Number(router.currentRoute.value.query.product_id)
+      const qty = Number(router.currentRoute.value.query.qty)
+      if (qty > 0) form.value.items[0].quantity = qty
     }
   } catch (e) {
     console.error('加载数据失败:', e)

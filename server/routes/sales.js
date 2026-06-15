@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { logOperation } = require('../utils/logger');
+const { round2, applyDiscount, calcPoints } = require('../utils/calc');
 
 // 获取销售记录（支持分页）
 router.get('/', (req, res) => {
@@ -89,7 +90,7 @@ router.post('/', (req, res) => {
       originalTotal += product.price * qty;
       lines.push({ product_id: product.id, quantity: qty, price: product.price });
     }
-    originalTotal = Math.round(originalTotal * 100) / 100;
+    originalTotal = round2(originalTotal);
 
     // 获取会员折扣和积分倍率
     let discount = 1;
@@ -106,7 +107,7 @@ router.post('/', (req, res) => {
     }
 
     // 应用折扣
-    const finalTotal = Math.round(originalTotal * discount * 100) / 100;
+    const finalTotal = applyDiscount(originalTotal, discount);
 
     const result = db.prepare(
       'INSERT INTO sales (member_id, total, payment) VALUES (?,?,?)'
@@ -128,7 +129,7 @@ router.post('/', (req, res) => {
 
     // 会员积分（含倍率）
     if (member_id) {
-      const points = Math.floor(finalTotal * pointsRate);
+      const points = calcPoints(finalTotal, pointsRate);
       db.prepare('UPDATE members SET points = points + ?, total_spent = total_spent + ? WHERE id = ?')
         .run(points, finalTotal, member_id);
 

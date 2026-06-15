@@ -7,6 +7,25 @@ const config = require('../config');
 const authMiddleware = require('../middleware/auth');
 const { logOperation } = require('../utils/logger');
 
+// 简易登录失败限流（内存级，防暴力破解）：同 IP 在时间窗内失败达上限则暂时锁定
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_WINDOW_MS = 10 * 60 * 1000; // 10 分钟
+const loginAttempts = new Map();
+
+function loginLocked(key) {
+  const e = loginAttempts.get(key);
+  if (!e) return false;
+  if (Date.now() - e.firstAt >= LOGIN_WINDOW_MS) { loginAttempts.delete(key); return false; }
+  return e.count >= LOGIN_MAX_FAILS;
+}
+function recordLoginFail(key) {
+  const now = Date.now();
+  const e = loginAttempts.get(key);
+  if (!e || now - e.firstAt >= LOGIN_WINDOW_MS) loginAttempts.set(key, { count: 1, firstAt: now });
+  else e.count++;
+}
+function clearLoginFails(key) { loginAttempts.delete(key); }
+
 // 登录
 router.post('/login', (req, res) => {
   try {
@@ -15,8 +34,14 @@ router.post('/login', (req, res) => {
       return res.status(400).json({ error: '用户名和密码不能为空' });
     }
 
+    const ipKey = req.ip || 'unknown';
+    if (loginLocked(ipKey)) {
+      return res.status(429).json({ error: '登录失败次数过多，请稍后再试' });
+    }
+
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user || !bcrypt.compareSync(password, user.password)) {
+      recordLoginFail(ipKey);
       // 记录登录失败日志
       logOperation({
         userId: null,
@@ -42,6 +67,7 @@ router.post('/login', (req, res) => {
       return res.status(403).json({ error: '账号已被禁用，请联系管理员' });
     }
 
+    clearLoginFails(ipKey);
     const token = jwt.sign({ id: user.id, role: user.role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRES_IN });
 
     // 记录登录成功日志

@@ -133,6 +133,15 @@ async function runChecks() {
   check('[收银台] 会员列表带 level_discount', goldMember && approx(goldMember.level_discount, gold.discount), `实际 ${goldMember && goldMember.level_discount}`);
   check('[收银台] 会员列表带 level_points_rate', goldMember && goldMember.level_points_rate === gold.points_rate, `实际 ${goldMember && goldMember.level_points_rate}`);
 
+  // ===== 创新：智能补货 + 会员 RFM =====
+  console.log('\n[创新] 智能补货 + 会员 RFM');
+  const rep = await req('GET', '/reports/inventory/replenish', token);
+  check('补货接口返回 lead_days + data[]', rep.status === 200 && typeof rep.data.lead_days === 'number' && Array.isArray(rep.data.data), JSON.stringify(rep.data).slice(0, 80));
+  check('补货接口对收银员 403', (await req('GET', '/reports/inventory/replenish', ctoken)).status === 403);
+  const rfm = await req('GET', '/reports/members/rfm', token);
+  check('RFM 返回 4 分层 + 名单', rfm.status === 200 && Array.isArray(rfm.data.segments) && rfm.data.segments.length === 4 && Array.isArray(rfm.data.members), JSON.stringify(rfm.data).slice(0, 80));
+  check('RFM 名单含烟测会员', (rfm.data.members || []).some(m => m.id === memberId));
+
   // ===== P3 商品导入 =====
   console.log('\n[P3] 商品批量导入');
   const imp = await req('POST', '/products/import', token, {
@@ -145,6 +154,14 @@ async function runChecks() {
   check('导入成功1条', imp.data.successCount === 1, `实际 ${imp.data && imp.data.successCount}`);
   check('导入失败2条(重复条码+空名)', imp.data.failedCount === 2, `实际 ${imp.data && imp.data.failedCount}`);
   check('失败含「条码已存在」', (imp.data.failed || []).some(f => f.reason.includes('条码已存在')));
+
+  // ===== 巩固：登录失败限流（放最后，会锁定本 IP）=====
+  console.log('\n[巩固] 登录失败限流');
+  let lastStatus = 0;
+  for (let i = 0; i < 6; i++) {
+    lastStatus = (await req('POST', '/auth/login', null, { username: 'admin', password: 'wrong-pw' })).status;
+  }
+  check('连续失败后触发 429 限流', lastStatus === 429, `最后状态 ${lastStatus}`);
 
   db.close();
   console.log(`\n===== 冒烟结果：通过 ${pass} / 失败 ${fail} =====`);

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { calcReplenish, rfmSegment } = require('../utils/calc');
 
 // 日销售报表（含退款与净销售额）
 router.get('/sales/daily', (req, res) => {
@@ -307,6 +308,55 @@ router.get('/profit/monthly', (req, res) => {
   }
 });
 
+// 智能补货建议（按近30天日均销量推算建议补货量与预计可售天数）
+router.get('/inventory/replenish', (req, res) => {
+  try {
+    const leadDays = parseInt(req.query.lead_days) || 7;
+    const rows = db.prepare(`
+      SELECT p.id, p.name, p.unit, p.stock, p.min_stock, c.name AS category_name,
+        COALESCE(s.sold, 0) AS sold_30d
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN (
+        SELECT si.product_id, SUM(si.quantity) AS sold
+        FROM sale_items si
+        JOIN sales sa ON si.sale_id = sa.id
+        WHERE DATE(sa.created_at) >= DATE('now', 'localtime', '-29 days')
+        GROUP BY si.product_id
+      ) s ON s.product_id = p.id
+      WHERE p.status = 1
+    `).all();
+
+    const data = rows
+      .map(r => {
+        const { suggested, daysLeft, avgDaily } = calcReplenish({
+          stock: r.stock,
+          minStock: r.min_stock,
+          avgDaily: r.sold_30d / 30,
+          leadDays
+        });
+        return {
+          id: r.id, name: r.name, unit: r.unit, category_name: r.category_name,
+          stock: r.stock, min_stock: r.min_stock, sold_30d: r.sold_30d,
+          avg_daily: avgDaily, days_left: daysLeft, suggested
+        };
+      })
+      // 需补货：低于安全库存，或按销售速度预计可售天数 ≤ 备货周期
+      .filter(d => d.stock <= d.min_stock || (d.days_left != null && d.days_left <= leadDays))
+      // 紧急度排序：预计可售天数升序（无销量排最后），其次建议补货量降序
+      .sort((a, b) => {
+        const ad = a.days_left == null ? Infinity : a.days_left;
+        const bd = b.days_left == null ? Infinity : b.days_left;
+        return ad !== bd ? ad - bd : b.suggested - a.suggested;
+      });
+
+    res.json({ lead_days: leadDays, data });
+  } catch (err) {
+    console.error('获取智能补货建议失败:', err);
+    res.status(500).json({ error: '获取智能补货建议失败' });
+  }
+});
+
 // ===== 会员画像 =====
 
 // 会员消费排行（按累计消费）
@@ -370,6 +420,52 @@ router.get('/members/repurchase', (req, res) => {
   } catch (err) {
     console.error('获取会员复购分析失败:', err);
     res.status(500).json({ error: '获取会员复购分析失败' });
+  }
+});
+
+// 会员 RFM 分层（R 最近消费天数 / F 订单数 / M 累计消费，按 R×M 四象限分层）
+router.get('/members/rfm', (req, res) => {
+  try {
+    const activeDays = parseInt(req.query.active_days) || 14;
+    const buyers = db.prepare(`
+      SELECT m.id, m.name, m.phone, m.level,
+        COUNT(sa.id) AS orders,
+        COALESCE(SUM(sa.total), 0) AS total,
+        CAST(julianday('now', 'localtime') - julianday(MAX(sa.created_at)) AS INTEGER) AS last_days
+      FROM members m
+      JOIN sales sa ON sa.member_id = m.id
+      WHERE m.status != -1
+      GROUP BY m.id
+    `).all();
+
+    // 价值分界 = 买家累计消费的中位数（相对阈值，避免写死）
+    const totals = buyers.map(b => b.total).sort((a, b) => a - b);
+    const n = totals.length;
+    const valueSplit = n === 0 ? 0
+      : (n % 2 ? totals[(n - 1) / 2] : (totals[n / 2 - 1] + totals[n / 2]) / 2);
+
+    const members = buyers.map(b => ({
+      ...b,
+      segment: rfmSegment({ total: b.total, lastDays: b.last_days, valueSplit, activeDays })
+    }));
+
+    const order = ['核心客户', '流失预警', '潜力客户', '沉睡客户'];
+    const segments = order.map(seg => {
+      const list = members.filter(m => m.segment === seg);
+      return {
+        segment: seg,
+        count: list.length,
+        total: Math.round(list.reduce((s, m) => s + m.total, 0) * 100) / 100
+      };
+    });
+
+    // 名单按累计消费降序，便于先看高价值
+    members.sort((a, b) => b.total - a.total);
+
+    res.json({ value_split: Math.round(valueSplit * 100) / 100, active_days: activeDays, segments, members });
+  } catch (err) {
+    console.error('获取会员 RFM 分层失败:', err);
+    res.status(500).json({ error: '获取会员 RFM 分层失败' });
   }
 });
 

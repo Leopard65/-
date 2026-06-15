@@ -178,6 +178,41 @@
             </el-col>
           </el-row>
         </el-card>
+
+        <el-card style="margin-top:20px">
+          <template #header>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <span>RFM 客户分层</span>
+              <span style="font-size:12px;color:#909399">价值分界(累计消费中位数) ¥{{ rfm.value_split || 0 }} · 活跃门槛 {{ rfm.active_days || 14 }} 天</span>
+            </div>
+          </template>
+          <el-row :gutter="16" style="margin-bottom:16px">
+            <el-col :span="6" v-for="seg in rfm.segments || []" :key="seg.segment">
+              <div class="rfm-tile" :style="{ borderTopColor: segColor(seg.segment) }">
+                <div class="rfm-seg">{{ seg.segment }}</div>
+                <div class="rfm-count">{{ seg.count }} <small>人</small></div>
+                <div class="rfm-total">消费 ¥{{ seg.total?.toFixed(2) }}</div>
+              </div>
+            </el-col>
+          </el-row>
+          <el-table :data="rfm.members || []" stripe size="small" max-height="320">
+            <el-table-column type="index" label="#" width="50" />
+            <el-table-column prop="name" label="会员" />
+            <el-table-column label="分层" width="110">
+              <template #default="{ row }">
+                <el-tag :type="segType(row.segment)">{{ row.segment }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="最近消费(R)" width="120">
+              <template #default="{ row }">{{ row.last_days }} 天前</template>
+            </el-table-column>
+            <el-table-column prop="orders" label="订单数(F)" width="100" />
+            <el-table-column prop="total" label="累计消费(M)" width="120">
+              <template #default="{ row }">¥{{ row.total?.toFixed(2) }}</template>
+            </el-table-column>
+          </el-table>
+          <el-empty v-if="!rfm.members?.length" description="暂无会员消费数据" :image-size="80" />
+        </el-card>
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -217,6 +252,10 @@ const monthlyProfit = ref([])
 const memberRanking = ref([])
 const levelDist = ref([])
 const repurchase = ref({})
+const rfm = ref({})
+
+const segType = (seg) => ({ 核心客户: 'success', 潜力客户: 'warning', 流失预警: 'danger', 沉睡客户: 'info' }[seg] || 'info')
+const segColor = (seg) => ({ 核心客户: '#67C23A', 潜力客户: '#E6A23C', 流失预警: '#F56C6C', 沉睡客户: '#909399' }[seg] || '#909399')
 
 // 图表引用
 const salesChartRef = ref(null)
@@ -383,14 +422,16 @@ const renderProfitChart = () => {
 // 加载会员分析数据
 const loadMemberData = async () => {
   try {
-    const [ranking, levels, repurch] = await Promise.all([
+    const [ranking, levels, repurch, rfmRes] = await Promise.all([
       reportsApi.getMemberRanking({ limit: 10 }),
       reportsApi.getMemberLevelDist(),
-      reportsApi.getMemberRepurchase()
+      reportsApi.getMemberRepurchase(),
+      reportsApi.getMemberRfm()
     ])
     memberRanking.value = ranking
     levelDist.value = levels
     repurchase.value = repurch
+    rfm.value = rfmRes
     nextTick(() => renderLevelChart())
   } catch (e) {
     console.error('加载会员分析失败:', e)
@@ -425,3 +466,17 @@ onMounted(() => {
   loadSalesData()
 })
 </script>
+
+<style scoped>
+.rfm-tile {
+  border: 1px solid #ebeef5;
+  border-top: 3px solid #909399;
+  border-radius: 6px;
+  padding: 14px 16px;
+  background: #fafafa;
+}
+.rfm-seg { font-size: 14px; color: #606266; }
+.rfm-count { font-size: 24px; font-weight: bold; color: #303133; margin: 4px 0; }
+.rfm-count small { font-size: 13px; font-weight: normal; color: #909399; }
+.rfm-total { font-size: 12px; color: #909399; }
+</style>

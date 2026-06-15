@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { logOperation } = require('../utils/logger');
+const { effectiveDiscount, calcRefund, calcPoints } = require('../utils/calc');
 
 // 获取退单列表（支持分页）
 router.get('/', (req, res) => {
@@ -76,7 +77,7 @@ router.post('/', (req, res) => {
     const saleLineSum = db.prepare(
       'SELECT COALESCE(SUM(price * quantity), 0) AS s FROM sale_items WHERE sale_id = ?'
     ).get(sale_id).s;
-    const effectiveDiscount = saleLineSum > 0 ? sale.total / saleLineSum : 1;
+    const effDiscount = effectiveDiscount(sale.total, saleLineSum);
 
     // 校验退货数量，并按服务端记录的原单单价计算（不信任前端传入的 price）
     let originalTotal = 0;
@@ -113,7 +114,7 @@ router.post('/', (req, res) => {
     }
 
     // 退款总额 = 原价合计 × 原单折扣
-    const total = Math.round(originalTotal * effectiveDiscount * 100) / 100;
+    const total = calcRefund(originalTotal, effDiscount);
 
     // 使用事务处理
     const createReturn = db.transaction(() => {
@@ -213,7 +214,7 @@ router.put('/:id/approve', (req, res) => {
           const level = db.prepare('SELECT points_rate FROM member_levels WHERE name = ?').get(member.level);
           if (level) pointsRate = level.points_rate;
         }
-        const points = Math.floor(returnRecord.total * pointsRate);
+        const points = calcPoints(returnRecord.total, pointsRate);
         db.prepare('UPDATE members SET points = MAX(0, points - ?), total_spent = MAX(0, total_spent - ?) WHERE id = ?')
           .run(points, returnRecord.total, sale.member_id);
       }
