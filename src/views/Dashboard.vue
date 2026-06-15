@@ -1,13 +1,12 @@
 <template>
   <div>
     <!-- 页面标题 -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <h2 style="margin:0">仪表盘</h2>
-      <div style="display:flex;align-items:center;gap:15px">
-        <span style="color:#999;font-size:14px">最后更新: {{ lastUpdated }}</span>
+    <PageHeader title="仪表盘" description="今日经营概览与待办事项">
+      <template #actions>
+        <span style="color:#909399;font-size:13px">最后更新: {{ lastUpdated }}</span>
         <el-button :icon="Refresh" @click="handleRefresh" :loading="fetching">刷新</el-button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- 统计卡片 -->
     <el-row :gutter="20" style="margin-bottom: 20px">
@@ -150,6 +149,7 @@ import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { dashboardApi } from '@/api'
+import PageHeader from '@/components/PageHeader.vue'
 
 echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 

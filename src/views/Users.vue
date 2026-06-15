@@ -1,9 +1,6 @@
 <template>
+  <PageHeader title="用户管理" description="系统账号、角色与启用状态" />
   <el-card>
-    <template #header>
-      <span>用户管理</span>
-    </template>
-
     <CrudTable
       :data="users"
       :loading="loading"
@@ -75,6 +72,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { usersApi } from '@/api'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const users = ref([])
 const loading = ref(false)

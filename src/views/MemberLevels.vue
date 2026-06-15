@@ -1,9 +1,6 @@
 <template>
+  <PageHeader title="会员等级" description="等级门槛、折扣与积分倍率" />
   <el-card>
-    <template #header>
-      <span>会员等级管理</span>
-    </template>
-
     <CrudTable
       :data="levels"
       :loading="loading"
@@ -59,6 +56,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { memberLevelsApi } from '@/api'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const levels = ref([])
 const loading = ref(false)

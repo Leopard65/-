@@ -1,33 +1,29 @@
 <template>
-  <el-card>
-    <template #header>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span>操作日志</span>
-        <div style="display:flex;gap:10px">
-          <el-input v-model="filters.username" placeholder="用户名" clearable style="width:120px" @clear="load" @keyup.enter="load" />
-          <el-select v-model="filters.action" placeholder="操作类型" clearable style="width:120px" @change="load">
-            <el-option label="登录" value="login" />
-            <el-option label="新增" value="create" />
-            <el-option label="修改" value="update" />
-            <el-option label="删除" value="delete" />
-            <el-option label="恢复" value="restore" />
-            <el-option label="审核通过" value="approve" />
-            <el-option label="审核拒绝" value="reject" />
-          </el-select>
-          <el-select v-model="filters.module" placeholder="模块" clearable style="width:120px" @change="load">
-            <el-option label="认证" value="auth" />
-            <el-option label="商品" value="products" />
-            <el-option label="会员" value="members" />
-            <el-option label="供应商" value="suppliers" />
-            <el-option label="销售" value="sales" />
-            <el-option label="退换货" value="returns" />
-            <el-option label="分类" value="categories" />
-          </el-select>
-          <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:260px" @change="handleDateChange" />
-        </div>
-      </div>
+  <PageHeader title="操作日志" description="系统关键操作的审计记录">
+    <template #actions>
+      <el-input v-model="filters.username" placeholder="用户名" clearable style="width:120px" @clear="load" @keyup.enter="load" />
+      <el-select v-model="filters.action" placeholder="操作类型" clearable style="width:120px" @change="load">
+        <el-option label="登录" value="login" />
+        <el-option label="新增" value="create" />
+        <el-option label="修改" value="update" />
+        <el-option label="删除" value="delete" />
+        <el-option label="恢复" value="restore" />
+        <el-option label="审核通过" value="approve" />
+        <el-option label="审核拒绝" value="reject" />
+      </el-select>
+      <el-select v-model="filters.module" placeholder="模块" clearable style="width:120px" @change="load">
+        <el-option label="认证" value="auth" />
+        <el-option label="商品" value="products" />
+        <el-option label="会员" value="members" />
+        <el-option label="供应商" value="suppliers" />
+        <el-option label="销售" value="sales" />
+        <el-option label="退换货" value="returns" />
+        <el-option label="分类" value="categories" />
+      </el-select>
+      <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:260px" @change="handleDateChange" />
     </template>
-
+  </PageHeader>
+  <el-card>
     <el-table :data="logs" stripe border style="width:100%">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="created_at" label="时间" width="180" />
@@ -70,6 +66,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { logsApi } from '@/api'
+import PageHeader from '@/components/PageHeader.vue'
 
 const logs = ref([])
 const page = ref(1)
@@ -90,7 +87,8 @@ const actionType = (action) => {
     delete: 'danger',
     restore: 'success',
     approve: 'success',
-    reject: 'danger'
+    reject: 'danger',
+    import: 'primary'
   }
   return map[action] || 'info'
 }
@@ -103,7 +101,8 @@ const actionText = (action) => {
     delete: '删除',
     restore: '恢复',
     approve: '审核通过',
-    reject: '审核拒绝'
+    reject: '审核拒绝',
+    import: '导入'
   }
   return map[action] || action
 }
@@ -113,10 +112,13 @@ const moduleText = (module) => {
     auth: '认证',
     products: '商品',
     members: '会员',
+    member_levels: '会员等级',
     suppliers: '供应商',
     sales: '销售',
+    purchases: '进货',
     returns: '退换货',
-    categories: '分类'
+    categories: '分类',
+    users: '用户'
   }
   return map[module] || module
 }

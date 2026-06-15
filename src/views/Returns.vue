@@ -1,19 +1,15 @@
 <template>
-  <el-card>
-    <template #header>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span>退换货管理</span>
-        <div style="display:flex;gap:10px">
-          <el-select v-model="filterStatus" placeholder="状态筛选" clearable style="width:120px" @change="load">
-            <el-option label="待审核" value="pending" />
-            <el-option label="已完成" value="completed" />
-            <el-option label="已拒绝" value="rejected" />
-          </el-select>
-          <el-button type="primary" @click="openDialog()">新建退单</el-button>
-        </div>
-      </div>
+  <PageHeader title="退换货管理" description="退货申请、审核与退款">
+    <template #actions>
+      <el-select v-model="filterStatus" placeholder="状态筛选" clearable style="width:120px" @change="load">
+        <el-option label="待审核" value="pending" />
+        <el-option label="已完成" value="completed" />
+        <el-option label="已拒绝" value="rejected" />
+      </el-select>
+      <el-button type="primary" @click="openDialog()">新建退单</el-button>
     </template>
-
+  </PageHeader>
+  <el-card>
     <!-- 退单列表 -->
     <el-table :data="returns" stripe border style="width:100%">
       <el-table-column prop="id" label="退单号" width="80" />
@@ -127,6 +123,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { returnsApi, salesApi } from '@/api'
 import { useUserStore } from '@/stores/user'
+import PageHeader from '@/components/PageHeader.vue'
 
 const userStore = useUserStore()
 const returns = ref([])

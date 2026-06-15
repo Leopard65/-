@@ -1,12 +1,10 @@
 <template>
-  <el-card>
-    <template #header>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span>库存预警</span>
-        <el-tag type="danger" size="large">预警商品: {{ warnings.length }} 个</el-tag>
-      </div>
+  <PageHeader title="库存预警" description="库存低于预警值的商品，及时补货">
+    <template #actions>
+      <el-tag type="danger" size="large">预警商品: {{ warnings.length }} 个</el-tag>
     </template>
-
+  </PageHeader>
+  <el-card>
     <el-table :data="warnings" border stripe style="width:100%">
       <el-table-column label="图片" width="80">
         <template #default="{ row }">
@@ -51,6 +49,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { reportsApi } from '@/api'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 const warnings = ref([])

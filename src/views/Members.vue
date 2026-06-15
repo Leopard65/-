@@ -1,9 +1,6 @@
 <template>
+  <PageHeader title="会员管理" description="会员档案、等级与积分" />
   <el-card>
-    <template #header>
-      <span>会员管理</span>
-    </template>
-
     <CrudTable
       :data="members"
       :loading="loading"
@@ -73,6 +70,7 @@ import { membersApi } from '@/api'
 import { exportMembers } from '@/utils/export'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const members = ref([])
 const keyword = ref('')

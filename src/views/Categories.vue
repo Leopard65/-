@@ -1,9 +1,6 @@
 <template>
+  <PageHeader title="分类管理" description="维护商品分类，用于商品归类与筛选" />
   <el-card>
-    <template #header>
-      <span>分类管理</span>
-    </template>
-
     <CrudTable
       :data="categories"
       :loading="loading"
@@ -38,6 +35,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { categoriesApi } from '@/api'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const categories = ref([])
 const loading = ref(false)

@@ -49,6 +49,7 @@ npm run build
 | `npm start` | 同时启动前后端（concurrently） |
 | `npm run build` | 前端生产构建到 `dist/` |
 | `npm run seed:demo` | 生成演示数据（重置交易类数据后写入约 30 天历史） |
+| `npm run smoke` | 冒烟测试（自启隔离后端 → 断言核心业务/权限/导入 → 自动清理） |
 
 ## 功能模块
 

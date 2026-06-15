@@ -1,9 +1,10 @@
 <template>
+  <PageHeader title="销售收银" description="商品结算、会员折扣与小票打印" />
   <el-row :gutter="20">
     <!-- 左侧：收银操作 -->
     <el-col :span="14">
       <el-card>
-        <template #header><span>🛒 销售收银</span></template>
+        <template #header><span>🛒 选购商品</span></template>
 
         <!-- 搜索商品 -->
         <div style="display:flex;gap:10px;margin-bottom:15px">
@@ -165,6 +166,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { productsApi, membersApi, salesApi } from '@/api'
 import { printReceipt } from '@/utils/receipt'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 const searchInputRef = ref(null)

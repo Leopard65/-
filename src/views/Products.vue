@@ -1,9 +1,6 @@
 <template>
+  <PageHeader title="商品管理" description="商品档案、价格与库存维护" />
   <el-card>
-    <template #header>
-      <span>商品管理</span>
-    </template>
-
     <CrudTable
       :data="products"
       :loading="loading"
@@ -173,6 +170,7 @@ import { useUserStore } from '@/stores/user'
 import { exportProducts, parseProductsExcel, downloadProductTemplate } from '@/utils/export'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const userStore = useUserStore()
 const products = ref([])

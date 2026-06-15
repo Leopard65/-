@@ -1,5 +1,6 @@
 <template>
   <div>
+    <PageHeader title="报表统计" description="销售、库存、利润与会员多维分析" />
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <!-- 销售报表 -->
       <el-tab-pane label="销售报表" name="sales">
@@ -190,6 +191,7 @@ import { LineChart, BarChart, PieChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { reportsApi } from '@/api'
+import PageHeader from '@/components/PageHeader.vue'
 
 echarts.use([LineChart, BarChart, PieChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
 

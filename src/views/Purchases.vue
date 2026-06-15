@@ -1,12 +1,10 @@
 <template>
-  <el-card>
-    <template #header>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span>进货管理</span>
-        <el-button type="primary" @click="openDialog()">新建进货单</el-button>
-      </div>
+  <PageHeader title="进货管理" description="供应商进货入库与明细">
+    <template #actions>
+      <el-button type="primary" @click="openDialog()">新建进货单</el-button>
     </template>
-
+  </PageHeader>
+  <el-card>
     <!-- 进货记录列表 -->
     <el-table :data="purchases" stripe border style="width:100%">
       <el-table-column prop="id" label="单号" width="80" />
@@ -90,6 +88,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { purchasesApi, suppliersApi, productsApi } from '@/api'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 

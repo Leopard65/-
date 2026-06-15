@@ -1,9 +1,6 @@
 <template>
+  <PageHeader title="供应商管理" description="供应商信息与联系方式" />
   <el-card>
-    <template #header>
-      <span>供应商管理</span>
-    </template>
-
     <CrudTable
       :data="suppliers"
       :loading="loading"
@@ -61,6 +58,7 @@ import { suppliersApi } from '@/api'
 import { exportSuppliers } from '@/utils/export'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const suppliers = ref([])
 const loading = ref(false)
