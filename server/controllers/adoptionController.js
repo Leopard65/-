@@ -6,6 +6,7 @@ const Animal = require('../models/Animal');
 const Followup = require('../models/Followup');
 const { success, paginated, error } = require('../utils/response');
 const { parsePagination } = require('../utils/validator');
+const { fileWebPath } = require('../utils/file');
 
 const adoptionController = {
   // 提交领养申请（用户）
@@ -66,6 +67,34 @@ const adoptionController = {
       const { status, keyword } = req.query;
       const result = await Adoption.findAll({ status, keyword, page, pageSize, offset });
       paginated(res, { ...result, page, pageSize });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 回访提醒（管理员）：已通过满 30 天且无回访的领养
+  async getFollowupReminders(req, res, next) {
+    try {
+      const list = await Adoption.findFollowupReminders();
+      success(res, list);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 近 6 个月领养申请趋势（管理员），缺失月份补 0
+  async getTrend(req, res, next) {
+    try {
+      const rows = await Adoption.monthlyCounts(6);
+      const map = Object.fromEntries(rows.map((r) => [r.month, Number(r.count)]));
+      const now = new Date();
+      const series = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        series.push({ month: key, count: map[key] || 0 });
+      }
+      success(res, series);
     } catch (err) {
       next(err);
     }
@@ -135,6 +164,7 @@ const adoptionController = {
         visit_date,
         content,
         animal_condition,
+        photos: req.files && req.files.length ? JSON.stringify(req.files.map(fileWebPath)) : null,
         operator_id: req.user.id,
       });
       success(res, { id }, '回访记录已保存');

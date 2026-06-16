@@ -100,7 +100,11 @@ const Animal = {
     const [[rescued]] = await db.execute("SELECT COUNT(*) as count FROM animals WHERE status = 'rescued'");
     const [[available]] = await db.execute("SELECT COUNT(*) as count FROM animals WHERE status = 'available'");
     const [[adopted]] = await db.execute("SELECT COUNT(*) as count FROM animals WHERE status = 'adopted'");
-    return { total: total.count, rescued: rescued.count, available: available.count, adopted: adopted.count };
+    const [[fostered]] = await db.execute("SELECT COUNT(*) as count FROM animals WHERE status = 'fostered'");
+    return {
+      total: total.count, rescued: rescued.count, available: available.count,
+      adopted: adopted.count, fostered: fostered.count,
+    };
   },
 };
 

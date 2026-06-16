@@ -46,7 +46,19 @@
           placement="top"
         >
           <p style="margin:0 0 4px;white-space:pre-wrap">{{ f.content }}</p>
-          <p v-if="f.animal_condition" style="margin:0;color:#909399;font-size:13px">动物状况：{{ f.animal_condition }}</p>
+          <p v-if="f.animal_condition" style="margin:0 0 4px;color:#909399;font-size:13px">动物状况：{{ f.animal_condition }}</p>
+          <div v-if="f.photos && f.photos.length" class="fu-photos">
+            <el-image
+              v-for="(p, i) in f.photos"
+              :key="i"
+              :src="p"
+              :preview-src-list="f.photos"
+              :initial-index="i"
+              fit="cover"
+              class="fu-photo"
+              preview-teleported
+            />
+          </div>
         </el-timeline-item>
       </el-timeline>
       <el-empty v-else-if="!followupLoading" description="工作人员尚未添加回访记录" :image-size="60" />
@@ -104,4 +116,6 @@ function statusType(s) {
 <style scoped>
 .adopt-mine-page h2 { margin-bottom: 16px; }
 .pagination { display: flex; justify-content: center; margin-top: 16px; }
+.fu-photos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.fu-photo { width: 72px; height: 72px; border-radius: 6px; cursor: pointer; }
 </style>

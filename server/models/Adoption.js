@@ -94,6 +94,33 @@ const Adoption = {
     );
     return rows.length > 0;
   },
+
+  // 回访提醒：已通过满 30 天、且尚无任何回访记录的领养（按通过时间从早到晚）
+  async findFollowupReminders() {
+    const [rows] = await db.execute(
+      `SELECT aa.id, aa.animal_id, a.name AS animal_name, aa.applicant_name, aa.phone,
+              aa.reviewed_at, DATEDIFF(NOW(), aa.reviewed_at) AS days_since
+       FROM adoption_applications aa
+       LEFT JOIN animals a ON aa.animal_id = a.id
+       WHERE aa.status = 'approved' AND aa.reviewed_at IS NOT NULL
+         AND aa.reviewed_at <= DATE_SUB(NOW(), INTERVAL 30 DAY)
+         AND NOT EXISTS (SELECT 1 FROM adoption_followups f WHERE f.application_id = aa.id)
+       ORDER BY aa.reviewed_at ASC`
+    );
+    return rows;
+  },
+
+  // 按月统计申请数（用于趋势图）。monthsBack 为服务端常量，直接内联拼接安全。
+  async monthlyCounts(monthsBack = 6) {
+    const n = Math.max(1, Number(monthsBack)) - 1;
+    const [rows] = await db.execute(
+      `SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count
+       FROM adoption_applications
+       WHERE created_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ${n} MONTH)
+       GROUP BY month ORDER BY month`
+    );
+    return rows;
+  },
 };
 
 module.exports = Adoption;

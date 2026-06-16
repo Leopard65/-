@@ -3,6 +3,17 @@
  */
 const db = require('../config/db');
 
+// 安全地把 photos 字段（JSON 字符串）解析为数组，脏数据返回空数组
+function parsePhotos(raw) {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
 const Followup = {
   // 新增一条回访记录
   async create({ application_id, visit_date, content, animal_condition, photos, operator_id }) {
@@ -18,7 +29,7 @@ const Followup = {
     return result.insertId;
   },
 
-  // 查询某个领养申请的全部回访记录（按回访日期倒序）
+  // 查询某个领养申请的全部回访记录（按回访日期倒序），photos 解析为数组
   async findByApplication(applicationId) {
     const [rows] = await db.execute(
       `SELECT f.*, u.nickname AS operator_name
@@ -28,7 +39,7 @@ const Followup = {
        ORDER BY f.visit_date DESC, f.id DESC`,
       [applicationId]
     );
-    return rows;
+    return rows.map((r) => ({ ...r, photos: parsePhotos(r.photos) }));
   },
 
   async findById(id) {

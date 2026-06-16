@@ -79,6 +79,18 @@
             <div class="followup-item">
               <p class="followup-content">{{ f.content }}</p>
               <p v-if="f.animal_condition" class="followup-cond">动物状况：{{ f.animal_condition }}</p>
+              <div v-if="f.photos && f.photos.length" class="followup-photos">
+                <el-image
+                  v-for="(p, i) in f.photos"
+                  :key="i"
+                  :src="p"
+                  :preview-src-list="f.photos"
+                  :initial-index="i"
+                  fit="cover"
+                  class="fu-photo"
+                  preview-teleported
+                />
+              </div>
               <el-button text type="danger" size="small" @click="deleteFollowup(f.id)">删除</el-button>
             </div>
           </el-timeline-item>
@@ -97,6 +109,17 @@
             </el-form-item>
             <el-form-item label="回访内容">
               <el-input v-model="followupForm.content" type="textarea" :rows="3" placeholder="本次回访的详细记录" />
+            </el-form-item>
+            <el-form-item label="回访照片">
+              <el-upload
+                v-model:file-list="followupPhotos"
+                list-type="picture-card"
+                :auto-upload="false"
+                :limit="6"
+                accept="image/*"
+              >
+                <span style="font-size:22px;color:#8c939d">+</span>
+              </el-upload>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="savingFollowup" @click="addFollowup">保存回访</el-button>
@@ -143,6 +166,7 @@ const followups = ref([])
 const followupLoading = ref(false)
 const savingFollowup = ref(false)
 const followupForm = reactive({ visit_date: '', content: '', animal_condition: '' })
+const followupPhotos = ref([])
 
 onMounted(() => loadData())
 
@@ -194,6 +218,7 @@ async function loadFollowups(applicationId) {
   followupLoading.value = true
   followups.value = []
   Object.assign(followupForm, { visit_date: '', content: '', animal_condition: '' })
+  followupPhotos.value = []
   try {
     const res = await request.get(`/adoptions/${applicationId}/followups`)
     followups.value = res.data || []
@@ -208,7 +233,14 @@ async function addFollowup() {
   }
   savingFollowup.value = true
   try {
-    await request.post(`/adoptions/${currentItem.value.id}/followups`, { ...followupForm })
+    const fd = new FormData()
+    fd.append('visit_date', followupForm.visit_date)
+    fd.append('content', followupForm.content)
+    fd.append('animal_condition', followupForm.animal_condition || '')
+    followupPhotos.value.forEach((f) => { if (f.raw) fd.append('photos', f.raw) })
+    await request.post(`/adoptions/${currentItem.value.id}/followups`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     ElMessage.success('回访记录已保存')
     loadFollowups(currentItem.value.id)
   } finally {
@@ -239,4 +271,6 @@ function statusType(s) {
 .followup-item { background: #f7f8fa; border-radius: 6px; padding: 8px 12px; }
 .followup-content { margin: 0 0 4px; color: #333; white-space: pre-wrap; }
 .followup-cond { margin: 0 0 4px; color: #909399; font-size: 13px; }
+.followup-photos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.fu-photo { width: 72px; height: 72px; border-radius: 6px; cursor: pointer; }
 </style>
