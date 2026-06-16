@@ -1,24 +1,22 @@
 <template>
-  <div class="category-manage">
-    <h2>分类管理</h2>
+  <div class="category-manage admin-view">
+    <PageHeader title="分类管理" subtitle="维护动物分类与品种" />
 
-    <el-row :gutter="20">
+    <el-row :gutter="16">
       <!-- 分类列表 -->
-      <el-col :span="10">
-        <el-card>
-          <template #header>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span>动物分类</span>
-              <el-button type="primary" size="small" @click="showAddCategory">添加</el-button>
-            </div>
-          </template>
-          <el-table :data="categories" stripe @row-click="selectCategory" highlight-current-row>
+      <el-col :xs="24" :md="10">
+        <div class="table-card">
+          <div class="block-head">
+            <span>动物分类</span>
+            <el-button type="primary" size="small" @click="showAddCategory">添加分类</el-button>
+          </div>
+          <el-table :data="categories" stripe highlight-current-row @row-click="selectCategory">
             <el-table-column prop="id" label="ID" width="60" />
             <el-table-column prop="name" label="名称" />
             <el-table-column prop="sort_order" label="排序" width="70" />
             <el-table-column label="操作" width="70">
               <template #default="{ row }">
-                <el-popconfirm title="删除分类会同时删除其下品种，确认？" @confirm="deleteCategory(row.id)">
+                <el-popconfirm title="删除分类会同时删除其下品种，确认？" width="240" @confirm="deleteCategory(row.id)">
                   <template #reference>
                     <el-button text type="danger" size="small" @click.stop>删除</el-button>
                   </template>
@@ -26,24 +24,22 @@
               </template>
             </el-table-column>
           </el-table>
-        </el-card>
+        </div>
       </el-col>
 
       <!-- 品种列表 -->
-      <el-col :span="14">
-        <el-card>
-          <template #header>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span>{{ selectedCategory ? selectedCategory.name + ' - 品种列表' : '请先选择分类' }}</span>
-              <el-button type="primary" size="small" :disabled="!selectedCategory" @click="showAddBreed">添加品种</el-button>
-            </div>
-          </template>
+      <el-col :xs="24" :md="14">
+        <div class="table-card">
+          <div class="block-head">
+            <span>{{ selectedCategory ? selectedCategory.name + ' · 品种' : '请先选择分类' }}</span>
+            <el-button type="primary" size="small" :disabled="!selectedCategory" @click="showAddBreed">添加品种</el-button>
+          </div>
           <el-table :data="breeds" stripe v-if="selectedCategory">
             <el-table-column prop="id" label="ID" width="60" />
             <el-table-column prop="name" label="品种名称" />
             <el-table-column label="操作" width="70">
               <template #default="{ row }">
-                <el-popconfirm title="确认删除？" @confirm="deleteBreed(row.id)">
+                <el-popconfirm title="确认删除该品种？" width="200" @confirm="deleteBreed(row.id)">
                   <template #reference>
                     <el-button text type="danger" size="small">删除</el-button>
                   </template>
@@ -51,8 +47,8 @@
               </template>
             </el-table-column>
           </el-table>
-          <el-empty v-else description="请点击左侧分类查看品种" />
-        </el-card>
+          <EmptyState v-else description="点击左侧分类查看其品种" :image-size="70" />
+        </div>
       </el-col>
     </el-row>
 
@@ -91,6 +87,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
+import PageHeader from '@/components/PageHeader.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const categories = ref([])
 const breeds = ref([])
@@ -161,5 +159,12 @@ async function deleteBreed(id) {
 </script>
 
 <style scoped>
-.category-manage h2 { margin-bottom: 16px; }
+.block-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
 </style>

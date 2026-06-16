@@ -6,6 +6,7 @@ const { success, paginated, error } = require('../utils/response');
 const { parsePagination, sanitizeSearch } = require('../utils/validator');
 const { fileWebPath } = require('../utils/file');
 const { scoreAnimal } = require('../utils/match');
+const AnimalEvent = require('../models/AnimalEvent');
 
 const animalController = {
   // 获取动物列表（前台 + 后台通用）
@@ -100,6 +101,78 @@ const animalController = {
         })
         .sort((x, y) => y.matchScore - x.matchScore);
       success(res, scored);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ===== 动物档案事件（生命周期时间线）=====
+
+  // 查看某动物的档案事件（公开）
+  async listEvents(req, res, next) {
+    try {
+      const list = await AnimalEvent.findByAnimal(req.params.id);
+      success(res, list);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 新增档案事件（管理员）
+  async addEvent(req, res, next) {
+    try {
+      const { event_type, event_date, title, description } = req.body;
+      if (!event_date || !title) return error(res, '事件日期和标题不能为空');
+      const animal = await Animal.findById(req.params.id);
+      if (!animal) return error(res, '动物信息不存在', 404);
+      const id = await AnimalEvent.create({
+        animal_id: req.params.id,
+        event_type, event_date, title, description,
+        created_by: req.user.id,
+      });
+      success(res, { id }, '档案事件已添加');
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 删除档案事件（管理员）
+  async deleteEvent(req, res, next) {
+    try {
+      const ev = await AnimalEvent.findById(req.params.eid);
+      if (!ev || String(ev.animal_id) !== String(req.params.id)) {
+        return error(res, '事件不存在', 404);
+      }
+      await AnimalEvent.delete(req.params.eid);
+      success(res, null, '删除成功');
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ===== 动物相册（多图）=====
+
+  // 追加相册图片（管理员，多文件）
+  async addImages(req, res, next) {
+    try {
+      const animal = await Animal.findById(req.params.id);
+      if (!animal) return error(res, '动物信息不存在', 404);
+      const updated = Animal.parseImages(animal.images).concat((req.files || []).map(fileWebPath));
+      await Animal.setImages(req.params.id, updated);
+      success(res, updated, '图片已上传');
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 删除相册中的某张图片（管理员）
+  async deleteImage(req, res, next) {
+    try {
+      const animal = await Animal.findById(req.params.id);
+      if (!animal) return error(res, '动物信息不存在', 404);
+      const updated = Animal.parseImages(animal.images).filter((u) => u !== req.body.url);
+      await Animal.setImages(req.params.id, updated);
+      success(res, updated, '图片已删除');
     } catch (err) {
       next(err);
     }

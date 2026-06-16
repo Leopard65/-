@@ -4,6 +4,7 @@
 const Adoption = require('../models/Adoption');
 const Animal = require('../models/Animal');
 const Followup = require('../models/Followup');
+const AnimalEvent = require('../models/AnimalEvent');
 const Notification = require('../models/Notification');
 const { success, paginated, error } = require('../utils/response');
 const { parsePagination } = require('../utils/validator');
@@ -83,6 +84,16 @@ const adoptionController = {
     }
   },
 
+  // 近期计划回访（管理员）：未来 30 天内有计划回访日期的记录
+  async getUpcomingFollowups(req, res, next) {
+    try {
+      const list = await Followup.findUpcoming(30);
+      success(res, list);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // 近 6 个月领养申请趋势（管理员），缺失月份补 0
   async getTrend(req, res, next) {
     try {
@@ -141,6 +152,41 @@ const adoptionController = {
     }
   },
 
+  // 标记领养完成（管理员）：已通过 -> 已完成
+  async complete(req, res, next) {
+    try {
+      const app = await Adoption.findById(req.params.id);
+      if (!app) return error(res, '申请不存在', 404);
+      if (app.status !== 'approved') return error(res, '仅已通过的申请可标记完成');
+      const affected = await Adoption.complete(req.params.id);
+
+      // 联动：给动物档案追加一条"被领养"事件（附属操作，失败不影响完成）
+      if (affected) {
+        try {
+          await AnimalEvent.create({
+            animal_id: app.animal_id,
+            event_type: 'adopted',
+            event_date: new Date().toISOString().slice(0, 10),
+            title: '被领养',
+            description: `由 ${app.applicant_name} 领养，完成领养手续`,
+            created_by: req.user.id,
+          });
+        } catch (e) { /* 档案事件为附属，忽略失败 */ }
+      }
+
+      await Notification.create({
+        user_id: app.user_id,
+        type: 'adoption',
+        title: '领养手续已完成',
+        content: `您领养「${app.animal_name}」的手续已全部完成，祝你们幸福相伴！`,
+        related_id: app.id,
+      });
+      success(res, null, '已标记为完成');
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // ===== 领养回访 =====
 
   // 查看某申请的回访记录（管理员或申请本人）
@@ -161,7 +207,7 @@ const adoptionController = {
   // 新增回访记录（管理员）
   async addFollowup(req, res, next) {
     try {
-      const { visit_date, content, animal_condition } = req.body;
+      const { visit_date, content, animal_condition, next_visit_date } = req.body;
       if (!visit_date || !content) {
         return error(res, '回访日期和回访内容不能为空');
       }
@@ -176,6 +222,7 @@ const adoptionController = {
         visit_date,
         content,
         animal_condition,
+        next_visit_date: next_visit_date || null,
         photos: req.files && req.files.length ? JSON.stringify(req.files.map(fileWebPath)) : null,
         operator_id: req.user.id,
       });

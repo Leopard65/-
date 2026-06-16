@@ -8,20 +8,23 @@
           <span class="logo-text">流浪动物救助中心</span>
         </router-link>
 
+        <!-- 桌面导航 -->
         <nav class="nav-menu">
-          <router-link to="/">首页</router-link>
-          <router-link to="/animals">待领养动物</router-link>
-          <router-link to="/match">领养匹配</router-link>
-          <router-link to="/rescue">救助求助</router-link>
-          <router-link to="/articles">科普文章</router-link>
+          <router-link v-for="link in navLinks" :key="link.to" :to="link.to">
+            {{ link.label }}
+          </router-link>
         </nav>
 
         <div class="header-right">
+          <el-icon class="theme-btn" :title="isDark ? '切换到浅色' : '切换到深色'" @click="toggleTheme">
+            <Moon v-if="!isDark" />
+            <Sunny v-else />
+          </el-icon>
           <template v-if="userStore.isLoggedIn">
             <el-popover placement="bottom" :width="330" trigger="click" @show="loadNotifications">
               <template #reference>
                 <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="noti-bell">
-                  <span class="bell-icon">🔔</span>
+                  <el-icon class="bell-icon"><Bell /></el-icon>
                 </el-badge>
               </template>
               <div class="noti-panel">
@@ -65,12 +68,33 @@
             </el-dropdown>
           </template>
           <template v-else>
-            <el-button type="primary" @click="$router.push('/login')">登录</el-button>
-            <el-button @click="$router.push('/register')">注册</el-button>
+            <el-button type="primary" round @click="$router.push('/login')">登录</el-button>
+            <el-button class="hide-mobile" round @click="$router.push('/register')">注册</el-button>
           </template>
+
+          <!-- 移动端菜单按钮 -->
+          <el-icon class="menu-btn" @click="mobileNavOpen = true"><Menu /></el-icon>
         </div>
       </div>
     </header>
+
+    <!-- 移动端抽屉导航 -->
+    <el-drawer v-model="mobileNavOpen" direction="ltr" size="72%" :with-header="false">
+      <div class="drawer-nav">
+        <div class="drawer-brand">
+          <span class="logo-icon">🐾</span> 流浪动物救助中心
+        </div>
+        <router-link
+          v-for="link in navLinks"
+          :key="link.to"
+          :to="link.to"
+          class="drawer-link"
+          @click="mobileNavOpen = false"
+        >
+          {{ link.label }}
+        </router-link>
+      </div>
+    </el-drawer>
 
     <!-- 主内容 -->
     <main class="main-content">
@@ -79,7 +103,27 @@
 
     <!-- 底部 -->
     <footer class="footer">
-      <p>© 2024 流浪动物救助与领养管理系统 | 让每个生命都被温柔以待</p>
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><span>🐾</span> 流浪动物救助中心</div>
+          <p>让每个生命都被温柔以待。<br />科学救助 · 透明领养 · 用心陪伴。</p>
+        </div>
+        <div class="footer-col">
+          <h4>快速链接</h4>
+          <router-link to="/animals">待领养动物</router-link>
+          <router-link to="/match">领养匹配</router-link>
+          <router-link to="/articles">科普文章</router-link>
+        </div>
+        <div class="footer-col">
+          <h4>需要帮助</h4>
+          <router-link to="/rescue">提交救助信息</router-link>
+          <span class="footer-text">救助热线：400-000-0000</span>
+          <span class="footer-text">服务时间：9:00 - 18:00</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        © 2024-2026 流浪动物救助与领养管理系统 · 仅供学习与演示使用
+      </div>
     </footer>
   </div>
 </template>
@@ -89,9 +133,20 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
+import { useTheme } from '@/composables/useTheme'
 
 const userStore = useUserStore()
 const router = useRouter()
+const { isDark, toggleTheme } = useTheme()
+
+const navLinks = [
+  { to: '/', label: '首页' },
+  { to: '/animals', label: '待领养动物' },
+  { to: '/match', label: '领养匹配' },
+  { to: '/rescue', label: '救助求助' },
+  { to: '/articles', label: '科普文章' },
+]
+const mobileNavOpen = ref(false)
 
 function handleLogout() {
   userStore.logout()
@@ -150,21 +205,24 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 }
 
 .header {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: var(--bg-header);
+  backdrop-filter: saturate(180%) blur(8px);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
 .header-inner {
-  max-width: 1200px;
+  max-width: var(--page-max);
   margin: 0 auto;
   padding: 0 20px;
-  height: 64px;
+  height: var(--header-h);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .logo {
@@ -172,31 +230,31 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
   align-items: center;
   gap: 8px;
   font-size: 18px;
-  font-weight: bold;
-  color: #409eff;
+  font-weight: 700;
+  color: var(--brand);
+  white-space: nowrap;
 }
-
 .logo-icon {
   font-size: 24px;
 }
 
 .nav-menu {
   display: flex;
-  gap: 32px;
+  gap: 30px;
+  flex: 1;
+  justify-content: center;
 }
-
 .nav-menu a {
-  color: #666;
+  color: var(--text-regular);
   font-size: 15px;
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 2px solid transparent;
-  transition: all 0.3s;
+  transition: color 0.25s, border-color 0.25s;
 }
-
 .nav-menu a:hover,
 .nav-menu a.router-link-active {
-  color: #409eff;
-  border-bottom-color: #409eff;
+  color: var(--brand);
+  border-bottom-color: var(--brand);
 }
 
 .header-right {
@@ -206,16 +264,16 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 }
 
 .noti-bell { cursor: pointer; }
-.bell-icon { font-size: 20px; display: inline-block; line-height: 1; }
+.bell-icon { font-size: 20px; color: var(--text-regular); }
 .noti-panel .noti-head { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 6px; }
 .noti-empty { color: #999; text-align: center; padding: 20px 0; font-size: 13px; }
 .noti-item { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer; border-radius: 4px; }
-.noti-item:hover { background: #f5f7fa; }
-.noti-item.unread { background: #ecf5ff33; }
+.noti-item:hover { background: var(--brand-lighter); }
+.noti-item.unread { background: var(--brand-light); }
 .noti-row { display: flex; align-items: center; gap: 6px; }
-.noti-dot { width: 7px; height: 7px; border-radius: 50%; background: #f56c6c; flex-shrink: 0; }
-.noti-title { font-size: 14px; color: #303133; font-weight: 500; }
-.noti-content { font-size: 12px; color: #909399; margin: 3px 0; line-height: 1.5; }
+.noti-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+.noti-title { font-size: 14px; color: var(--text-main); font-weight: 500; }
+.noti-content { font-size: 12px; color: var(--text-secondary); margin: 3px 0; line-height: 1.5; }
 .noti-time { font-size: 11px; color: #c0c4cc; }
 
 .user-info {
@@ -224,25 +282,123 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
   gap: 8px;
   cursor: pointer;
 }
-
 .user-name {
   font-size: 14px;
-  color: #333;
+  color: var(--text-main);
+}
+
+.menu-btn {
+  display: none;
+  font-size: 24px;
+  color: var(--text-regular);
+  cursor: pointer;
+}
+.theme-btn {
+  font-size: 19px;
+  color: var(--text-regular);
+  cursor: pointer;
+}
+.theme-btn:hover {
+  color: var(--brand);
+}
+
+/* 移动端抽屉 */
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px;
+}
+.drawer-brand {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--brand);
+  padding: 8px 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 8px;
+}
+.drawer-link {
+  padding: 14px 12px;
+  font-size: 16px;
+  color: var(--text-main);
+  border-radius: 8px;
+}
+.drawer-link.router-link-active {
+  color: var(--brand);
+  background: var(--brand-light);
 }
 
 .main-content {
   flex: 1;
-  max-width: 1200px;
+  max-width: var(--page-max);
   width: 100%;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px 20px 40px;
 }
 
+/* 底部 */
 .footer {
-  background: #333;
-  color: #999;
-  text-align: center;
-  padding: 20px;
+  background: #2a2622;
+  color: #b9b2a8;
+  margin-top: 40px;
+}
+.footer-inner {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 40px 20px 28px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 32px;
+}
+.footer-logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+}
+.footer-brand p {
   font-size: 13px;
+  line-height: 1.8;
+}
+.footer-col h4 {
+  color: #fff;
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+.footer-col a,
+.footer-col .footer-text {
+  display: block;
+  font-size: 13px;
+  color: #b9b2a8;
+  margin-bottom: 10px;
+  transition: color 0.2s;
+}
+.footer-col a:hover {
+  color: var(--brand);
+}
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: #7d766c;
+}
+
+@media (max-width: 768px) {
+  .nav-menu,
+  .hide-mobile,
+  .user-name {
+    display: none;
+  }
+  .menu-btn {
+    display: inline-flex;
+  }
+  .main-content {
+    padding: 16px 14px 32px;
+  }
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 28px 20px 20px;
+  }
 }
 </style>

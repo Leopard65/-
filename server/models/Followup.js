@@ -16,14 +16,14 @@ function parsePhotos(raw) {
 
 const Followup = {
   // 新增一条回访记录
-  async create({ application_id, visit_date, content, animal_condition, photos, operator_id }) {
+  async create({ application_id, visit_date, content, animal_condition, photos, operator_id, next_visit_date }) {
     const [result] = await db.execute(
       `INSERT INTO adoption_followups
-        (application_id, visit_date, content, animal_condition, photos, operator_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+        (application_id, visit_date, content, animal_condition, next_visit_date, photos, operator_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         application_id, visit_date, content,
-        animal_condition || '', photos || null, operator_id || null,
+        animal_condition || '', next_visit_date || null, photos || null, operator_id || null,
       ]
     );
     return result.insertId;
@@ -45,6 +45,25 @@ const Followup = {
   async findById(id) {
     const [rows] = await db.execute('SELECT * FROM adoption_followups WHERE id = ?', [id]);
     return rows[0] || null;
+  },
+
+  // 近期计划回访：未来 daysAhead 天内有计划回访日期的记录（用于后台看板提醒）
+  async findUpcoming(daysAhead = 30) {
+    const n = Math.max(1, Number(daysAhead) || 30);
+    const [rows] = await db.execute(
+      `SELECT f.id, f.application_id, f.next_visit_date,
+              DATEDIFF(f.next_visit_date, CURDATE()) AS days_until,
+              aa.applicant_name, aa.phone, aa.animal_id,
+              a.name AS animal_name
+       FROM adoption_followups f
+       JOIN adoption_applications aa ON f.application_id = aa.id
+       LEFT JOIN animals a ON aa.animal_id = a.id
+       WHERE f.next_visit_date IS NOT NULL
+         AND f.next_visit_date >= CURDATE()
+         AND f.next_visit_date <= DATE_ADD(CURDATE(), INTERVAL ${n} DAY)
+       ORDER BY f.next_visit_date ASC`
+    );
+    return rows;
   },
 
   async delete(id) {

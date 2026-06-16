@@ -1,39 +1,61 @@
 <template>
   <div class="articles-page">
-    <h2>科普文章</h2>
-    <el-tabs v-model="category" @tab-change="loadArticles">
+    <PageHeader title="科普文章" subtitle="领养须知、科学养宠与温暖的领养故事" />
+
+    <el-tabs v-model="category" @tab-change="onTab" class="cat-tabs">
       <el-tab-pane label="全部" name="" />
       <el-tab-pane label="领养须知" name="guide" />
       <el-tab-pane label="科普知识" name="knowledge" />
       <el-tab-pane label="领养故事" name="story" />
     </el-tabs>
 
-    <div class="article-list" v-loading="loading">
-      <div v-for="item in articles" :key="item.id" class="article-item" @click="$router.push(`/articles/${item.id}`)">
-        <img v-if="item.cover_image" v-imgfb :src="item.cover_image" class="article-cover" />
-        <div class="article-info">
-          <h3>{{ item.title }}</h3>
-          <p class="article-meta">
-            <el-tag size="small" :type="catType(item.category)">{{ catText(item.category) }}</el-tag>
-            <span>{{ item.created_at?.slice(0, 10) }}</span>
-            <span>阅读 {{ item.view_count }}</span>
-          </p>
-        </div>
+    <div class="list-body">
+      <div v-if="loading" class="article-grid">
+        <CardSkeleton v-for="i in 6" :key="i" :height="150" />
       </div>
+      <div v-else-if="articles.length" class="article-grid">
+        <article
+          v-for="item in articles"
+          :key="item.id"
+          class="article-card"
+          @click="$router.push(`/articles/${item.id}`)"
+        >
+          <div class="ac-cover">
+            <img v-if="item.cover_image" v-imgfb :src="item.cover_image" :alt="item.title" />
+            <div v-else class="paw-ph"></div>
+            <StatusTag kind="article" :value="item.category" size="small" class="ac-cat" />
+          </div>
+          <div class="ac-content">
+            <h3>{{ item.title }}</h3>
+            <div class="ac-foot">
+              <span>{{ item.created_at?.slice(0, 10) }}</span>
+              <span><el-icon><View /></el-icon> {{ item.view_count }}</span>
+            </div>
+          </div>
+        </article>
+      </div>
+      <EmptyState v-else description="该分类下暂无文章" />
     </div>
-    <el-empty v-if="!loading && articles.length === 0" description="暂无文章" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import request from '@/utils/request'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import CardSkeleton from '@/components/CardSkeleton.vue'
 
 const articles = ref([])
 const loading = ref(false)
 const category = ref('')
 
 onMounted(() => loadArticles())
+
+function onTab() {
+  loadArticles()
+}
 
 async function loadArticles() {
   loading.value = true
@@ -44,30 +66,74 @@ async function loadArticles() {
     loading.value = false
   }
 }
-
-function catText(c) {
-  return { guide: '领养须知', knowledge: '科普', story: '故事' }[c] || c
-}
-function catType(c) {
-  return { guide: 'success', knowledge: 'primary', story: 'warning' }[c] || ''
-}
 </script>
 
 <style scoped>
-.articles-page h2 { margin-bottom: 16px; }
-.article-item {
-  display: flex;
-  gap: 16px;
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: box-shadow 0.2s;
+.cat-tabs {
+  margin-bottom: 8px;
 }
-.article-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-.article-cover { width: 160px; height: 100px; border-radius: 6px; object-fit: cover; }
-.article-info { flex: 1; }
-.article-info h3 { margin-bottom: 8px; }
-.article-meta { display: flex; gap: 12px; align-items: center; font-size: 13px; color: #999; }
+.list-body {
+  min-height: 200px;
+}
+.article-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.article-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.article-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+.ac-cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+.ac-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.article-card:hover .ac-cover img {
+  transform: scale(1.05);
+}
+.ac-cat {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+.ac-content {
+  padding: 14px 16px 16px;
+}
+.ac-content h3 {
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ac-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.ac-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 </style>

@@ -1,24 +1,33 @@
 <template>
-  <div class="banner-manage">
-    <div class="page-header">
-      <h2>轮播图管理</h2>
-      <el-button type="primary" @click="openDialog()">添加轮播图</el-button>
-    </div>
+  <div class="banner-manage admin-view">
+    <PageHeader title="轮播图管理" subtitle="维护首页顶部轮播图">
+      <el-button type="primary" @click="openDialog()">
+        <el-icon style="margin-right: 4px"><Plus /></el-icon> 添加轮播图
+      </el-button>
+    </PageHeader>
 
-    <el-card>
+    <div class="table-card">
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column label="图片" width="150">
+        <el-table-column label="图片" width="160">
           <template #default="{ row }">
-            <img v-imgfb :src="row.image_url" style="width:120px;height:60px;border-radius:4px;object-fit:cover" />
+            <el-image
+              :src="row.image_url"
+              fit="cover"
+              class="banner-thumb"
+              :preview-src-list="[row.image_url]"
+              preview-teleported
+            >
+              <template #error><div class="banner-thumb paw-mini">🐾</div></template>
+            </el-image>
           </template>
         </el-table-column>
-        <el-table-column prop="title" label="标题" />
+        <el-table-column prop="title" label="标题" show-overflow-tooltip />
         <el-table-column prop="link_url" label="链接" show-overflow-tooltip />
         <el-table-column prop="sort_order" label="排序" width="80" />
-        <el-table-column prop="status" label="状态" width="80">
+        <el-table-column label="状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small" round>
               {{ row.status === 1 ? '显示' : '隐藏' }}
             </el-tag>
           </template>
@@ -26,7 +35,7 @@
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button text type="primary" size="small" @click="openDialog(row)">编辑</el-button>
-            <el-popconfirm title="确认删除？" @confirm="handleDelete(row.id)">
+            <el-popconfirm title="确认删除该轮播图？" width="200" @confirm="handleDelete(row.id)">
               <template #reference>
                 <el-button text type="danger" size="small">删除</el-button>
               </template>
@@ -34,7 +43,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑轮播图' : '添加轮播图'" width="500px">
       <el-form ref="formRef" :model="form" label-width="80px">
@@ -42,10 +51,7 @@
           <el-input v-model="form.title" />
         </el-form-item>
         <el-form-item label="图片">
-          <el-upload action="/api/content/banners" :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
-            <img v-if="imageUrl" :src="imageUrl" style="width: 200px; border-radius: 4px" />
-            <el-button v-else>选择图片</el-button>
-          </el-upload>
+          <ImageUpload v-model="imageUrl" :width="240" :height="110" placeholder="上传轮播图" @change="onImagePick" />
         </el-form-item>
         <el-form-item label="跳转链接">
           <el-input v-model="form.link_url" placeholder="选填" />
@@ -55,8 +61,8 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="form.status">
-            <el-radio :label="1">显示</el-radio>
-            <el-radio :label="0">隐藏</el-radio>
+            <el-radio :value="1">显示</el-radio>
+            <el-radio :value="0">隐藏</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -72,6 +78,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
+import PageHeader from '@/components/PageHeader.vue'
+import ImageUpload from '@/components/ImageUpload.vue'
 
 const list = ref([])
 const loading = ref(false)
@@ -106,15 +114,8 @@ function openDialog(row) {
   dialogVisible.value = true
 }
 
-function beforeUpload(file) {
-  const isImage = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-  if (!isImage) ElMessage.error('只能上传图片')
-  return isImage
-}
-
-function handleUpload({ file }) {
+function onImagePick(file) {
   imageFile.value = file
-  imageUrl.value = URL.createObjectURL(file)
 }
 
 async function handleSubmit() {
@@ -151,5 +152,18 @@ async function handleDelete(id) {
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.banner-thumb {
+  width: 120px;
+  height: 56px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
+.paw-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-soft);
+  font-size: 22px;
+}
 </style>

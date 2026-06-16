@@ -1,39 +1,42 @@
 <template>
-  <div class="register-page">
-    <div class="register-card">
-      <h2>🐾 注册</h2>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="0" size="large">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名（3-20位）" prefix-icon="User" />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码（至少6位）" prefix-icon="Lock" show-password />
-        </el-form-item>
-        <el-form-item prop="confirmPassword">
-          <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock" show-password />
-        </el-form-item>
-        <el-form-item>
-          <el-input v-model="form.nickname" placeholder="昵称（选填）" />
-        </el-form-item>
-        <el-form-item>
-          <el-input v-model="form.phone" placeholder="手机号（选填）" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="loading" style="width: 100%" @click="handleRegister">注 册</el-button>
-        </el-form-item>
-      </el-form>
-      <div class="links">
-        <router-link to="/login">已有账号？去登录</router-link>
-      </div>
-    </div>
-  </div>
+  <AuthShell headline="加入我们" text="注册一个账号，开启你与小生命的双向奔赴。">
+    <h2 class="auth-title">注册账号</h2>
+    <p class="auth-sub">已有账号？<router-link to="/login">去登录</router-link></p>
+
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="0" size="large">
+      <el-form-item prop="username">
+        <el-input v-model="form.username" placeholder="用户名（3-20 位）" :prefix-icon="User" />
+      </el-form-item>
+      <el-form-item prop="password">
+        <el-input v-model="form.password" type="password" placeholder="密码（至少 6 位）" :prefix-icon="Lock" show-password />
+      </el-form-item>
+      <el-form-item prop="confirmPassword">
+        <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" :prefix-icon="Lock" show-password />
+      </el-form-item>
+      <el-form-item>
+        <el-input v-model="form.nickname" placeholder="昵称（选填）" :prefix-icon="Avatar" />
+      </el-form-item>
+      <el-form-item>
+        <el-input v-model="form.phone" placeholder="手机号（选填）" :prefix-icon="Iphone" />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" :loading="loading" style="width: 100%" round @click="handleRegister">
+          注 册
+        </el-button>
+      </el-form-item>
+    </el-form>
+
+    <router-link to="/" class="back-home">← 返回首页</router-link>
+  </AuthShell>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { User, Lock, Avatar, Iphone } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import AuthShell from '@/components/AuthShell.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -81,34 +84,25 @@ async function handleRegister() {
 </script>
 
 <style scoped>
-.register-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.register-card {
-  width: 420px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.register-card h2 {
-  text-align: center;
-  margin-bottom: 32px;
+.auth-title {
   font-size: 24px;
+  margin-bottom: 6px;
 }
-
-.links {
-  text-align: center;
+.auth-sub {
   font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
 }
-
-.links a {
-  color: #409eff;
+.auth-sub a {
+  color: var(--brand);
+}
+.back-home {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.back-home:hover {
+  color: var(--brand);
 }
 </style>

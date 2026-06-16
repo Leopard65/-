@@ -1,31 +1,40 @@
 <template>
-  <div class="login-page">
-    <div class="login-card">
-      <h2>🐾 登录</h2>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="0" size="large">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password @keyup.enter="handleLogin" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="loading" style="width: 100%" @click="handleLogin">登 录</el-button>
-        </el-form-item>
-      </el-form>
-      <div class="login-links">
-        <router-link to="/register">还没有账号？去注册</router-link>
-        <router-link to="/">返回首页</router-link>
-      </div>
-    </div>
-  </div>
+  <AuthShell headline="欢迎回来" text="登录后可申请领养、跟踪进度与查看回访记录。">
+    <h2 class="auth-title">登录账号</h2>
+    <p class="auth-sub">还没有账号？<router-link to="/register">立即注册</router-link></p>
+
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="0" size="large">
+      <el-form-item prop="username">
+        <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" />
+      </el-form-item>
+      <el-form-item prop="password">
+        <el-input
+          v-model="form.password"
+          type="password"
+          placeholder="密码"
+          :prefix-icon="Lock"
+          show-password
+          @keyup.enter="handleLogin"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" :loading="loading" style="width: 100%" round @click="handleLogin">
+          登 录
+        </el-button>
+      </el-form-item>
+    </el-form>
+
+    <router-link to="/" class="back-home">← 返回首页</router-link>
+  </AuthShell>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import AuthShell from '@/components/AuthShell.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -56,36 +65,25 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.login-card {
-  width: 400px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.login-card h2 {
-  text-align: center;
-  margin-bottom: 32px;
+.auth-title {
   font-size: 24px;
-  color: #333;
+  margin-bottom: 6px;
 }
-
-.login-links {
-  display: flex;
-  justify-content: space-between;
+.auth-sub {
   font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
 }
-
-.login-links a {
-  color: #409eff;
+.auth-sub a {
+  color: var(--brand);
+}
+.back-home {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.back-home:hover {
+  color: var(--brand);
 }
 </style>

@@ -8,7 +8,11 @@ const upload = require('../middlewares/upload');
 
 router.post('/', optionalAuth, upload.single('image'), rescueController.create);
 router.get('/', authenticate, requireAdmin, rescueController.getAll);
-router.get('/:id', rescueController.getDetail);
+router.get('/stats/urgency', authenticate, requireAdmin, rescueController.getUrgencyStats);
+router.get('/:id', optionalAuth, rescueController.getDetail);
 router.put('/:id/status', authenticate, requireAdmin, rescueController.updateStatus);
+// 救助处理日志（进度时间线）
+router.get('/:id/logs', authenticate, requireAdmin, rescueController.listLogs);
+router.post('/:id/logs', authenticate, requireAdmin, rescueController.addNote);
 
 module.exports = router;

@@ -3,7 +3,19 @@
  */
 const db = require('../config/db');
 
+// 安全解析 images（JSON 字符串）为数组，脏数据返回空数组
+function parseImages(raw) {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
 const Animal = {
+  parseImages,
   // 创建动物记录
   async create(data) {
     const [result] = await db.execute(
@@ -91,6 +103,15 @@ const Animal = {
   // 删除
   async delete(id) {
     const [result] = await db.execute('DELETE FROM animals WHERE id = ?', [id]);
+    return result.affectedRows;
+  },
+
+  // 相册图片：覆盖保存为 JSON
+  async setImages(id, arr) {
+    const [result] = await db.execute(
+      'UPDATE animals SET images = ? WHERE id = ?',
+      [JSON.stringify(Array.isArray(arr) ? arr : []), id]
+    );
     return result.affectedRows;
   },
 

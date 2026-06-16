@@ -95,6 +95,15 @@ const Adoption = {
     return rows.length > 0;
   },
 
+  // 标记领养完成（已通过 -> 已完成）
+  async complete(id) {
+    const [result] = await db.execute(
+      "UPDATE adoption_applications SET status = 'completed' WHERE id = ? AND status = 'approved'",
+      [id]
+    );
+    return result.affectedRows;
+  },
+
   // 回访提醒：已通过满 30 天、且尚无任何回访记录的领养（按通过时间从早到晚）
   async findFollowupReminders() {
     const [rows] = await db.execute(

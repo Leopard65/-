@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS adoption_followups (
   visit_date    DATE         NOT NULL COMMENT '回访日期',
   content       TEXT         NOT NULL COMMENT '回访内容',
   animal_condition VARCHAR(200) DEFAULT '' COMMENT '动物状况',
+  next_visit_date DATE         DEFAULT NULL COMMENT '下次计划回访日期',
   photos        TEXT         COMMENT '回访照片JSON',
   operator_id   INT UNSIGNED DEFAULT NULL COMMENT '操作人',
   created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
@@ -213,6 +214,48 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内通知表';
+
+-- -------------------------------------------
+-- 12. 动物档案事件表（救助/体检/疫苗/绝育/上架/领养等生命周期记录）
+-- -------------------------------------------
+CREATE TABLE IF NOT EXISTS animal_events (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  animal_id     INT UNSIGNED NOT NULL COMMENT '动物ID',
+  event_type    ENUM('rescue','checkup','vaccine','sterilize','listing','adopted','followup','other')
+                DEFAULT 'other' COMMENT '事件类型',
+  event_date    DATE         NOT NULL COMMENT '事件日期',
+  title         VARCHAR(100) NOT NULL COMMENT '事件标题',
+  description   VARCHAR(500) DEFAULT '' COMMENT '事件描述',
+  created_by    INT UNSIGNED DEFAULT NULL COMMENT '记录人',
+  created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (animal_id) REFERENCES animals(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='动物档案事件表';
+
+-- -------------------------------------------
+-- 13. 救助处理日志表（救助进度时间线 + 处理备注）
+-- -------------------------------------------
+CREATE TABLE IF NOT EXISTS rescue_logs (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  rescue_id     INT UNSIGNED NOT NULL COMMENT '救助求助ID',
+  action        VARCHAR(20)  NOT NULL DEFAULT 'note' COMMENT '动作: processing/resolved/closed/note',
+  note          VARCHAR(500) DEFAULT '' COMMENT '处理备注',
+  operator_id   INT UNSIGNED DEFAULT NULL COMMENT '操作人',
+  created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (rescue_id) REFERENCES rescue_requests(id) ON DELETE CASCADE,
+  FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='救助处理日志表';
+
+-- -------------------------------------------
+-- 表结构升级（兼容旧库）：为已存在的旧表补充新列，幂等、可重复执行。
+-- 全新数据库由上面的 CREATE TABLE 直接包含这些列，下面的 ALTER 会被自动跳过。
+-- -------------------------------------------
+SET @col_nvd := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'adoption_followups' AND COLUMN_NAME = 'next_visit_date');
+SET @ddl_nvd := IF(@col_nvd = 0,
+  'ALTER TABLE adoption_followups ADD COLUMN next_visit_date DATE DEFAULT NULL COMMENT ''下次计划回访日期'' AFTER animal_condition',
+  'DO 0');
+PREPARE p_nvd FROM @ddl_nvd; EXECUTE p_nvd; DEALLOCATE PREPARE p_nvd;
 
 -- -------------------------------------------
 -- 初始数据

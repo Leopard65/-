@@ -63,6 +63,39 @@ async function main() {
     animalId[a[0]] = r.insertId;
   }
 
+  // ===== 动物档案事件（生命周期时间线）=====
+  const events = [
+    ['大黄', 'rescue', 60, '被救助', '在城西工业园发现，当时较为瘦弱。'],
+    ['大黄', 'checkup', 58, '入院体检', '体检完成，整体健康。'],
+    ['大黄', 'vaccine', 50, '接种疫苗', '完成狂犬及联苗首针。'],
+    ['大黄', 'sterilize', 40, '绝育手术', '绝育完成，恢复良好。'],
+    ['大黄', 'listing', 30, '上架待领养', '健康达标，正式开放领养。'],
+    ['大黄', 'adopted', 6, '被成功领养', '由有爱心的家庭领养回家。'],
+    ['小橘', 'rescue', 60, '被救助', '阳光小区南门被好心人发现。'],
+    ['小橘', 'checkup', 57, '入院体检', '已驱虫，无传染病。'],
+    ['小橘', 'vaccine', 45, '接种疫苗', '完成首针疫苗。'],
+    ['小橘', 'listing', 20, '上架待领养', '开放领养，等待有缘人。'],
+    ['花花', 'rescue', 60, '被救助', '老城区菜场附近救助。'],
+    ['花花', 'listing', 15, '上架待领养', '开放领养。'],
+    ['旺财', 'rescue', 60, '被救助', '城南村附近救助，性格忠诚。'],
+    ['旺财', 'listing', 45, '上架待领养', '健康检查通过，开放领养。'],
+    ['旺财', 'adopted', 35, '被领养', '由演示用户领养，完成领养手续。'],
+  ];
+  for (const [name, type, daysAgo, title, desc] of events) {
+    if (!animalId[name]) continue;
+    await db.execute(
+      `INSERT INTO animal_events (animal_id,event_type,event_date,title,description,created_by)
+       VALUES (?,?, DATE_SUB(CURDATE(), INTERVAL ? DAY), ?,?,?)`,
+      [animalId[name], type, daysAgo, title, desc, adminId]
+    );
+  }
+
+  // 动物相册（多图演示）
+  await db.execute('UPDATE animals SET images=? WHERE id=?',
+    [JSON.stringify(['/seed/animal-cat-orange.svg', '/seed/animal-cat-british.svg', '/seed/animal-cat-grey.svg']), animalId['小橘']])
+  await db.execute('UPDATE animals SET images=? WHERE id=?',
+    [JSON.stringify(['/seed/animal-dog-golden.svg', '/seed/animal-dog-corgi.svg']), animalId['大黄']])
+
   // ===== 文章 =====
   const articles = [
     ['新手养猫完全指南', '<p>第一次养猫需要准备猫砂盆、猫粮、饮水机和磨爪板……</p><p>定期驱虫与疫苗必不可少，建议每年体检一次。</p>', '/seed/article-care.svg', 'knowledge', 128],
@@ -101,13 +134,27 @@ async function main() {
     [null, '李先生', '13900002222', '科技园B区停车场', '一窝小奶猫被遗弃，约4只，需要奶粉。', '猫', 'critical', 'processing'],
     [demoId, '张同学', '13900003333', '大学城宿舍区', '流浪狗在垃圾桶附近徘徊，比较温顺。', '狗', 'medium', 'resolved'],
   ];
+  const rescueIds = [];
   for (const r of rescues) {
-    await db.execute(
+    const [rr] = await db.execute(
       `INSERT INTO rescue_requests (user_id,reporter_name,phone,location,description,animal_type,urgency,status,resolved_at,created_at)
        VALUES (?,?,?,?,?,?,?,?, ${'resolved' === r[7] ? 'NOW()' : 'NULL'}, DATE_SUB(NOW(), INTERVAL 7 DAY))`,
       r
     );
+    rescueIds.push(rr.insertId);
   }
+  // 救助处理日志（进度时间线演示）
+  await db.execute(
+    `INSERT INTO rescue_logs (rescue_id,action,note,operator_id,created_at) VALUES
+     (?, 'processing', '已联系报告人，安排志愿者前往现场核实。', ?, DATE_SUB(NOW(), INTERVAL 5 DAY))`,
+    [rescueIds[1], adminId]
+  );
+  await db.execute(
+    `INSERT INTO rescue_logs (rescue_id,action,note,operator_id,created_at) VALUES
+     (?, 'processing', '志愿者已到场，将流浪狗带回做基础检查。', ?, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+     (?, 'resolved', '狗狗健康良好，已联系领养人顺利安置。', ?, DATE_SUB(NOW(), INTERVAL 4 DAY))`,
+    [rescueIds[2], adminId, rescueIds[2], adminId]
+  );
 
   // ===== 领养申请 + 回访 =====
   // A: 已通过(近期) + 有回访(含照片) -> 不进提醒
@@ -117,8 +164,8 @@ async function main() {
     [demoId, animalId['大黄'], '演示用户', '13800000000', '幸福路18号', '自有', adminId]
   );
   await db.execute(
-    `INSERT INTO adoption_followups (application_id,visit_date,content,animal_condition,photos,operator_id)
-     VALUES (?, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '上门回访，大黄适应良好，已熟悉新环境。', '健康活泼，体重正常', ?, ?)`,
+    `INSERT INTO adoption_followups (application_id,visit_date,content,animal_condition,next_visit_date,photos,operator_id)
+     VALUES (?, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '上门回访，大黄适应良好，已熟悉新环境。', '健康活泼，体重正常', DATE_ADD(CURDATE(), INTERVAL 20 DAY), ?, ?)`,
     [adA.insertId, JSON.stringify(['/seed/animal-dog-golden.svg']), adminId]
   );
 
@@ -145,6 +192,12 @@ async function main() {
      demoId, animalId['雪球'], '演示用户', '13800000000', '安居小区', '自有']
   );
 
+  // 演示：将一条已通过申请标记为"已完成"，展示领养闭环
+  await db.execute(
+    "UPDATE adoption_applications SET status='completed' WHERE animal_id=? AND status='approved' LIMIT 1",
+    [animalId['旺财']]
+  );
+
   // ===== 站内通知（演示用） =====
   await db.execute(
     `INSERT INTO notifications (user_id,type,title,content,related_id,is_read,created_at) VALUES
@@ -155,7 +208,7 @@ async function main() {
   );
 
   console.log('🎉 演示数据播种完成！');
-  console.log('   动物 10 · 文章 4 · 轮播 3 · 公告 +2 · 救助 3 · 领养 5（含回访/提醒/趋势） · 通知 3');
+  console.log('   动物 10（含相册/档案事件）· 文章 4 · 轮播 3 · 公告 +2 · 救助 3（含处理日志）· 领养 5（含回访/计划回访/完成/提醒/趋势）· 通知 3');
   console.log('   演示用户：demo / demo123');
   process.exit(0);
 }

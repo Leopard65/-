@@ -11,6 +11,7 @@ router.post('/apply', authenticate, adoptionController.apply);
 router.get('/mine', authenticate, adoptionController.getMyApplications);
 // 管理员：回访提醒 / 趋势统计（需在 /:id 之前注册，避免被参数路由捕获）
 router.get('/followup-reminders', authenticate, requireAdmin, adoptionController.getFollowupReminders);
+router.get('/followups/upcoming', authenticate, requireAdmin, adoptionController.getUpcomingFollowups);
 router.get('/stats/trend', authenticate, requireAdmin, adoptionController.getTrend);
 router.get('/:id', authenticate, adoptionController.getDetail);
 
@@ -22,5 +23,6 @@ router.delete('/:id/followups/:fid', authenticate, requireAdmin, adoptionControl
 // 管理员接口
 router.get('/', authenticate, requireAdmin, adoptionController.getAll);
 router.put('/:id/review', authenticate, requireAdmin, adoptionController.review);
+router.put('/:id/complete', authenticate, requireAdmin, adoptionController.complete);
 
 module.exports = router;

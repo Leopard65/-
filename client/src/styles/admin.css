@@ -1,0 +1,56 @@
+/* ============================================================
+   后台共享样式（全局）
+   目标：统一页面头部、筛选栏、表格卡片、分页、弹窗
+   风格：克制、清晰、信息密度合理
+   ============================================================ */
+
+/* 表格外层卡片 */
+.table-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+.table-card + .table-card {
+  margin-top: var(--space-4);
+}
+
+/* 分页（后台右对齐，前台用 .pagination--center 居中） */
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-5);
+}
+.pagination--center {
+  justify-content: center;
+}
+
+/* 后台内容区中卡片之间的统一间距 */
+.admin-view > .data-toolbar,
+.admin-view > .page-header {
+  margin-bottom: var(--space-4);
+}
+
+/* 表格操作列按钮：减少默认 text 按钮的左右外边距堆叠 */
+.table-card .el-table .cell .el-button + .el-button {
+  margin-left: 6px;
+}
+
+/* 弹窗表单统一观感 */
+.el-dialog__body {
+  padding-top: var(--space-4);
+}
+
+/* 描述列表（详情弹窗）标签更柔和 */
+.el-descriptions__label {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .table-card {
+    padding: var(--space-3);
+  }
+  .pagination {
+    justify-content: center;
+  }
+}

@@ -66,6 +66,14 @@ const Rescue = {
     const [result] = await db.execute(`UPDATE rescue_requests SET ${fields.join(', ')} WHERE id = ?`, values);
     return result.affectedRows;
   },
+
+  // 按紧急程度统计数量（用于看板分布图）
+  async urgencyStats() {
+    const [rows] = await db.execute(
+      'SELECT urgency, COUNT(*) AS c FROM rescue_requests GROUP BY urgency'
+    );
+    return rows;
+  },
 };
 
 module.exports = Rescue;

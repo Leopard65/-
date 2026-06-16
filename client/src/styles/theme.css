@@ -1,0 +1,193 @@
+/* ============================================================
+   全局设计变量（Design Tokens）+ 基础重置 + Element Plus 主题覆盖
+   设计目标：
+   - 前台：温暖、干净、有公益感（关怀绿 + 暖珊瑚点缀 + 暖白底）
+   - 后台：克制、清晰，信息密度合理
+   - 通过覆盖 Element Plus 的 --el-* 变量，让整站脱离默认蓝
+   ============================================================ */
+
+:root {
+  /* —— 品牌主色：温暖的关怀绿 —— */
+  --brand: #2f9e87;
+  --brand-hover: #267e6c;
+  --brand-active: #1f6757;
+  --brand-light: #eaf5f3;
+  --brand-lighter: #f3faf8;
+
+  /* —— 暖色点缀（次要 CTA / 救助强调）—— */
+  --accent: #f08a5d;
+  --accent-hover: #e3744a;
+  --accent-light: #fdeee6;
+
+  /* —— 语义色 —— */
+  --success: #3e9d7c;
+  --warning: #e6a23c;
+  --danger: #e15b56;
+  --info: #8a93a0;
+
+  /* —— 文字 —— */
+  --text-main: #2b2b2b;
+  --text-regular: #5a5a5a;
+  --text-secondary: #8a8a8a;
+  --text-placeholder: #b3afa8;
+
+  /* —— 背景 / 边框（暖中性）—— */
+  --bg-page: #faf8f5;
+  --bg-card: #ffffff;
+  --bg-soft: #f5f1eb;
+  --bg-header: rgba(255, 255, 255, 0.92);
+  --border: #ece7df;
+  --border-light: #f3efe9;
+
+  /* —— 阴影 —— */
+  --shadow-sm: 0 2px 8px rgba(74, 60, 40, 0.06);
+  --shadow: 0 6px 20px rgba(74, 60, 40, 0.09);
+  --shadow-lg: 0 14px 36px rgba(74, 60, 40, 0.13);
+
+  /* —— 圆角 —— */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+
+  /* —— 间距刻度 —— */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* —— 布局 —— */
+  --page-max: 1200px;
+  --header-h: 64px;
+
+  /* ============ 覆盖 Element Plus 主题 ============ */
+  --el-color-primary: var(--brand);
+  --el-color-primary-light-3: #5cb4a1;
+  --el-color-primary-light-5: #97cec3;
+  --el-color-primary-light-7: #c0e2db;
+  --el-color-primary-light-8: #d5ece7;
+  --el-color-primary-light-9: var(--brand-light);
+  --el-color-primary-dark-2: var(--brand-hover);
+
+  --el-color-success: var(--success);
+  --el-color-warning: var(--warning);
+  --el-color-danger: var(--danger);
+  --el-color-error: var(--danger);
+  --el-color-info: var(--info);
+
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+
+  --el-text-color-primary: var(--text-main);
+  --el-text-color-regular: var(--text-regular);
+  --el-text-color-secondary: var(--text-secondary);
+  --el-border-color: var(--border);
+  --el-border-color-light: var(--border-light);
+
+  --el-font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    '微软雅黑', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+/* ============================================================
+   暗色主题：覆盖自定义 token 与 Element Plus 品牌变量
+   （EP 自身暗色由 element-plus dark/css-vars.css 提供，此处仅做品牌与中性色微调）
+   ============================================================ */
+html.dark {
+  --brand: #3bb49a;
+  --brand-hover: #4ec3a8;
+  --brand-active: #2f9e87;
+  --brand-light: rgba(59, 180, 154, 0.18);
+  --brand-lighter: rgba(59, 180, 154, 0.10);
+
+  --accent: #f0936b;
+  --accent-hover: #f0936b;
+  --accent-light: rgba(240, 138, 93, 0.16);
+
+  --text-main: #ecebe8;
+  --text-regular: #c4c0b8;
+  --text-secondary: #97928a;
+  --text-placeholder: #6f6a62;
+
+  --bg-page: #1b1a18;
+  --bg-card: #242320;
+  --bg-soft: #2c2a26;
+  --bg-header: rgba(33, 32, 29, 0.86);
+  --border: #38352f;
+  --border-light: #312e29;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.5);
+
+  /* 重申品牌主色，避免被 EP 暗色变量覆盖；light 系列在暗色下取更深的色阶 */
+  --el-color-primary: var(--brand);
+  --el-color-primary-light-3: #2f8d79;
+  --el-color-primary-light-5: #266f60;
+  --el-color-primary-light-7: #1f574c;
+  --el-color-primary-light-8: #1c4a41;
+  --el-color-primary-light-9: #173b34;
+  --el-color-primary-dark-2: #4ec3a8;
+}
+
+/* —— 基础重置 —— */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--el-font-family);
+  color: var(--text-main);
+  background-color: var(--bg-page);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+h1, h2, h3, h4, h5 {
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+
+/* 柔和滚动条（仅 webkit） */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9d2c7;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c4bcae;
+  background-clip: content-box;
+}
+
+/* 主按钮更圆润、有质感（前后台通用） */
+.el-button--primary {
+  --el-button-bg-color: var(--brand);
+  --el-button-border-color: var(--brand);
+  --el-button-hover-bg-color: var(--brand-hover);
+  --el-button-hover-border-color: var(--brand-hover);
+  --el-button-active-bg-color: var(--brand-active);
+  --el-button-active-border-color: var(--brand-active);
+}
