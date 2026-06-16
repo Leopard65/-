@@ -3,8 +3,7 @@
 </template>
 
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Microsoft YaHei', sans-serif; }
+/* 基础重置与通用规范见 src/styles/global.css；此处仅保留打印样式 */
 
 /* 打印样式 - 仅打印小票区域 */
 @media print {

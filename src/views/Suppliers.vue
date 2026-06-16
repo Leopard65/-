@@ -12,10 +12,7 @@
       @size-change="handleSizeChange"
     >
       <template #actions>
-        <el-button type="success" @click="handleExport">
-          <el-icon style="margin-right:5px"><Download /></el-icon>
-          导出
-        </el-button>
+        <el-button :icon="Download" @click="handleExport">导出</el-button>
       </template>
 
       <el-table-column prop="id" label="ID" width="60" />

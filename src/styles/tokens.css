@@ -1,0 +1,107 @@
+/**
+ * 设计令牌（Design Tokens）
+ * 全站唯一的颜色 / 间距 / 圆角 / 阴影 / 字号来源。
+ * 业务页面一律使用 var(--xxx)，禁止再硬编码色值与魔法数字。
+ * 同时把令牌映射到 Element Plus 的 CSS 变量，实现整套组件主题统一。
+ */
+:root {
+  /* ===== 品牌 / 语义色 ===== */
+  --color-primary: #3b6fe0;          /* 主色：稳重商务蓝 */
+  --color-primary-dark: #2f59b3;
+  --color-success: #2faa6e;
+  --color-warning: #e6932e;
+  --color-danger: #e0564f;
+  --color-info: #86909c;
+  --color-accent: #11998e;           /* 第二强调色：墨青，用于数据/亮点，打破单一蓝 */
+
+  /* ===== 主色阶梯（供 hover / 浅底使用） ===== */
+  --color-primary-light-3: #769ae9;
+  --color-primary-light-5: #9db7f0;
+  --color-primary-light-7: #c4d4f6;
+  --color-primary-light-8: #d8e2fa;
+  --color-primary-light-9: #ebf1fc;
+
+  /* ===== 文本 ===== */
+  --text-primary: #1f2329;           /* 标题 / 主要数字 */
+  --text-regular: #4e5969;           /* 正文 */
+  --text-secondary: #86909c;         /* 辅助 / 标签 */
+  --text-placeholder: #a8abb2;
+
+  /* ===== 边框 / 分割线 ===== */
+  --border-color: #e5e6eb;
+  --border-color-light: #eef0f3;
+
+  /* ===== 背景 ===== */
+  --bg-page: #f5f6f8;                /* 内容区底色 */
+  --bg-card: #ffffff;                /* 卡片 / 面板 */
+  --bg-muted: #f7f8fa;              /* 浅色填充块（结算框、表头等） */
+
+  /* ===== 侧栏（深色） ===== */
+  --sidebar-bg: #20232a;
+  --sidebar-bg-deep: #1a1d23;
+  --sidebar-text: #c2c8d1;
+  --sidebar-text-muted: #7d8694;
+  --sidebar-active-bg: #2b3340;
+
+  /* ===== 间距比例（4 的倍数） ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ===== 圆角 ===== */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* ===== 阴影（两级，全站统一） ===== */
+  --shadow-card: 0 1px 2px rgba(31, 35, 41, 0.04), 0 2px 8px rgba(31, 35, 41, 0.04);
+  --shadow-hover: 0 4px 16px rgba(31, 35, 41, 0.08);
+
+  /* ===== 字号 ===== */
+  --font-page-title: 20px;
+  --font-section-title: 15px;
+  --font-body: 14px;
+  --font-aux: 13px;
+  --font-metric: 26px;
+
+  /* ===== 布局尺寸 ===== */
+  --layout-aside: 220px;
+  --layout-aside-collapsed: 64px;
+  --layout-header: 56px;
+}
+
+/* ===== 映射到 Element Plus 主题变量，使内置组件与令牌一致 ===== */
+:root {
+  --el-color-primary: var(--color-primary);
+  --el-color-primary-dark-2: var(--color-primary-dark);
+  --el-color-primary-light-3: var(--color-primary-light-3);
+  --el-color-primary-light-5: var(--color-primary-light-5);
+  --el-color-primary-light-7: var(--color-primary-light-7);
+  --el-color-primary-light-8: var(--color-primary-light-8);
+  --el-color-primary-light-9: var(--color-primary-light-9);
+
+  --el-color-success: var(--color-success);
+  --el-color-warning: var(--color-warning);
+  --el-color-danger: var(--color-danger);
+  --el-color-error: var(--color-danger);
+  --el-color-info: var(--color-info);
+
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-regular);
+  --el-text-color-secondary: var(--text-secondary);
+  --el-text-color-placeholder: var(--text-placeholder);
+
+  --el-border-color: var(--border-color);
+  --el-border-color-light: var(--border-color-light);
+  --el-border-color-lighter: var(--border-color-light);
+
+  --el-fill-color-blank: var(--bg-card);
+  --el-bg-color: var(--bg-card);
+
+  --el-border-radius-base: var(--radius-md);
+  --el-font-size-base: var(--font-body);
+}

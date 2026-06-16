@@ -20,19 +20,21 @@ import { HomeFilled } from '@element-plus/icons-vue'
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  background: var(--bg-page);
+  color: var(--text-regular);
 }
 
 h1 {
-  font-size: 150px;
+  font-size: 120px;
   margin: 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 4px;
 }
 
 p {
-  font-size: 20px;
-  margin: 20px 0 40px;
-  opacity: 0.9;
+  font-size: 18px;
+  margin: 12px 0 32px;
+  color: var(--text-secondary);
 }
 </style>

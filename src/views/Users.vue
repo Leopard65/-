@@ -12,12 +12,12 @@
       <el-table-column prop="username" label="用户名" />
       <el-table-column prop="role" label="角色" width="120">
         <template #default="{ row }">
-          <el-tag :type="row.role === 'admin' ? 'danger' : 'info'">{{ roleText(row.role) }}</el-tag>
+          <StatusTag preset="role" :value="row.role" />
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+          <StatusTag preset="userStatus" :value="row.status" />
         </template>
       </el-table-column>
       <el-table-column prop="created_at" label="创建时间" width="180" />
@@ -73,6 +73,7 @@ import { usersApi } from '@/api'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import StatusTag from '@/components/StatusTag.vue'
 
 const users = ref([])
 const loading = ref(false)
@@ -85,8 +86,6 @@ const rules = computed(() => ({
   password: form.value.id ? [] : [{ required: true, message: '请输入初始密码', trigger: 'blur' }],
   role: [{ required: true, message: '请选择角色', trigger: 'change' }]
 }))
-
-const roleText = (role) => ({ admin: '管理员', cashier: '收银员' }[role] || role)
 
 const load = async () => {
   loading.value = true

@@ -3,7 +3,7 @@
     <!-- 左侧品牌面板 -->
     <div class="login-brand">
       <div class="brand-inner">
-        <div class="brand-logo">🛒</div>
+        <div class="brand-logo"><el-icon><Shop /></el-icon></div>
         <h1 class="brand-title">超市管理系统</h1>
         <p class="brand-sub">Supermarket Management System</p>
         <ul class="brand-features">
@@ -43,6 +43,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Shop } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -78,7 +79,7 @@ const handleLogin = async () => {
 /* 左侧品牌面板：复用侧栏深色，专业克制，无渐变 */
 .login-brand {
   flex: 1.1;
-  background: #304156;
+  background: var(--sidebar-bg);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -86,8 +87,15 @@ const handleLogin = async () => {
   padding: 60px 56px;
   position: relative;
 }
-.brand-logo { font-size: 56px; line-height: 1; }
-.brand-title { font-size: 34px; font-weight: 600; margin: 20px 0 4px; }
+.brand-logo {
+  width: 72px; height: 72px;
+  border-radius: var(--radius-lg);
+  background: rgba(59, 111, 224, 0.16);
+  color: var(--color-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+}
+.brand-title { font-size: 32px; font-weight: 600; margin: 22px 0 4px; }
 .brand-sub { color: #9aa7b8; letter-spacing: 1px; margin: 0 0 44px; font-size: 14px; }
 .brand-features { list-style: none; padding: 0; margin: 0; }
 .brand-features li {
@@ -96,7 +104,7 @@ const handleLogin = async () => {
 }
 .brand-features .dot {
   width: 7px; height: 7px; border-radius: 50%;
-  background: #409EFF; margin-right: 12px; flex-shrink: 0;
+  background: var(--color-primary); margin-right: 12px; flex-shrink: 0;
 }
 .brand-foot {
   position: absolute; bottom: 32px; left: 56px;
@@ -111,9 +119,9 @@ const handleLogin = async () => {
   justify-content: center;
 }
 .login-form { width: 340px; }
-.form-title { margin: 0; font-size: 26px; color: #303133; }
-.form-sub { color: #909399; margin: 6px 0 28px; font-size: 14px; }
-.form-tip { text-align: center; color: #c0c4cc; font-size: 12px; margin-top: 8px; }
+.form-title { margin: 0; font-size: 26px; color: var(--text-primary); }
+.form-sub { color: var(--text-secondary); margin: 6px 0 28px; font-size: 14px; }
+.form-tip { text-align: center; color: var(--text-placeholder); font-size: 12px; margin-top: 8px; }
 
 /* 窄屏隐藏品牌面板 */
 @media (max-width: 768px) {

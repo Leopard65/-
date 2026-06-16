@@ -10,8 +10,8 @@
     >
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="等级名称" />
-      <el-table-column prop="min_spent" label="升级门槛（累计消费）" width="180">
-        <template #default="{ row }">¥{{ row.min_spent?.toFixed(2) }}</template>
+      <el-table-column prop="min_spent" label="升级门槛（累计消费）" width="180" align="right">
+        <template #default="{ row }"><span class="num">{{ formatMoney(row.min_spent) }}</span></template>
       </el-table-column>
       <el-table-column prop="discount" label="折扣" width="120">
         <template #default="{ row }">
@@ -54,6 +54,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { memberLevelsApi } from '@/api'
+import { formatMoney } from '@/utils/format'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
 import PageHeader from '@/components/PageHeader.vue'

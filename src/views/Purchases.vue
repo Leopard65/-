@@ -6,19 +6,22 @@
   </PageHeader>
   <el-card>
     <!-- 进货记录列表 -->
-    <el-table :data="purchases" stripe border style="width:100%">
+    <el-table :data="purchases" v-loading="loading" stripe border style="width:100%">
       <el-table-column prop="id" label="单号" width="80" />
-      <el-table-column prop="supplier_name" label="供应商" />
-      <el-table-column prop="total" label="总金额" width="120">
-        <template #default="{ row }">¥{{ row.total?.toFixed(2) }}</template>
+      <el-table-column prop="supplier_name" label="供应商" min-width="160">
+        <template #default="{ row }">{{ row.supplier_name || '-' }}</template>
+      </el-table-column>
+      <el-table-column prop="total" label="总金额" width="140" align="right">
+        <template #default="{ row }"><span class="num amount">{{ formatMoney(row.total) }}</span></template>
       </el-table-column>
       <el-table-column prop="created_at" label="进货时间" width="180" />
-      <el-table-column label="明细" width="80">
+      <el-table-column label="明细" width="90">
         <template #default="{ row }">
-          <el-button size="small" @click="showDetail(row)">查看</el-button>
+          <el-button size="small" :icon="View" @click="showDetail(row)">查看</el-button>
         </template>
       </el-table-column>
     </el-table>
+    <EmptyState v-if="!loading && !purchases.length" description="暂无进货记录" />
 
     <!-- 分页 -->
     <div style="display:flex;justify-content:flex-end;margin-top:15px">
@@ -50,7 +53,7 @@
               </el-select>
               <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="flex:1" />
               <el-input-number v-model="item.cost" :min="0" :precision="2" placeholder="单价" style="flex:1" />
-              <span style="width:80px;text-align:right">¥{{ (item.quantity * item.cost).toFixed(2) }}</span>
+              <span style="width:90px;text-align:right" class="num">{{ formatMoney(item.quantity * item.cost) }}</span>
               <el-button type="danger" :icon="Delete" circle size="small" @click="form.items.splice(i, 1)" />
             </div>
             <el-button @click="form.items.push({ product_id: null, quantity: 1, cost: 0 })" style="width:100%">
@@ -60,7 +63,7 @@
         </el-form-item>
 
         <el-form-item label="合计">
-          <span style="font-size:20px;font-weight:bold;color:#409EFF">¥{{ formTotal }}</span>
+          <span style="font-size:20px;font-weight:bold;color:var(--color-primary)" class="num">{{ formatMoney(formTotal) }}</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -73,9 +76,9 @@
     <el-dialog v-model="detailVisible" title="进货明细" width="500px">
       <el-table :data="detailItems" stripe>
         <el-table-column prop="product_name" label="商品" />
-        <el-table-column prop="quantity" label="数量" width="80" />
-        <el-table-column prop="cost" label="单价" width="100">
-          <template #default="{ row }">¥{{ row.cost }}</template>
+        <el-table-column prop="quantity" label="数量" width="80" align="right" />
+        <el-table-column prop="cost" label="单价" width="110" align="right">
+          <template #default="{ row }"><span class="num">{{ formatMoney(row.cost) }}</span></template>
         </el-table-column>
       </el-table>
     </el-dialog>
@@ -86,15 +89,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, View } from '@element-plus/icons-vue'
 import { purchasesApi, suppliersApi, productsApi } from '@/api'
+import { formatMoney } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const router = useRouter()
 
 const purchases = ref([])
 const suppliers = ref([])
 const products = ref([])
+const loading = ref(false)
 const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const detailItems = ref([])
@@ -108,9 +114,14 @@ const formTotal = computed(() =>
 )
 
 const load = async () => {
-  const res = await purchasesApi.getPurchases({ page: page.value, pageSize: pageSize.value })
-  purchases.value = res.data
-  total.value = res.total
+  loading.value = true
+  try {
+    const res = await purchasesApi.getPurchases({ page: page.value, pageSize: pageSize.value })
+    purchases.value = res.data
+    total.value = res.total
+  } finally {
+    loading.value = false
+  }
 }
 
 const openDialog = () => {
@@ -132,7 +143,7 @@ const handleSave = async () => {
     dialogVisible.value = false
     load()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '操作失败')
+    // 错误提示已由 request 拦截器统一处理
   }
 }
 

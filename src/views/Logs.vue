@@ -1,52 +1,52 @@
 <template>
-  <PageHeader title="操作日志" description="系统关键操作的审计记录">
-    <template #actions>
-      <el-input v-model="filters.username" placeholder="用户名" clearable style="width:120px" @clear="load" @keyup.enter="load" />
-      <el-select v-model="filters.action" placeholder="操作类型" clearable style="width:120px" @change="load">
-        <el-option label="登录" value="login" />
-        <el-option label="新增" value="create" />
-        <el-option label="修改" value="update" />
-        <el-option label="删除" value="delete" />
-        <el-option label="恢复" value="restore" />
-        <el-option label="审核通过" value="approve" />
-        <el-option label="审核拒绝" value="reject" />
-      </el-select>
-      <el-select v-model="filters.module" placeholder="模块" clearable style="width:120px" @change="load">
-        <el-option label="认证" value="auth" />
-        <el-option label="商品" value="products" />
-        <el-option label="会员" value="members" />
-        <el-option label="供应商" value="suppliers" />
-        <el-option label="销售" value="sales" />
-        <el-option label="退换货" value="returns" />
-        <el-option label="分类" value="categories" />
-      </el-select>
-      <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:260px" @change="handleDateChange" />
-    </template>
-  </PageHeader>
+  <PageHeader title="操作日志" description="系统关键操作的审计记录" />
+  <FilterBar>
+    <el-input v-model="filters.username" placeholder="用户名" clearable style="width:130px" @clear="load" @keyup.enter="load" />
+    <el-select v-model="filters.action" placeholder="操作类型" clearable style="width:130px" @change="load">
+      <el-option label="登录" value="login" />
+      <el-option label="新增" value="create" />
+      <el-option label="修改" value="update" />
+      <el-option label="删除" value="delete" />
+      <el-option label="恢复" value="restore" />
+      <el-option label="审核通过" value="approve" />
+      <el-option label="审核拒绝" value="reject" />
+    </el-select>
+    <el-select v-model="filters.module" placeholder="模块" clearable style="width:120px" @change="load">
+      <el-option label="认证" value="auth" />
+      <el-option label="商品" value="products" />
+      <el-option label="会员" value="members" />
+      <el-option label="供应商" value="suppliers" />
+      <el-option label="销售" value="sales" />
+      <el-option label="退换货" value="returns" />
+      <el-option label="分类" value="categories" />
+    </el-select>
+    <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:260px" @change="handleDateChange" />
+  </FilterBar>
   <el-card>
-    <el-table :data="logs" stripe border style="width:100%">
+    <el-table :data="logs" v-loading="loading" stripe border style="width:100%">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="created_at" label="时间" width="180" />
       <el-table-column prop="username" label="用户" width="100" />
       <el-table-column prop="action" label="操作" width="100">
         <template #default="{ row }">
-          <el-tag :type="actionType(row.action)">{{ actionText(row.action) }}</el-tag>
+          <el-tag :type="actionType(row.action)" effect="light">{{ actionText(row.action) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="module" label="模块" width="100">
         <template #default="{ row }">
-          <el-tag type="info">{{ moduleText(row.module) }}</el-tag>
+          <el-tag type="info" effect="plain">{{ moduleText(row.module) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="target_id" label="对象ID" width="80" />
-      <el-table-column prop="detail" label="详情">
+      <el-table-column prop="detail" label="详情" min-width="200">
         <template #default="{ row }">
           <span v-if="row.detail">{{ formatDetail(row.detail) }}</span>
-          <span v-else style="color:#999">-</span>
+          <span v-else style="color:var(--text-placeholder)">-</span>
         </template>
       </el-table-column>
       <el-table-column prop="ip" label="IP地址" width="140" />
     </el-table>
+    <EmptyState v-if="!loading && !logs.length" description="暂无操作日志" />
 
     <!-- 分页 -->
     <div style="display:flex;justify-content:flex-end;margin-top:15px">
@@ -67,8 +67,11 @@
 import { ref, onMounted } from 'vue'
 import { logsApi } from '@/api'
 import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const logs = ref([])
+const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -144,6 +147,7 @@ const handleDateChange = (val) => {
 }
 
 const load = async () => {
+  loading.value = true
   try {
     const res = await logsApi.getLogs({
       page: page.value,
@@ -154,6 +158,8 @@ const load = async () => {
     total.value = res.total
   } catch (e) {
     console.error('获取日志失败:', e)
+  } finally {
+    loading.value = false
   }
 }
 

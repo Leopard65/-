@@ -1,0 +1,135 @@
+/**
+ * 全局样式：基础重置 + 通用布局 class + Element Plus 观感统一
+ * 通用 class 供各页面直接套用，保证页面结构/间距/标题/筛选栏/操作按钮一致。
+ */
+
+/* ===== 基础 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #app { height: 100%; }
+body {
+  font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--font-body);
+  color: var(--text-regular);
+  background: var(--bg-page);
+}
+
+/* ===== 页面容器：内容不贴边、底色统一、高度稳定 ===== */
+.page {
+  padding: var(--space-5);
+  min-height: 100%;
+}
+
+/* ===== 页面标题区 ===== */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+.page-header__title {
+  margin: 0;
+  font-size: var(--font-page-title);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.page-header__desc {
+  margin: 2px 0 0;
+  font-size: var(--font-aux);
+  color: var(--text-secondary);
+}
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* ===== 筛选 / 工具栏 ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.toolbar__spacer { flex: 1 1 auto; }
+
+/* ===== 面板（替代散落的 el-card 标题块；不要卡片套卡片） ===== */
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.panel + .panel { margin-top: var(--space-5); }
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-color-light);
+}
+.panel__title {
+  font-size: var(--font-section-title);
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.panel__body { padding: var(--space-5); }
+
+/* ===== 指标卡网格 ===== */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+@media (max-width: 1200px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .metric-grid { grid-template-columns: 1fr; } }
+
+/* ===== 表格行内操作按钮：尺寸/间距统一 ===== */
+.table-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ===== 空状态 ===== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-5);
+  color: var(--text-secondary);
+}
+
+/* ===== 数字 / 金额：等宽对齐，便于扫读 ===== */
+.num, .amount {
+  font-variant-numeric: tabular-nums;
+}
+.amount { color: var(--text-primary); }
+.amount--danger { color: var(--color-danger); }
+.amount--success { color: var(--color-success); }
+
+/* ===== Element Plus 观感统一 ===== */
+.el-card { border-radius: var(--radius-lg); border-color: var(--border-color-light); }
+.el-card.is-always-shadow, .el-card.is-hover-shadow { box-shadow: var(--shadow-card); }
+.el-card__header { padding: var(--space-4) var(--space-5); font-weight: 600; color: var(--text-primary); }
+
+/* 表格：清爽表头 + 稳定行高 */
+.el-table th.el-table__cell { background: var(--bg-muted); color: var(--text-regular); font-weight: 600; }
+.el-table { --el-table-border-color: var(--border-color-light); }
+
+/* 弹窗：统一标题字重与圆角 */
+.el-dialog { border-radius: var(--radius-lg); }
+.el-dialog__title { font-weight: 600; color: var(--text-primary); }
+
+/* 按钮内图标与文字间距统一（避免各页手写 margin） */
+.el-button [class*='el-icon'] + span { margin-left: 4px; }

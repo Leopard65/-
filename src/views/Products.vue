@@ -19,40 +19,49 @@
         <el-select v-model="filterCategory" placeholder="分类筛选" clearable style="width:140px" @change="load">
           <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
         </el-select>
+        <el-select v-model="filterStatus" placeholder="状态筛选" clearable style="width:130px" @change="load">
+          <el-option label="正常上架" :value="1" />
+          <el-option label="已下架" :value="0" />
+        </el-select>
       </template>
 
       <template #actions>
-        <el-button type="success" @click="handleExport">
-          <el-icon style="margin-right:5px"><Download /></el-icon>
-          导出
-        </el-button>
-        <el-button type="warning" @click="triggerImport">
-          <el-icon style="margin-right:5px"><Upload /></el-icon>
-          导入
-        </el-button>
+        <el-button :icon="Download" @click="handleExport">导出</el-button>
+        <el-button :icon="Upload" @click="triggerImport">导入</el-button>
         <el-button link type="primary" @click="downloadTemplate">下载模板</el-button>
         <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="onFileChange" />
       </template>
 
-      <el-table-column label="图片" width="80">
+      <el-table-column label="图片" width="70">
         <template #default="{ row }">
           <el-image v-if="row.image" :src="row.image" style="width:40px;height:40px;border-radius:4px" fit="cover" />
-          <span v-else style="color:#999">无</span>
+          <span v-else class="no-img">无</span>
         </template>
       </el-table-column>
-      <el-table-column prop="id" label="ID" width="60" />
-      <el-table-column prop="name" label="商品名称" />
-      <el-table-column prop="barcode" label="条码" width="140" />
-      <el-table-column prop="category_name" label="分类" width="100" />
-      <el-table-column prop="price" label="售价" width="80">
-        <template #default="{ row }">¥{{ row.price }}</template>
-      </el-table-column>
-      <el-table-column prop="cost" label="成本" width="80">
-        <template #default="{ row }">¥{{ row.cost }}</template>
-      </el-table-column>
-      <el-table-column prop="stock" label="库存" width="80">
+      <el-table-column label="商品" min-width="200">
         <template #default="{ row }">
-          <el-tag :type="row.stock <= row.min_stock ? 'danger' : ''" size="small">{{ row.stock }}{{ row.unit }}</el-tag>
+          <div class="cell-name">{{ row.name }}</div>
+          <div class="cell-sub num">{{ row.barcode || '无条码' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="category_name" label="分类" width="100">
+        <template #default="{ row }">{{ row.category_name || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="售价 / 成本" width="130" align="right">
+        <template #default="{ row }">
+          <div class="amount num">{{ formatMoney(row.price) }}</div>
+          <div class="cell-sub num">{{ formatMoney(row.cost) }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="库存 / 预警" width="120" align="right">
+        <template #default="{ row }">
+          <div class="num" :class="{ 'amount--danger': row.stock <= row.min_stock }">{{ row.stock }}{{ row.unit }}</div>
+          <div class="cell-sub num">{{ row.min_stock }}{{ row.unit }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="90">
+        <template #default="{ row }">
+          <el-tag :type="productStatus(row).type" size="small" effect="light">{{ productStatus(row).text }}</el-tag>
         </template>
       </el-table-column>
     </CrudTable>
@@ -60,23 +69,35 @@
     <CrudDialog
       ref="dialogRef"
       :title="form.id ? '编辑商品' : '新增商品'"
-      width="500px"
+      width="560px"
       label-width="80px"
       :rules="rules"
       :submit-fn="handleSave"
       @success="load"
     >
+      <el-divider content-position="left">基础信息</el-divider>
       <el-form-item label="商品名称" prop="name">
-        <el-input v-model="form.name" />
+        <el-input v-model="form.name" placeholder="请输入商品名称" />
       </el-form-item>
-      <el-form-item label="条码" prop="barcode">
-        <el-input v-model="form.barcode" />
-      </el-form-item>
+      <el-row :gutter="10">
+        <el-col :span="12">
+          <el-form-item label="条码" prop="barcode">
+            <el-input v-model="form.barcode" placeholder="条形码" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="单位" prop="unit">
+            <el-input v-model="form.unit" placeholder="个/瓶/袋" />
+          </el-form-item>
+        </el-col>
+      </el-row>
       <el-form-item label="分类" prop="category_id">
         <el-select v-model="form.category_id" placeholder="选择分类" clearable style="width:100%">
           <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
         </el-select>
       </el-form-item>
+
+      <el-divider content-position="left">价格与库存</el-divider>
       <el-row :gutter="10">
         <el-col :span="12">
           <el-form-item label="售价" prop="price">
@@ -101,10 +122,9 @@
           </el-form-item>
         </el-col>
       </el-row>
-      <el-form-item label="单位" prop="unit">
-        <el-input v-model="form.unit" placeholder="个/瓶/袋" />
-      </el-form-item>
-      <el-form-item label="商品图片">
+
+      <el-divider content-position="left">商品图片</el-divider>
+      <el-form-item label="图片">
         <el-upload
           class="product-uploader"
           action="/api/upload/image"
@@ -168,6 +188,7 @@ import { Plus, Download, Upload } from '@element-plus/icons-vue'
 import { productsApi, categoriesApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { exportProducts, parseProductsExcel, downloadProductTemplate } from '@/utils/export'
+import { formatMoney } from '@/utils/format'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -177,12 +198,21 @@ const products = ref([])
 const categories = ref([])
 const keyword = ref('')
 const filterCategory = ref('')
+const filterStatus = ref('')
 const loading = ref(false)
 const dialogRef = ref(null)
 const form = ref({})
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+// 商品状态：下架 > 缺货 > 低库存 > 正常（用于表格展示）
+const productStatus = (row) => {
+  if (row.status !== 1) return { type: 'info', text: '已下架' }
+  if (row.stock === 0) return { type: 'danger', text: '缺货' }
+  if (row.stock <= row.min_stock) return { type: 'warning', text: '低库存' }
+  return { type: 'success', text: '正常' }
+}
 
 // Excel 导入
 const fileInputRef = ref(null)
@@ -222,7 +252,8 @@ const load = async () => {
       page: page.value,
       pageSize: pageSize.value,
       keyword: keyword.value,
-      category_id: filterCategory.value || undefined
+      category_id: filterCategory.value || undefined,
+      status: filterStatus.value === '' ? undefined : filterStatus.value
     })
     products.value = res.data
     total.value = res.total
@@ -245,6 +276,7 @@ const handleSizeChange = (val) => {
 const handleReset = () => {
   keyword.value = ''
   filterCategory.value = ''
+  filterStatus.value = ''
   page.value = 1
   load()
 }
@@ -363,6 +395,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.no-img { color: var(--text-placeholder); font-size: 13px; }
+.cell-name { color: var(--text-primary); font-weight: 500; }
+.cell-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
 .product-uploader {
   width: 120px;
   height: 120px;

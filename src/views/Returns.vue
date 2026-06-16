@@ -1,37 +1,48 @@
 <template>
   <PageHeader title="退换货管理" description="退货申请、审核与退款">
     <template #actions>
-      <el-select v-model="filterStatus" placeholder="状态筛选" clearable style="width:120px" @change="load">
-        <el-option label="待审核" value="pending" />
-        <el-option label="已完成" value="completed" />
-        <el-option label="已拒绝" value="rejected" />
-      </el-select>
-      <el-button type="primary" @click="openDialog()">新建退单</el-button>
+      <el-tag v-if="!isAdmin" type="info" effect="plain">收银员可登记退单，审核由管理员处理</el-tag>
     </template>
   </PageHeader>
+  <FilterBar>
+    <el-radio-group v-model="filterStatus" @change="onFilterChange">
+      <el-radio-button value="">全部</el-radio-button>
+      <el-radio-button value="pending">待审核</el-radio-button>
+      <el-radio-button value="completed">已完成</el-radio-button>
+      <el-radio-button value="rejected">已拒绝</el-radio-button>
+    </el-radio-group>
+    <template #actions>
+      <el-button type="primary" :icon="Plus" @click="openDialog()">新建退单</el-button>
+    </template>
+  </FilterBar>
   <el-card>
     <!-- 退单列表 -->
-    <el-table :data="returns" stripe border style="width:100%">
+    <el-table :data="returns" stripe border style="width:100%" :row-class-name="rowClass">
       <el-table-column prop="id" label="退单号" width="80" />
-      <el-table-column prop="sale_id" label="原订单号" width="80" />
+      <el-table-column prop="sale_id" label="原订单号" width="90" />
       <el-table-column prop="member_name" label="会员" width="100">
         <template #default="{ row }">{{ row.member_name || '-' }}</template>
       </el-table-column>
-      <el-table-column prop="total" label="退款金额" width="100">
-        <template #default="{ row }">¥{{ row.total?.toFixed(2) }}</template>
+      <el-table-column prop="total" label="退款金额" width="110" align="right">
+        <template #default="{ row }"><span class="num amount amount--danger">{{ formatMoney(row.total) }}</span></template>
       </el-table-column>
-      <el-table-column prop="reason" label="退货原因" />
+      <el-table-column prop="reason" label="退货原因" min-width="140" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
+          <StatusTag preset="returnStatus" :value="row.status" />
         </template>
       </el-table-column>
-      <el-table-column prop="created_at" label="创建时间" width="180" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column prop="created_at" label="创建时间" width="170" />
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="showDetail(row)">详情</el-button>
-          <el-button v-if="row.status === 'pending' && isAdmin" size="small" type="success" @click="handleApprove(row)">通过</el-button>
-          <el-button v-if="row.status === 'pending' && isAdmin" size="small" type="danger" @click="handleReject(row)">拒绝</el-button>
+          <div class="table-actions">
+            <el-button size="small" :icon="View" @click="showDetail(row)">详情</el-button>
+            <template v-if="row.status === 'pending' && isAdmin">
+              <el-button size="small" type="success" :icon="Select" @click="handleApprove(row)">通过</el-button>
+              <el-button size="small" type="danger" :icon="CloseBold" @click="handleReject(row)">拒绝</el-button>
+            </template>
+            <el-tag v-else-if="row.status === 'pending'" size="small" type="warning" effect="plain">待管理员审核</el-tag>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -78,8 +89,8 @@
 
         <el-form-item label="预估退款">
           <div>
-            <span style="font-size:20px;font-weight:bold;color:#F56C6C">¥{{ formTotal }}</span>
-            <span v-if="saleDiscount < 1" style="margin-left:10px;font-size:12px;color:#909399">
+            <span style="font-size:20px;font-weight:bold;color:var(--color-danger)">{{ formatMoney(formTotal) }}</span>
+            <span v-if="saleDiscount < 1" style="margin-left:10px;font-size:12px;color:var(--text-secondary)">
               （原单 {{ (saleDiscount * 10).toFixed(2) }} 折，按折后价退；实际以审核为准）
             </span>
           </div>
@@ -98,9 +109,9 @@
         <el-descriptions-item label="原订单号">{{ detail.sale_id }}</el-descriptions-item>
         <el-descriptions-item label="会员">{{ detail.member_name || '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusType(detail.status)">{{ statusText(detail.status) }}</el-tag>
+          <StatusTag preset="returnStatus" :value="detail.status" />
         </el-descriptions-item>
-        <el-descriptions-item label="退款金额">¥{{ detail.total?.toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="退款金额">{{ formatMoney(detail.total) }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detail.created_at }}</el-descriptions-item>
         <el-descriptions-item label="退货原因" :span="2">{{ detail.reason || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -108,9 +119,9 @@
       <el-divider>退货商品</el-divider>
       <el-table :data="detail.items" stripe size="small">
         <el-table-column prop="product_name" label="商品" />
-        <el-table-column prop="quantity" label="数量" width="80" />
-        <el-table-column prop="price" label="单价" width="100">
-          <template #default="{ row }">¥{{ row.price }}</template>
+        <el-table-column prop="quantity" label="数量" width="80" align="right" />
+        <el-table-column prop="price" label="单价" width="100" align="right">
+          <template #default="{ row }"><span class="num">{{ formatMoney(row.price) }}</span></template>
         </el-table-column>
       </el-table>
     </el-dialog>
@@ -120,10 +131,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, Plus, View, Select, CloseBold } from '@element-plus/icons-vue'
 import { returnsApi, salesApi } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { formatMoney } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
+import StatusTag from '@/components/StatusTag.vue'
 
 const userStore = useUserStore()
 const returns = ref([])
@@ -144,14 +158,12 @@ const formTotal = computed(() =>
   (form.value.items.reduce((s, i) => s + i.quantity * i.price, 0) * saleDiscount.value).toFixed(2)
 )
 
-const statusType = (status) => {
-  const map = { pending: 'warning', completed: 'success', rejected: 'danger' }
-  return map[status] || 'info'
-}
+// 待审核行高亮，使审核任务更醒目
+const rowClass = ({ row }) => (row.status === 'pending' ? 'row-pending' : '')
 
-const statusText = (status) => {
-  const map = { pending: '待审核', completed: '已完成', rejected: '已拒绝' }
-  return map[status] || status
+const onFilterChange = () => {
+  page.value = 1
+  load()
 }
 
 const load = async () => {
@@ -220,7 +232,7 @@ const handleSave = async () => {
     dialogVisible.value = false
     load()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '创建失败')
+    // 错误提示已由 request 拦截器统一处理
   }
 }
 
@@ -231,7 +243,7 @@ const handleApprove = async (row) => {
     ElMessage.success('审核通过')
     load()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '审核失败')
+    // 错误提示已由 request 拦截器统一处理
   }
 }
 
@@ -242,9 +254,20 @@ const handleReject = async (row) => {
     ElMessage.success('已拒绝')
     load()
   } catch (e) {
-    ElMessage.error(e.response?.data?.error || '操作失败')
+    // 错误提示已由 request 拦截器统一处理
   }
 }
 
 onMounted(load)
 </script>
+
+<style scoped>
+/* 待审核行高亮：左侧琥珀强调，使审核任务一眼可辨 */
+:deep(.row-pending td.el-table__cell) {
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent) !important;
+}
+:deep(.row-pending td.el-table__cell:first-child) {
+  box-shadow: inset 3px 0 0 var(--color-warning);
+}
+</style>
+

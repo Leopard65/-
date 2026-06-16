@@ -18,10 +18,7 @@
       </template>
 
       <template #actions>
-        <el-button type="success" @click="handleExport">
-          <el-icon style="margin-right:5px"><Download /></el-icon>
-          导出
-        </el-button>
+        <el-button :icon="Download" @click="handleExport">导出</el-button>
       </template>
 
       <el-table-column prop="id" label="ID" width="60" />
@@ -29,7 +26,7 @@
       <el-table-column prop="phone" label="手机号" width="140" />
       <el-table-column prop="level" label="等级" width="100">
         <template #default="{ row }">
-          <el-tag :type="getLevelType(row.level)">{{ getLevelText(row.level) }}</el-tag>
+          <StatusTag preset="memberLevel" :value="row.level" />
         </template>
       </el-table-column>
       <el-table-column prop="points" label="积分" width="100">
@@ -37,8 +34,8 @@
           <el-tag type="success">{{ row.points }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="total_spent" label="累计消费" width="120">
-        <template #default="{ row }">¥{{ row.total_spent?.toFixed(2) }}</template>
+      <el-table-column prop="total_spent" label="累计消费" width="120" align="right">
+        <template #default="{ row }"><span class="num amount">{{ formatMoney(row.total_spent) }}</span></template>
       </el-table-column>
       <el-table-column prop="created_at" label="注册时间" width="180" />
     </CrudTable>
@@ -68,9 +65,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download } from '@element-plus/icons-vue'
 import { membersApi } from '@/api'
 import { exportMembers } from '@/utils/export'
+import { formatMoney } from '@/utils/format'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import StatusTag from '@/components/StatusTag.vue'
 
 const members = ref([])
 const keyword = ref('')
@@ -89,40 +88,6 @@ const rules = {
     { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
   ]
-}
-
-// 会员等级类型映射（支持中文和英文）
-const getLevelType = (level) => {
-  const map = {
-    // 英文键
-    normal: 'info',
-    silver: '',
-    gold: 'warning',
-    diamond: 'danger',
-    // 中文键
-    '普通会员': 'info',
-    '银卡会员': '',
-    '金卡会员': 'warning',
-    '钻石会员': 'danger'
-  }
-  return map[level] || 'info'
-}
-
-// 会员等级文本映射（支持中文和英文）
-const getLevelText = (level) => {
-  const map = {
-    // 英文键 -> 中文显示
-    normal: '普通会员',
-    silver: '银卡会员',
-    gold: '金卡会员',
-    diamond: '钻石会员',
-    // 中文键 -> 直接显示
-    '普通会员': '普通会员',
-    '银卡会员': '银卡会员',
-    '金卡会员': '金卡会员',
-    '钻石会员': '钻石会员'
-  }
-  return map[level] || '普通会员'
 }
 
 const load = async () => {
