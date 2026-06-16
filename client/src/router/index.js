@@ -26,6 +26,9 @@ const routes = [
   { path: '/login', name: 'Login', component: () => import('@/views/user/Login.vue') },
   { path: '/register', name: 'Register', component: () => import('@/views/user/Register.vue') },
 
+  // 领养证书（独立打印页，不套前台布局）
+  { path: '/adopt/certificate/:id', name: 'Certificate', component: () => import('@/views/adopt/Certificate.vue'), meta: { requireAuth: true } },
+
   // ===== 后台路由 =====
   {
     path: '/admin',

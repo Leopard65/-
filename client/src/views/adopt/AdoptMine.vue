@@ -21,12 +21,16 @@
         <template #default="{ row }">{{ row.created_at?.slice(0, 16) }}</template>
       </el-table-column>
       <el-table-column prop="reject_reason" label="拒绝原因" />
-      <el-table-column label="操作" width="100" fixed="right">
+      <el-table-column label="操作" width="170" fixed="right">
         <template #default="{ row }">
           <el-button
             v-if="row.status === 'approved' || row.status === 'completed'"
             text type="primary" size="small" @click="showFollowups(row)"
           >回访记录</el-button>
+          <el-button
+            v-if="row.status === 'approved' || row.status === 'completed'"
+            text type="warning" size="small" @click="$router.push(`/adopt/certificate/${row.id}`)"
+          >领养证书</el-button>
         </template>
       </el-table-column>
     </el-table>

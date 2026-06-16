@@ -63,6 +63,10 @@
         <el-descriptions-item v-if="currentItem.reject_reason" label="拒绝原因" :span="2">{{ currentItem.reject_reason }}</el-descriptions-item>
       </el-descriptions>
 
+      <div v-if="currentItem && (currentItem.status === 'approved' || currentItem.status === 'completed')" class="cert-entry">
+        <el-button type="warning" plain size="small" @click="$router.push(`/adopt/certificate/${currentItem.id}`)">📜 查看 / 打印领养证书</el-button>
+      </div>
+
       <!-- 领养回访 -->
       <div class="followup-section" v-if="currentItem">
         <div class="followup-head">
@@ -267,6 +271,7 @@ function statusType(s) {
 <style scoped>
 .filter-card { margin-bottom: 16px; }
 .pagination { display: flex; justify-content: flex-end; margin-top: 16px; }
+.cert-entry { margin-top: 14px; }
 .followup-section { margin-top: 20px; }
 .followup-title { font-weight: bold; font-size: 15px; }
 .followup-head { margin-bottom: 12px; }
