@@ -84,7 +84,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, Fold, Expand, ArrowDown, RefreshLeft, DataAnalysis, Document, Warning, Medal, UserFilled, Shop, SwitchButton } from '@element-plus/icons-vue'
+import { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, Fold, Expand, ArrowDown, RefreshLeft, DataAnalysis, Document, Warning, Medal, UserFilled, Shop, SwitchButton, Calendar } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { reportsApi } from '@/api'
 import { formatDate } from '@/utils/format'
@@ -96,7 +96,7 @@ const warningCount = ref(0)
 let warningInterval = null
 
 // 图标映射
-const iconMap = { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, RefreshLeft, Warning, DataAnalysis, Document, Medal, UserFilled }
+const iconMap = { Monitor, Goods, Menu, ShoppingCart, Box, User, Van, RefreshLeft, Warning, DataAnalysis, Document, Medal, UserFilled, Calendar }
 
 // 菜单分组顺序（与产品信息架构一致）
 const groupOrder = ['经营看板', '收银业务', '商品库存', '会员供应商', '数据报表', '系统管理']

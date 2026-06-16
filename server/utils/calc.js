@@ -64,6 +64,38 @@ function rfmSegment({ total = 0, lastDays = null, valueSplit = 0, activeDays = 1
   return '沉睡客户';
 }
 
+/**
+ * 距到期天数 = 到期日 - 基准日（正=未到期，0=今日到期，负=已过期）。
+ * 入参为 'YYYY-MM-DD'（可带时间，仅取日期部分）；按 UTC 0 点比较，避免时区与夏令时误差。
+ * @returns {number|null} 整数天；任一日期非法时为 null
+ */
+function daysToExpiry(expiryDate, today) {
+  const toUTC = (s) => {
+    if (!s) return NaN;
+    const [y, m, d] = String(s).slice(0, 10).split('-').map(Number);
+    if (!y || !m || !d) return NaN;
+    return Date.UTC(y, m - 1, d);
+  };
+  const a = toUTC(expiryDate);
+  const b = toUTC(today);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((a - b) / 86400000);
+}
+
+/**
+ * 保质期状态：expired 已过期 / near 临期（warnDays 天内含当天）/ normal 正常。
+ * @param {string} expiryDate 到期日 'YYYY-MM-DD'
+ * @param {string} today 基准日 'YYYY-MM-DD'
+ * @param {number} warnDays 临期阈值（默认 30 天）
+ */
+function expiryStatus({ expiryDate, today, warnDays = 30 }) {
+  const days = daysToExpiry(expiryDate, today);
+  if (days == null) return 'normal';
+  if (days < 0) return 'expired';
+  if (days <= warnDays) return 'near';
+  return 'normal';
+}
+
 module.exports = {
   round2,
   applyDiscount,
@@ -72,4 +104,6 @@ module.exports = {
   calcRefund,
   calcReplenish,
   rfmSegment,
+  daysToExpiry,
+  expiryStatus,
 };

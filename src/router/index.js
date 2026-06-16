@@ -22,6 +22,7 @@ const routes = [
       { path: 'products', name: 'Products', component: () => import('../views/Products.vue'), meta: { title: '商品管理', icon: 'Goods', group: '商品库存', roles: [ROLES.ADMIN, ROLES.CASHIER] } },
       { path: 'categories', name: 'Categories', component: () => import('../views/Categories.vue'), meta: { title: '分类管理', icon: 'Menu', group: '商品库存', roles: [ROLES.ADMIN, ROLES.CASHIER] } },
       { path: 'inventory', name: 'Inventory', component: () => import('../views/Inventory.vue'), meta: { title: '库存预警', icon: 'Warning', group: '商品库存', roles: [ROLES.ADMIN] } },
+      { path: 'batches', name: 'Batches', component: () => import('../views/Batches.vue'), meta: { title: '批次/保质期', icon: 'Calendar', group: '商品库存', roles: [ROLES.ADMIN] } },
       { path: 'purchases', name: 'Purchases', component: () => import('../views/Purchases.vue'), meta: { title: '进货管理', icon: 'Box', group: '商品库存', roles: [ROLES.ADMIN] } },
       { path: 'members', name: 'Members', component: () => import('../views/Members.vue'), meta: { title: '会员管理', icon: 'User', group: '会员供应商', roles: [ROLES.ADMIN, ROLES.CASHIER] } },
       { path: 'member-levels', name: 'MemberLevels', component: () => import('../views/MemberLevels.vue'), meta: { title: '会员等级', icon: 'Medal', group: '会员供应商', roles: [ROLES.ADMIN] } },

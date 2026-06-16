@@ -64,11 +64,18 @@ router.post('/', (req, res) => {
     const updateCost = db.prepare(
       'UPDATE products SET cost = ? WHERE id = ?'
     );
+    const insertBatch = db.prepare(
+      'INSERT INTO product_batches (product_id, batch_no, production_date, expiry_date, quantity, purchase_id) VALUES (?,?,?,?,?,?)'
+    );
 
     items.forEach(item => {
       insertItem.run(purchaseId, item.product_id, item.quantity, item.cost);
       updateStock.run(item.quantity, item.product_id);
       updateCost.run(item.cost, item.product_id); // 更新最新成本价
+      // 选填：录入了到期日则同时登记保质期批次（向后兼容，留空则不建批次）
+      if (item.expiry_date) {
+        insertBatch.run(item.product_id, item.batch_no || null, item.production_date || null, item.expiry_date, item.quantity, purchaseId);
+      }
     });
 
     return purchaseId;

@@ -31,6 +31,7 @@ app.use('/api/member-levels', authMiddleware, roleMiddleware('admin'), require('
 app.use('/api/users', authMiddleware, roleMiddleware('admin'), require('./routes/users'));
 app.use('/api/suppliers', authMiddleware, roleMiddleware('admin'), require('./routes/suppliers'));
 app.use('/api/purchases', authMiddleware, roleMiddleware('admin'), require('./routes/purchases'));
+app.use('/api/batches', authMiddleware, roleMiddleware('admin'), require('./routes/batches'));
 app.use('/api/reports', authMiddleware, roleMiddleware('admin'), require('./routes/reports'));
 app.use('/api/logs', authMiddleware, roleMiddleware('admin'), require('./routes/logs'));
 

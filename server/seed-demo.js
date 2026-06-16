@@ -33,6 +33,13 @@ function dayAgo(n, hour = randInt(9, 21), min = randInt(0, 59), sec = randInt(0,
   d.setHours(hour, min, sec, 0);
   return d;
 }
+// 相对今天偏移 days 天的日期（days>0 未来 / <0 过去），返回 'YYYY-MM-DD'
+function dateOffset(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 const DAYS = 30;
 
@@ -41,6 +48,7 @@ console.log('=== 开始生成演示数据 ===');
 // ---------- 1. 清空交易类数据 ----------
 const clear = db.transaction(() => {
   db.exec(`
+    DELETE FROM product_batches;
     DELETE FROM return_items;
     DELETE FROM returns;
     DELETE FROM sale_items;
@@ -51,7 +59,7 @@ const clear = db.transaction(() => {
   `);
 });
 clear();
-console.log('已清空：销售 / 进货 / 退货 / 操作日志');
+console.log('已清空：销售 / 进货 / 退货 / 批次 / 操作日志');
 
 // ---------- 2. 补充会员（让会员分析更丰富）----------
 const extraMembers = [
@@ -230,6 +238,44 @@ const generate = db.transaction(() => {
 
 generate();
 
+// ---------- 5.7 生成商品批次/保质期（覆盖 过期/临期/正常 三档）----------
+// 仅对非「日用百货」的食品生鲜类商品造批次，贴合保质期主题
+const perishable = db.prepare(`
+  SELECT p.id, p.name FROM products p
+  LEFT JOIN categories c ON p.category_id = c.id
+  WHERE p.status = 1 AND (c.name IS NULL OR c.name != '日用百货')
+`).all();
+const purchaseIds = db.prepare('SELECT id FROM purchases').all().map(r => r.id);
+const insBatch = db.prepare(`
+  INSERT INTO product_batches (product_id, batch_no, production_date, expiry_date, quantity, purchase_id, status)
+  VALUES (?,?,?,?,?,?, 'active')
+`);
+
+const seedBatches = db.transaction(() => {
+  let seq = 1;
+  perishable.forEach((p, idx) => {
+    const offsets = [];
+    // 按索引轮转，确保整体覆盖 过期 / 临期 / 正常
+    const mod = idx % 5;
+    if (mod === 0) offsets.push(-randInt(1, 12));      // 已过期
+    else if (mod === 1) offsets.push(randInt(2, 14));  // 临期（近）
+    else if (mod === 2) offsets.push(randInt(15, 28)); // 临期（中）
+    else offsets.push(randInt(60, 280));               // 正常
+    // 约半数再加一个远期正常批次，丰富列表
+    if (chance(0.5)) offsets.push(randInt(90, 320));
+
+    offsets.forEach((off) => {
+      const expiry = dateOffset(off);
+      const prod = dateOffset(off - randInt(90, 365)); // 生产日期 = 到期日 - 保质期
+      const qty = randInt(20, 90);
+      const pid = purchaseIds.length && chance(0.7) ? pick(purchaseIds) : null;
+      const batchNo = `B${expiry.replace(/-/g, '')}-${String(seq++).padStart(3, '0')}`;
+      insBatch.run(p.id, batchNo, prod, expiry, qty, pid);
+    });
+  });
+});
+seedBatches();
+
 // ---------- 6. 汇总输出 ----------
 const sum = (q) => db.prepare(q).get().c;
 console.log('—— 生成结果 ——');
@@ -238,6 +284,8 @@ console.log('销售明细：', sum('SELECT COUNT(*) c FROM sale_items'));
 console.log('进货单：', sum('SELECT COUNT(*) c FROM purchases'));
 console.log('退货单（已通过）：', sum("SELECT COUNT(*) c FROM returns WHERE status='completed'"));
 console.log('库存预警商品：', sum('SELECT COUNT(*) c FROM products WHERE stock <= min_stock AND status = 1'));
+console.log('商品批次：', sum('SELECT COUNT(*) c FROM product_batches'));
+console.log('临期/过期批次：', sum("SELECT COUNT(*) c FROM product_batches WHERE status='active' AND date(expiry_date) <= date('now','localtime','+30 days')"));
 const topMember = db.prepare('SELECT name, level, points, total_spent FROM members ORDER BY total_spent DESC LIMIT 1').get();
 console.log('消费最高会员：', topMember ? `${topMember.name} / ${topMember.level} / 积分${topMember.points} / 消费¥${round2(topMember.total_spent)}` : '无');
 console.log('=== 演示数据生成完成 ===');

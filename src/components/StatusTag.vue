@@ -12,7 +12,7 @@ import { computed } from 'vue'
  */
 const props = defineProps({
   value: { type: [String, Number], default: '' },
-  preset: { type: String, default: '' }, // returnStatus / memberLevel / userStatus / role
+  preset: { type: String, default: '' }, // returnStatus / memberLevel / userStatus / role / batchExpiry / batchStatus
   map: { type: Object, default: null },
   size: { type: String, default: 'default' },
   effect: { type: String, default: 'light' }
@@ -41,6 +41,15 @@ const presets = {
   role: {
     admin: { type: 'primary', text: '管理员' },
     cashier: { type: 'info', text: '收银员' }
+  },
+  batchExpiry: {
+    normal: { type: 'success', text: '正常' },
+    near: { type: 'warning', text: '临期' },
+    expired: { type: 'danger', text: '过期' }
+  },
+  batchStatus: {
+    active: { type: 'success', text: '在库' },
+    cleared: { type: 'info', text: '已清理' }
   }
 }
 

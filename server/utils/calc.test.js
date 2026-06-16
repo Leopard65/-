@@ -64,3 +64,21 @@ test('rfmSegment 客户分层', () => {
   assert.strictEqual(calc.rfmSegment({ total: 100, lastDays: 40, valueSplit: split }), '沉睡客户');
   assert.strictEqual(calc.rfmSegment({ total: 100, lastDays: null, valueSplit: split }), '沉睡客户');
 });
+
+test('daysToExpiry 距到期天数', () => {
+  assert.strictEqual(calc.daysToExpiry('2026-06-20', '2026-06-17'), 3);   // 未到期
+  assert.strictEqual(calc.daysToExpiry('2026-06-17', '2026-06-17'), 0);   // 今日到期
+  assert.strictEqual(calc.daysToExpiry('2026-06-15', '2026-06-17'), -2);  // 已过期
+  assert.strictEqual(calc.daysToExpiry('2026-07-17 09:30:00', '2026-06-17'), 30); // 带时间只取日期
+  assert.strictEqual(calc.daysToExpiry('', '2026-06-17'), null);          // 非法入参
+});
+
+test('expiryStatus 保质期状态', () => {
+  const today = '2026-06-17';
+  assert.strictEqual(calc.expiryStatus({ expiryDate: '2026-06-10', today }), 'expired'); // 过期
+  assert.strictEqual(calc.expiryStatus({ expiryDate: '2026-06-17', today }), 'near');     // 今日到期=临期
+  assert.strictEqual(calc.expiryStatus({ expiryDate: '2026-07-10', today }), 'near');     // 23 天内
+  assert.strictEqual(calc.expiryStatus({ expiryDate: '2026-07-17', today }), 'near');     // 第30天含边界
+  assert.strictEqual(calc.expiryStatus({ expiryDate: '2026-08-01', today }), 'normal');   // 远期
+  assert.strictEqual(calc.expiryStatus({ expiryDate: '2026-06-20', today, warnDays: 2 }), 'normal'); // 自定义阈值外
+});

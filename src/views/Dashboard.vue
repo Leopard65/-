@@ -104,7 +104,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Refresh, Money, Tickets, Wallet, UserFilled, RefreshLeft, Warning, CircleClose, ArrowRight } from '@element-plus/icons-vue'
+import { Refresh, Money, Tickets, Wallet, UserFilled, RefreshLeft, Warning, CircleClose, ArrowRight, Calendar } from '@element-plus/icons-vue'
 import * as echarts from 'echarts/core'
 import { LineChart, PieChart, GaugeChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
@@ -151,8 +151,10 @@ const targetPercent = computed(() => {
 const todos = computed(() => {
   const low = data.value.lowStock || []
   const outOfStock = low.filter(s => s.stock === 0).length
+  const expiryCount = (data.value.nearExpiry || 0) + (data.value.expiredBatches || 0)
   const items = [
     { key: 'returns', label: '待审核退货', count: data.value.pendingReturns || 0, tone: 'warning', icon: RefreshLeft, path: '/returns' },
+    { key: 'expiry', label: '临期/过期预警', count: expiryCount, tone: 'warning', icon: Calendar, path: '/batches' },
     { key: 'low', label: '低库存预警', count: low.length, tone: 'danger', icon: Warning, path: '/inventory' },
     { key: 'out', label: '缺货商品', count: outOfStock, tone: 'danger', icon: CircleClose, path: '/inventory' }
   ]

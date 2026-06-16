@@ -148,6 +148,21 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
+  CREATE TABLE IF NOT EXISTS product_batches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    batch_no TEXT,                 -- 批次号（可选，便于追溯）
+    production_date TEXT,          -- 生产日期（可选）
+    expiry_date TEXT NOT NULL,     -- 到期日（必填，临期/过期预警核心）
+    quantity INTEGER DEFAULT 0,    -- 该批进货数量
+    purchase_id INTEGER,           -- 来源进货单（手工录入则为 NULL）
+    status TEXT DEFAULT 'active',  -- active 在库 / cleared 已清理下架
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (purchase_id) REFERENCES purchases(id)
+  );
+
   CREATE TABLE IF NOT EXISTS operation_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
@@ -210,6 +225,12 @@ db.exec(`
   AFTER UPDATE ON returns
   BEGIN
     UPDATE returns SET updated_at = datetime('now','localtime') WHERE id = NEW.id;
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS update_product_batches_timestamp
+  AFTER UPDATE ON product_batches
+  BEGIN
+    UPDATE product_batches SET updated_at = datetime('now','localtime') WHERE id = NEW.id;
   END;
 `);
 

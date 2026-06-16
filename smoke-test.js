@@ -17,6 +17,12 @@ const DB_FILE = path.resolve(__dirname, 'server', 'smoke-test.db');
 
 let pass = 0, fail = 0;
 const approx = (a, b) => Math.abs(a - b) < 0.005;
+const pad = (n) => String(n).padStart(2, '0');
+const dateOffset = (days) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 const check = (name, cond, extra = '') => {
   if (cond) { pass++; console.log(`  ✓ ${name}`); }
   else { fail++; console.log(`  ✗ ${name}  ${extra}`); }
@@ -154,6 +160,25 @@ async function runChecks() {
   check('导入成功1条', imp.data.successCount === 1, `实际 ${imp.data && imp.data.successCount}`);
   check('导入失败2条(重复条码+空名)', imp.data.failedCount === 2, `实际 ${imp.data && imp.data.failedCount}`);
   check('失败含「条码已存在」', (imp.data.failed || []).some(f => f.reason.includes('条码已存在')));
+
+  // ===== 批次 / 保质期管理 =====
+  console.log('\n[批次] 保质期登记 / 预警 / 清理下架');
+  check('建批次缺到期日 400', (await req('POST', '/batches', token, { product_id: prod.id, quantity: 5 })).status === 400);
+  const expiredBatch = await req('POST', '/batches', token, { product_id: prod.id, batch_no: 'SMOKE-EXP', expiry_date: dateOffset(-2), quantity: 5 });
+  check('管理员建批次成功', expiredBatch.status === 200 && !!expiredBatch.data.id, JSON.stringify(expiredBatch.data));
+  const expiredList = await req('GET', '/batches?filter=expired&pageSize=1000', token);
+  const foundBatch = ((expiredList.data && expiredList.data.data) || []).find(b => b.id === expiredBatch.data.id);
+  check('过期筛选含该批次且 expiry_status=expired', !!foundBatch && foundBatch.expiry_status === 'expired', JSON.stringify(foundBatch || {}));
+  const bsum = await req('GET', '/batches/summary', token);
+  check('批次汇总 expired≥1 且 lossAmount 为数字', bsum.data.expired >= 1 && typeof bsum.data.lossAmount === 'number', JSON.stringify(bsum.data));
+  const stockBeforeClear = db.prepare('SELECT stock FROM products WHERE id=?').get(prod.id).stock;
+  const clr = await req('POST', `/batches/${expiredBatch.data.id}/clear`, token);
+  check('清理下架返回 cleared_qty=5/loss 数字', clr.status === 200 && clr.data.cleared_qty === 5 && typeof clr.data.loss === 'number', JSON.stringify(clr.data));
+  const stockAfterClear = db.prepare('SELECT stock FROM products WHERE id=?').get(prod.id).stock;
+  check('清理下架按量扣减库存(-5)', stockAfterClear === stockBeforeClear - 5, `前 ${stockBeforeClear} 后 ${stockAfterClear}`);
+  check('批次状态变 cleared', db.prepare('SELECT status FROM product_batches WHERE id=?').get(expiredBatch.data.id).status === 'cleared');
+  check('重复清理被拒 400', (await req('POST', `/batches/${expiredBatch.data.id}/clear`, token)).status === 400);
+  check('收银员访问批次 403', (await req('GET', '/batches', ctoken)).status === 403);
 
   // ===== 巩固：登录失败限流（放最后，会锁定本 IP）=====
   console.log('\n[巩固] 登录失败限流');

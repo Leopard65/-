@@ -47,16 +47,23 @@
 
         <el-form-item label="进货明细">
           <div style="width:100%">
-            <div v-for="(item, i) in form.items" :key="i" style="display:flex;gap:10px;margin-bottom:10px;align-items:center">
-              <el-select v-model="item.product_id" placeholder="选择商品" filterable style="flex:2">
-                <el-option v-for="p in products" :key="p.id" :label="`${p.name} (库存:${p.stock})`" :value="p.id" />
-              </el-select>
-              <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="flex:1" />
-              <el-input-number v-model="item.cost" :min="0" :precision="2" placeholder="单价" style="flex:1" />
-              <span style="width:90px;text-align:right" class="num">{{ formatMoney(item.quantity * item.cost) }}</span>
-              <el-button type="danger" :icon="Delete" circle size="small" @click="form.items.splice(i, 1)" />
+            <div v-for="(item, i) in form.items" :key="i" class="purchase-line">
+              <div class="purchase-line__main">
+                <el-select v-model="item.product_id" placeholder="选择商品" filterable style="flex:2">
+                  <el-option v-for="p in products" :key="p.id" :label="`${p.name} (库存:${p.stock})`" :value="p.id" />
+                </el-select>
+                <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="flex:1" />
+                <el-input-number v-model="item.cost" :min="0" :precision="2" placeholder="单价" style="flex:1" />
+                <span style="width:90px;text-align:right" class="num">{{ formatMoney(item.quantity * item.cost) }}</span>
+                <el-button type="danger" :icon="Delete" circle size="small" @click="form.items.splice(i, 1)" />
+              </div>
+              <div class="purchase-line__batch">
+                <span class="purchase-line__hint">保质期（选填，填到期日则登记批次）</span>
+                <el-date-picker v-model="item.expiry_date" type="date" placeholder="到期日" value-format="YYYY-MM-DD" style="width:150px" />
+                <el-input v-model="item.batch_no" placeholder="批次号" style="width:150px" />
+              </div>
             </div>
-            <el-button @click="form.items.push({ product_id: null, quantity: 1, cost: 0 })" style="width:100%">
+            <el-button @click="form.items.push({ product_id: null, quantity: 1, cost: 0, batch_no: '', expiry_date: null })" style="width:100%">
               + 添加商品
             </el-button>
           </div>
@@ -125,7 +132,7 @@ const load = async () => {
 }
 
 const openDialog = () => {
-  form.value = { supplier_id: null, items: [{ product_id: null, quantity: 1, cost: 0 }] }
+  form.value = { supplier_id: null, items: [{ product_id: null, quantity: 1, cost: 0, batch_no: '', expiry_date: null }] }
   dialogVisible.value = true
 }
 
@@ -169,3 +176,15 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.purchase-line {
+  padding: 10px;
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+}
+.purchase-line__main { display: flex; gap: 10px; align-items: center; }
+.purchase-line__batch { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.purchase-line__hint { font-size: 12px; color: var(--text-secondary); flex: 1; }
+</style>

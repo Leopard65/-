@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { expiryStatus } = require('../utils/calc');
+
+// 批次临期预警阈值（天），与批次页/汇总口径一致
+const WARN_DAYS = 30;
 
 // 获取本地时区的今日日期
 function getToday() {
@@ -60,6 +64,15 @@ router.get('/', (req, res) => {
     GROUP BY date(created_at) ORDER BY date
   `).all(today);
 
+  // 批次保质期预警（在库批次按到期日计 临期/过期，待办用）
+  const batchRows = db.prepare("SELECT expiry_date FROM product_batches WHERE status = 'active'").all();
+  let nearExpiry = 0, expiredBatches = 0;
+  batchRows.forEach(r => {
+    const s = expiryStatus({ expiryDate: r.expiry_date, today, warnDays: WARN_DAYS });
+    if (s === 'expired') expiredBatches++;
+    else if (s === 'near') nearExpiry++;
+  });
+
   res.json({
     todaySales: todaySales.amount,
     todayOrders: todaySales.count,
@@ -67,6 +80,8 @@ router.get('/', (req, res) => {
     memberCount,
     pendingReturns,
     salesTarget,
+    nearExpiry,
+    expiredBatches,
     lowStock,
     hotProducts,
     trend

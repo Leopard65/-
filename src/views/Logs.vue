@@ -91,7 +91,8 @@ const actionType = (action) => {
     restore: 'success',
     approve: 'success',
     reject: 'danger',
-    import: 'primary'
+    import: 'primary',
+    clear: 'warning'
   }
   return map[action] || 'info'
 }
@@ -105,7 +106,8 @@ const actionText = (action) => {
     restore: '恢复',
     approve: '审核通过',
     reject: '审核拒绝',
-    import: '导入'
+    import: '导入',
+    clear: '清理下架'
   }
   return map[action] || action
 }
@@ -121,7 +123,8 @@ const moduleText = (module) => {
     purchases: '进货',
     returns: '退换货',
     categories: '分类',
-    users: '用户'
+    users: '用户',
+    batches: '批次'
   }
   return map[module] || module
 }
