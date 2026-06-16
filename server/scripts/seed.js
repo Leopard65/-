@@ -50,6 +50,8 @@ async function main() {
     ['团子', 4, '银狐仓鼠', 'male', '约5个月', 0.1, '银白', '健康', 0, 0, '小巧呆萌', '巴掌大的小家伙，夜间活跃。', '/seed/animal-hamster.svg', 'rescued', '步行街'],
     ['花花', 1, '中华田园猫', 'female', '约1岁', 3.5, '狸花', '健康，待绝育', 1, 0, '机灵活泼', '会自己用猫砂，亲人，适合新手。', '/seed/animal-cat-grey.svg', 'available', '老城区菜场'],
     ['旺财', 2, '中华田园犬', 'male', '约2岁', 15.0, '黄色', '健康，已绝育', 1, 1, '忠诚护家', '看家一流，认主，适合有院子的家庭。', '/seed/animal-dog-golden.svg', 'adopted', '城南村'],
+    ['豆豆', 2, '柯基', 'male', '约1岁', 8.5, '黄白', '健康，已接种', 1, 1, '亲人活泼', '活泼亲人，喜欢追球，适合喜欢狗狗的家庭。', '/seed/animal-dog-corgi.svg', 'available', '城东花园'],
+    ['跳跳', 3, '侏儒兔', 'female', '约6个月', 1.2, '灰色', '健康', 0, 0, '安静温顺', '安静好养，适合公寓和新手饲养。', '/seed/animal-rabbit.svg', 'available', '青年路'],
   ];
   const animalId = {};
   for (const a of animals) {
@@ -144,7 +146,7 @@ async function main() {
   );
 
   console.log('🎉 演示数据播种完成！');
-  console.log('   动物 8 · 文章 4 · 轮播 3 · 公告 +2 · 救助 3 · 领养 5（含回访/提醒/趋势）');
+  console.log('   动物 10 · 文章 4 · 轮播 3 · 公告 +2 · 救助 3 · 领养 5（含回访/提醒/趋势）');
   console.log('   演示用户：demo / demo123');
   process.exit(0);
 }

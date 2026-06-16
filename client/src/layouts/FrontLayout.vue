@@ -11,6 +11,7 @@
         <nav class="nav-menu">
           <router-link to="/">首页</router-link>
           <router-link to="/animals">待领养动物</router-link>
+          <router-link to="/match">领养匹配</router-link>
           <router-link to="/rescue">救助求助</router-link>
           <router-link to="/articles">科普文章</router-link>
         </nav>

@@ -5,6 +5,7 @@ const Animal = require('../models/Animal');
 const { success, paginated, error } = require('../utils/response');
 const { parsePagination, sanitizeSearch } = require('../utils/validator');
 const { fileWebPath } = require('../utils/file');
+const { scoreAnimal } = require('../utils/match');
 
 const animalController = {
   // 获取动物列表（前台 + 后台通用）
@@ -82,6 +83,23 @@ const animalController = {
     try {
       const stats = await Animal.getStats();
       success(res, stats);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 智能领养匹配推荐（根据偏好为可领养动物打分排序）
+  async recommend(req, res, next) {
+    try {
+      const prefs = req.body || {};
+      const { list } = await Animal.findAll({ status: 'available', page: 1, pageSize: 100, offset: 0 });
+      const scored = list
+        .map((a) => {
+          const { score, reasons } = scoreAnimal(a, prefs);
+          return { ...a, matchScore: score, matchReasons: reasons };
+        })
+        .sort((x, y) => y.matchScore - x.matchScore);
+      success(res, scored);
     } catch (err) {
       next(err);
     }

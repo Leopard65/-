@@ -9,6 +9,7 @@ const upload = require('../middlewares/upload');
 // 公开接口
 router.get('/', animalController.getList);
 router.get('/stats', animalController.getStats);
+router.post('/recommend', animalController.recommend);
 router.get('/:id', animalController.getDetail);
 
 // 管理员接口
