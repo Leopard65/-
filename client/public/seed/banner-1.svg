@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/>
+  </linearGradient></defs>
+  <rect width="1200" height="420" fill="url(#g)"/>
+  <text x="50%" y="46%" font-size="176" text-anchor="middle" dominant-baseline="central">🐾</text>
+  <text x="50%" y="352.8" font-size="36" fill="#ffffff" text-anchor="middle" font-family="'Microsoft YaHei',sans-serif" font-weight="bold">给它一个温暖的家</text><text x="50%" y="390.6" font-size="21" fill="#ffffffcc" text-anchor="middle" font-family="'Microsoft YaHei',sans-serif">领养代替购买</text>
+</svg>

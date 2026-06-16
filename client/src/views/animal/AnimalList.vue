@@ -27,7 +27,7 @@
         @click="$router.push(`/animals/${animal.id}`)"
       >
         <div class="card-image">
-          <img v-if="animal.image_url" :src="animal.image_url" :alt="animal.name" />
+          <img v-if="animal.image_url" v-imgfb :src="animal.image_url" :alt="animal.name" />
           <div v-else class="card-image-placeholder">🐾</div>
         </div>
         <div class="card-body">

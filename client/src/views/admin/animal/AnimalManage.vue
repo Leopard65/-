@@ -31,7 +31,7 @@
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column label="图片" width="80">
           <template #default="{ row }">
-            <img v-if="row.image_url" :src="row.image_url" style="width:50px;height:50px;border-radius:4px;object-fit:cover" />
+            <img v-if="row.image_url" v-imgfb :src="row.image_url" style="width:50px;height:50px;border-radius:4px;object-fit:cover" />
             <span v-else>🐾</span>
           </template>
         </el-table-column>

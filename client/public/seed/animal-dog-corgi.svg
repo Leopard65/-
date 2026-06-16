@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ffecd2"/><stop offset="1" stop-color="#fcb69f"/>
+  </linearGradient></defs>
+  <rect width="600" height="600" fill="url(#g)"/>
+  <text x="50%" y="46%" font-size="252" text-anchor="middle" dominant-baseline="central">🐶</text>
+  <text x="50%" y="504" font-size="51" fill="#ffffff" text-anchor="middle" font-family="'Microsoft YaHei',sans-serif" font-weight="bold">柯基</text><text x="50%" y="558" font-size="30" fill="#ffffffcc" text-anchor="middle" font-family="'Microsoft YaHei',sans-serif">元气满满</text>
+</svg>

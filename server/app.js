@@ -11,7 +11,15 @@ const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 
 // ===== 中间件 =====
-app.use(cors());
+app.use(cors({
+  origin(origin, cb) {
+    // 无 Origin（同源页面、curl、服务端转发）放行；白名单内放行；其余拒绝
+    if (!origin || config.corsOrigins.includes(origin)) return cb(null, true);
+    const err = new Error('CORS 不允许的来源: ' + origin);
+    err.statusCode = 403;
+    cb(err);
+  },
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

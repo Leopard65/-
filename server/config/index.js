@@ -23,5 +23,9 @@ module.exports = {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 
+  // 允许跨域的来源白名单（逗号分隔）。同源访问、服务端调用（无 Origin）始终放行。
+  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+    .split(',').map((s) => s.trim()).filter(Boolean),
+
   uploadDir: process.env.UPLOAD_DIR || 'uploads',
 };

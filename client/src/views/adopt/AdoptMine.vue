@@ -5,7 +5,7 @@
       <el-table-column prop="animal_name" label="动物" width="150">
         <template #default="{ row }">
           <div style="display:flex;align-items:center;gap:8px">
-            <img v-if="row.animal_image" :src="row.animal_image" style="width:40px;height:40px;border-radius:4px;object-fit:cover" />
+            <img v-if="row.animal_image" v-imgfb :src="row.animal_image" style="width:40px;height:40px;border-radius:4px;object-fit:cover" />
             <span>{{ row.animal_name }}</span>
           </div>
         </template>
@@ -57,7 +57,9 @@
               fit="cover"
               class="fu-photo"
               preview-teleported
-            />
+            >
+              <template #error><div class="fu-photo-err">🐾</div></template>
+            </el-image>
           </div>
         </el-timeline-item>
       </el-timeline>
@@ -118,4 +120,5 @@ function statusType(s) {
 .pagination { display: flex; justify-content: center; margin-top: 16px; }
 .fu-photos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .fu-photo { width: 72px; height: 72px; border-radius: 6px; cursor: pointer; }
+.fu-photo-err { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; background: #eef0f3; border-radius: 6px; font-size: 26px; }
 </style>

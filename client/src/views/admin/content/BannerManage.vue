@@ -10,7 +10,7 @@
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column label="图片" width="150">
           <template #default="{ row }">
-            <img :src="row.image_url" style="width:120px;height:60px;border-radius:4px;object-fit:cover" />
+            <img v-imgfb :src="row.image_url" style="width:120px;height:60px;border-radius:4px;object-fit:cover" />
           </template>
         </el-table-column>
         <el-table-column prop="title" label="标题" />

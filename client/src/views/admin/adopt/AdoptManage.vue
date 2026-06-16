@@ -89,7 +89,9 @@
                   fit="cover"
                   class="fu-photo"
                   preview-teleported
-                />
+                >
+                  <template #error><div class="fu-photo-err">🐾</div></template>
+                </el-image>
               </div>
               <el-button text type="danger" size="small" @click="deleteFollowup(f.id)">删除</el-button>
             </div>
@@ -273,4 +275,5 @@ function statusType(s) {
 .followup-cond { margin: 0 0 4px; color: #909399; font-size: 13px; }
 .followup-photos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
 .fu-photo { width: 72px; height: 72px; border-radius: 6px; cursor: pointer; }
+.fu-photo-err { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; background: #eef0f3; border-radius: 6px; font-size: 26px; }
 </style>

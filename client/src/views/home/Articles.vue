@@ -10,7 +10,7 @@
 
     <div class="article-list" v-loading="loading">
       <div v-for="item in articles" :key="item.id" class="article-item" @click="$router.push(`/articles/${item.id}`)">
-        <img v-if="item.cover_image" :src="item.cover_image" class="article-cover" />
+        <img v-if="item.cover_image" v-imgfb :src="item.cover_image" class="article-cover" />
         <div class="article-info">
           <h3>{{ item.title }}</h3>
           <p class="article-meta">

@@ -3,7 +3,7 @@
     <h2>领养申请</h2>
     <el-card v-if="animal" class="animal-brief">
       <div class="brief-inner">
-        <img v-if="animal.image_url" :src="animal.image_url" class="brief-img" />
+        <img v-if="animal.image_url" v-imgfb :src="animal.image_url" class="brief-img" />
         <div>
           <h3>{{ animal.name }}</h3>
           <p>{{ animal.category_name }} · {{ animal.breed_name || '未知品种' }}</p>
