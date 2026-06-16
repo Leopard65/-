@@ -34,6 +34,7 @@ app.use('/api/rescues', require('./routes/rescues'));
 app.use('/api/content', require('./routes/content'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // 健康检查
 app.get('/api/health', (req, res) => {

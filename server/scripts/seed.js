@@ -145,8 +145,17 @@ async function main() {
      demoId, animalId['雪球'], '演示用户', '13800000000', '安居小区', '自有']
   );
 
+  // ===== 站内通知（演示用） =====
+  await db.execute(
+    `INSERT INTO notifications (user_id,type,title,content,related_id,is_read,created_at) VALUES
+     (?,'adoption','领养申请已通过','您领养「大黄」的申请已通过审核，请及时联系工作人员办理后续手续。',?,0, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+     (?,'followup','新的领养回访记录','工作人员为您领养的「大黄」添加了一条回访记录，快来看看吧。',?,0, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+     (?,'adoption','领养申请已通过','您领养「短腿」的申请已通过审核。',NULL,1, DATE_SUB(NOW(), INTERVAL 40 DAY))`,
+    [demoId, adA.insertId, demoId, adA.insertId, demoId]
+  );
+
   console.log('🎉 演示数据播种完成！');
-  console.log('   动物 10 · 文章 4 · 轮播 3 · 公告 +2 · 救助 3 · 领养 5（含回访/提醒/趋势）');
+  console.log('   动物 10 · 文章 4 · 轮播 3 · 公告 +2 · 救助 3 · 领养 5（含回访/提醒/趋势） · 通知 3');
   console.log('   演示用户：demo / demo123');
   process.exit(0);
 }

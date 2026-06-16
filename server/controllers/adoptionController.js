@@ -4,6 +4,7 @@
 const Adoption = require('../models/Adoption');
 const Animal = require('../models/Animal');
 const Followup = require('../models/Followup');
+const Notification = require('../models/Notification');
 const { success, paginated, error } = require('../utils/response');
 const { parsePagination } = require('../utils/validator');
 const { fileWebPath } = require('../utils/file');
@@ -123,6 +124,17 @@ const adoptionController = {
         await Animal.update(app.animal_id, { status: 'adopted' });
       }
 
+      // 给申请人发送站内通知
+      await Notification.create({
+        user_id: app.user_id,
+        type: 'adoption',
+        title: status === 'approved' ? '领养申请已通过' : '领养申请未通过',
+        content: status === 'approved'
+          ? `您领养「${app.animal_name}」的申请已通过审核，请及时联系工作人员办理后续手续。`
+          : `很抱歉，您领养「${app.animal_name}」的申请未通过。${reject_reason ? '原因：' + reject_reason : ''}`,
+        related_id: app.id,
+      });
+
       success(res, null, status === 'approved' ? '已批准' : '已拒绝');
     } catch (err) {
       next(err);
@@ -166,6 +178,14 @@ const adoptionController = {
         animal_condition,
         photos: req.files && req.files.length ? JSON.stringify(req.files.map(fileWebPath)) : null,
         operator_id: req.user.id,
+      });
+      // 通知领养人有新回访
+      await Notification.create({
+        user_id: app.user_id,
+        type: 'followup',
+        title: '新的领养回访记录',
+        content: `工作人员为您领养的「${app.animal_name}」添加了一条回访记录，快来看看吧。`,
+        related_id: app.id,
       });
       success(res, { id }, '回访记录已保存');
     } catch (err) {

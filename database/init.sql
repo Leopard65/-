@@ -200,6 +200,21 @@ CREATE TABLE IF NOT EXISTS banners (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='轮播图表';
 
 -- -------------------------------------------
+-- 11. 站内通知表
+-- -------------------------------------------
+CREATE TABLE IF NOT EXISTS notifications (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT UNSIGNED NOT NULL COMMENT '接收用户ID',
+  type          VARCHAR(30)  DEFAULT 'system' COMMENT '类型: adoption/followup/system',
+  title         VARCHAR(200) NOT NULL COMMENT '标题',
+  content       VARCHAR(500) DEFAULT '' COMMENT '内容',
+  related_id    INT UNSIGNED DEFAULT NULL COMMENT '关联业务ID（如领养申请ID）',
+  is_read       TINYINT      DEFAULT 0 COMMENT '是否已读 0=未读 1=已读',
+  created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内通知表';
+
+-- -------------------------------------------
 -- 初始数据
 -- -------------------------------------------
 
