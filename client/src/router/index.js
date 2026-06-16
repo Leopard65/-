@@ -2,6 +2,7 @@
  * 路由配置
  */
 import { createRouter, createWebHistory } from 'vue-router'
+import { getStoredUser } from '@/utils/storage'
 
 const routes = [
   // ===== 前台路由 =====
@@ -57,7 +58,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || 'null')
+  const user = getStoredUser()
 
   if (to.meta.requireAuth && !token) {
     next({ path: '/login', query: { redirect: to.fullPath } })

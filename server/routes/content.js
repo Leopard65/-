@@ -3,7 +3,7 @@
  */
 const router = require('express').Router();
 const contentController = require('../controllers/contentController');
-const { authenticate, requireAdmin } = require('../middlewares/auth');
+const { authenticate, requireAdmin, optionalAuth } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
 // ===== 公告 =====
@@ -16,7 +16,7 @@ router.delete('/announcements/:id', authenticate, requireAdmin, contentControlle
 // ===== 文章 =====
 router.get('/articles', contentController.getPublishedArticles);
 router.get('/articles/all', authenticate, requireAdmin, contentController.getArticleList);
-router.get('/articles/:id', contentController.getArticleDetail);
+router.get('/articles/:id', optionalAuth, contentController.getArticleDetail);
 router.post('/articles', authenticate, requireAdmin, upload.single('cover'), contentController.createArticle);
 router.put('/articles/:id', authenticate, requireAdmin, upload.single('cover'), contentController.updateArticle);
 router.delete('/articles/:id', authenticate, requireAdmin, contentController.deleteArticle);

@@ -104,11 +104,27 @@ async function loadData() {
   }
 }
 
-function openDialog(row) {
+async function openDialog(row) {
   isEdit.value = !!row
   editId.value = row?.id
-  Object.assign(form, row || { title: '', content: '', category: 'knowledge', status: 1 })
+  // 先用默认值/列表已有字段填充并打开弹窗
+  Object.assign(form, {
+    title: row?.title || '',
+    content: '',
+    category: row?.category || 'knowledge',
+    status: row?.status ?? 1,
+  })
   dialogVisible.value = true
+  // 列表接口不返回 content，编辑时按 id 拉取完整详情回填正文
+  if (row) {
+    const res = await request.get(`/content/articles/${row.id}`)
+    if (res?.data) {
+      form.title = res.data.title
+      form.content = res.data.content || ''
+      form.category = res.data.category || 'knowledge'
+      form.status = res.data.status
+    }
+  }
 }
 
 async function handleSubmit() {

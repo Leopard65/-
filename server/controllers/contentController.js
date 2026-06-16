@@ -72,7 +72,10 @@ const contentController = {
     try {
       const article = await Article.findById(req.params.id);
       if (!article) return error(res, '文章不存在', 404);
-      await Article.incrementView(req.params.id);
+      // 管理员打开（用于编辑回填）不计入浏览量
+      if (!req.user || req.user.role !== 'admin') {
+        await Article.incrementView(req.params.id);
+      }
       success(res, article);
     } catch (err) { next(err); }
   },

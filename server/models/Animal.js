@@ -12,11 +12,11 @@ const Animal = {
         image_url, images, status, rescue_date, location, created_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        data.name, data.category_id, data.breed_id || null, data.gender || 'unknown',
-        data.age, data.weight || null, data.color, data.health_status,
-        data.is_vaccinated || 0, data.is_sterilized || 0, data.personality,
-        data.description, data.image_url || '', data.images || '[]',
-        data.status || 'rescued', data.rescue_date, data.location, data.created_by,
+        data.name || '未命名', data.category_id, data.breed_id || null, data.gender || 'unknown',
+        data.age || '未知', data.weight || null, data.color || '', data.health_status || '',
+        data.is_vaccinated || 0, data.is_sterilized || 0, data.personality || '',
+        data.description || null, data.image_url || '', data.images || '[]',
+        data.status || 'rescued', data.rescue_date || null, data.location || '', data.created_by || null,
       ]
     );
     return result.insertId;
