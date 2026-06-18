@@ -266,15 +266,15 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 .noti-bell { cursor: pointer; }
 .bell-icon { font-size: 20px; color: var(--text-regular); }
 .noti-panel .noti-head { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 6px; }
-.noti-empty { color: #999; text-align: center; padding: 20px 0; font-size: 13px; }
-.noti-item { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer; border-radius: 4px; }
+.noti-empty { color: var(--text-secondary); text-align: center; padding: 20px 0; font-size: 13px; }
+.noti-item { padding: 10px 8px; border-bottom: 1px solid var(--border-light); cursor: pointer; border-radius: 4px; }
 .noti-item:hover { background: var(--brand-lighter); }
 .noti-item.unread { background: var(--brand-light); }
 .noti-row { display: flex; align-items: center; gap: 6px; }
 .noti-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
 .noti-title { font-size: 14px; color: var(--text-main); font-weight: 500; }
 .noti-content { font-size: 12px; color: var(--text-secondary); margin: 3px 0; line-height: 1.5; }
-.noti-time { font-size: 11px; color: #c0c4cc; }
+.noti-time { font-size: 11px; color: var(--text-placeholder); }
 
 .user-info {
   display: flex;

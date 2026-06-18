@@ -63,6 +63,36 @@
   --page-max: 1200px;
   --header-h: 64px;
 
+  /* —— 语义浅底色（图标/标签背景，html.dark 下自动翻深）—— */
+  --tone-success-bg: #e7f5ee;
+  --tone-warning-bg: #fdf3e3;
+  --tone-danger-bg: #fceae9;
+  --tone-info-bg: #eef0f3;
+  --tone-violet: #8254d8;
+  --tone-violet-bg: #f0ebfb;
+
+  /* —— 过渡（统一时长与缓动）—— */
+  --dur-fast: 0.18s;
+  --dur: 0.25s;
+  --dur-slow: 0.4s;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* —— 字号刻度 —— */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 26px;
+  --fs-3xl: 32px;
+
+  /* —— 层级 —— */
+  --z-header: 100;
+  --z-dropdown: 1000;
+  --z-drawer: 2000;
+  --z-modal: 3000;
+
   /* ============ 覆盖 Element Plus 主题 ============ */
   --el-color-primary: var(--brand);
   --el-color-primary-light-3: #5cb4a1;
@@ -118,6 +148,14 @@ html.dark {
   --bg-header: rgba(33, 32, 29, 0.86);
   --border: #38352f;
   --border-light: #312e29;
+
+  /* 语义浅底色：暗色下用半透明叠在深卡片上，避免亮色块穿帮 */
+  --tone-success-bg: rgba(62, 157, 124, 0.18);
+  --tone-warning-bg: rgba(230, 162, 60, 0.18);
+  --tone-danger-bg: rgba(225, 91, 86, 0.18);
+  --tone-info-bg: rgba(138, 147, 160, 0.20);
+  --tone-violet: #a98be6;
+  --tone-violet-bg: rgba(130, 84, 216, 0.22);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.32);
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.42);

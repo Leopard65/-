@@ -10,17 +10,17 @@
     </PageHeader>
 
     <!-- 状态快捷筛选：点击按动物状态过滤，数量来自 /animals/stats -->
-    <div class="status-filters">
+    <div class="filter-pills">
       <button
         v-for="opt in statusOptions"
         :key="opt.value"
         type="button"
-        class="status-pill"
+        class="filter-pill"
         :class="{ active: filters.status === opt.value }"
         @click="selectStatus(opt.value)"
       >
-        <span class="pill-label">{{ opt.label }}</span>
-        <span class="pill-count">{{ opt.count }}</span>
+        {{ opt.label }}
+        <span class="filter-pill__count">{{ opt.count }}</span>
       </button>
     </div>
 
@@ -179,49 +179,6 @@ async function exportData() {
 </script>
 
 <style scoped>
-.status-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-card);
-  color: var(--text-regular);
-  font-size: 14px;
-  line-height: 1.4;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
-}
-.status-pill:hover {
-  border-color: var(--brand);
-  color: var(--brand);
-}
-.status-pill.active {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
-}
-.pill-count {
-  min-width: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--bg-soft);
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-}
-.status-pill.active .pill-count {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-}
 .cell-thumb {
   width: 48px;
   height: 48px;

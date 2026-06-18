@@ -18,7 +18,7 @@
         <template v-if="animal.breed_name"> · {{ animal.breed_name }}</template>
       </div>
       <div class="ac-chips">
-        <span class="chip">{{ genderText(animal.gender) }}</span>
+        <span class="chip"><i class="g-dot" :class="`g-${animal.gender || 'unknown'}`"></i>{{ genderText(animal.gender) }}</span>
         <span v-if="animal.age" class="chip">{{ animal.age }}</span>
         <span v-if="animal.is_sterilized" class="chip chip-ok">已绝育</span>
         <span v-if="animal.is_vaccinated" class="chip chip-ok">已疫苗</span>
@@ -109,6 +109,17 @@ defineProps({
   background: var(--brand-light);
   color: var(--brand-hover);
 }
+.g-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.g-dot.g-male { background: #3a7bd5; }
+.g-dot.g-female { background: #d6588b; }
+.g-dot.g-unknown { background: var(--text-placeholder); }
 @media (max-width: 768px) {
   .ac-name {
     font-size: 15px;

@@ -11,9 +11,9 @@
         :default-active="$route.path"
         router
         :collapse="isCollapsed"
-        background-color="#2b3648"
-        text-color="#c2cad6"
-        active-text-color="#54c4ab"
+        background-color="#1e3a33"
+        text-color="#b3c2bc"
+        active-text-color="#5fd0b6"
       >
         <el-menu-item index="/admin">
           <el-icon><DataBoard /></el-icon>
@@ -144,7 +144,7 @@ onUnmounted(() => window.removeEventListener('resize', handleResize))
 
 .sidebar {
   width: 220px;
-  background: #2b3648;
+  background: #1e3a33;
   transition: width 0.3s;
   overflow: hidden;
   flex-shrink: 0;
@@ -171,7 +171,7 @@ onUnmounted(() => window.removeEventListener('resize', handleResize))
   border-right: none;
 }
 .sidebar :deep(.el-menu-item.is-active) {
-  background: rgba(84, 196, 171, 0.12) !important;
+  background: rgba(95, 208, 182, 0.14) !important;
   border-left: 3px solid var(--brand);
 }
 

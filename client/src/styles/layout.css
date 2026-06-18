@@ -79,6 +79,51 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* 快捷筛选 pill（前台分类 / 后台状态通用） */
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: var(--space-4);
+}
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-regular);
+  font-size: var(--fs-base);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color var(--dur), border-color var(--dur), background var(--dur);
+}
+.filter-pill:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.filter-pill.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.filter-pill__count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  line-height: 18px;
+  text-align: center;
+}
+.filter-pill.active .filter-pill__count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
 /* 响应式：窄屏调整 */
 @media (max-width: 768px) {
   .section-block {

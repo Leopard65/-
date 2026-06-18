@@ -55,11 +55,11 @@ defineProps({
 
 /* 色调 */
 .tone-brand .mc-icon { background: var(--brand-light); color: var(--brand); }
-.tone-success .mc-icon { background: #e7f5ee; color: var(--success); }
-.tone-warning .mc-icon { background: #fdf3e3; color: var(--warning); }
-.tone-danger .mc-icon { background: #fceae9; color: var(--danger); }
-.tone-info .mc-icon { background: #eef0f3; color: var(--info); }
-.tone-violet .mc-icon { background: #f0ebfb; color: #8254d8; }
+.tone-success .mc-icon { background: var(--tone-success-bg); color: var(--success); }
+.tone-warning .mc-icon { background: var(--tone-warning-bg); color: var(--warning); }
+.tone-danger .mc-icon { background: var(--tone-danger-bg); color: var(--danger); }
+.tone-info .mc-icon { background: var(--tone-info-bg); color: var(--info); }
+.tone-violet .mc-icon { background: var(--tone-violet-bg); color: var(--tone-violet); }
 
 @media (max-width: 768px) {
   .metric-card { padding: var(--space-4); gap: var(--space-3); }

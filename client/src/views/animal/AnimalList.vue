@@ -2,11 +2,21 @@
   <div class="animal-list-page">
     <PageHeader title="待领养动物" subtitle="它们都已做好准备，期待与你相遇" />
 
+    <!-- 分类快捷筛选 -->
+    <div class="filter-pills">
+      <button type="button" class="filter-pill" :class="{ active: filters.category_id === '' }" @click="selectCat('')">全部</button>
+      <button
+        v-for="c in categories"
+        :key="c.id"
+        type="button"
+        class="filter-pill"
+        :class="{ active: filters.category_id === c.id }"
+        @click="selectCat(c.id)"
+      >{{ c.name }}</button>
+    </div>
+
     <!-- 筛选栏 -->
     <div class="filter-bar">
-      <el-select v-model="filters.category_id" placeholder="动物类型" clearable @change="onFilter" style="width: 150px">
-        <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
-      </el-select>
       <el-select v-model="filters.gender" placeholder="性别" clearable @change="onFilter" style="width: 120px">
         <el-option label="公" value="male" />
         <el-option label="母" value="female" />
@@ -82,6 +92,11 @@ onMounted(async () => {
 function onFilter() {
   page.value = 1
   loadAnimals()
+}
+
+function selectCat(id) {
+  filters.category_id = id
+  onFilter()
 }
 
 async function loadAnimals() {

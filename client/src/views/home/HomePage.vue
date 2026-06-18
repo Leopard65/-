@@ -31,7 +31,7 @@
     <!-- 救助成果 -->
     <section class="impact">
       <div v-for="m in impactStats" :key="m.label" class="impact-item">
-        <div class="impact-num">{{ m.value }}</div>
+        <div class="impact-num"><CountUp :value="m.value" /></div>
         <div class="impact-label">{{ m.label }}</div>
       </div>
     </section>
@@ -108,6 +108,7 @@ import request from '@/utils/request'
 import AnimalCard from '@/components/AnimalCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import CardSkeleton from '@/components/CardSkeleton.vue'
+import CountUp from '@/components/CountUp.vue'
 
 const banners = ref([])
 const announcements = ref([])
@@ -344,7 +345,7 @@ onMounted(() => {
 }
 .ql-rescue { background: var(--accent-light); color: var(--accent); }
 .ql-match { background: var(--brand-light); color: var(--brand); }
-.ql-read { background: #f0ebfb; color: #8254d8; }
+.ql-read { background: var(--tone-violet-bg); color: var(--tone-violet); }
 .quick-link h4 {
   font-size: 17px;
   margin-bottom: 6px;

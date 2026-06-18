@@ -46,6 +46,19 @@
   color: var(--text-secondary);
 }
 
+/* 表格观感精修：表头浅底、行内边距、悬浮淡绿高亮 */
+.table-card .el-table th.el-table__cell {
+  background: var(--bg-soft);
+  font-weight: 600;
+  color: var(--text-regular);
+}
+.table-card .el-table td.el-table__cell {
+  padding: 10px 0;
+}
+.table-card .el-table {
+  --el-table-row-hover-bg-color: var(--brand-lighter);
+}
+
 @media (max-width: 768px) {
   .table-card {
     padding: var(--space-3);
