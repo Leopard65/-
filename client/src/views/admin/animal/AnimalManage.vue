@@ -9,14 +9,26 @@
       </el-button>
     </PageHeader>
 
+    <!-- 状态快捷筛选：点击按动物状态过滤，数量来自 /animals/stats -->
+    <div class="status-filters">
+      <button
+        v-for="opt in statusOptions"
+        :key="opt.value"
+        type="button"
+        class="status-pill"
+        :class="{ active: filters.status === opt.value }"
+        @click="selectStatus(opt.value)"
+      >
+        <span class="pill-label">{{ opt.label }}</span>
+        <span class="pill-count">{{ opt.count }}</span>
+      </button>
+    </div>
+
     <!-- 筛选 -->
     <DataToolbar>
       <el-input v-model="filters.keyword" placeholder="名称关键词" clearable style="width: 200px" @keyup.enter="onSearch" @clear="onSearch">
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
-      <el-select v-model="filters.status" clearable placeholder="全部状态" style="width: 150px" @change="onSearch">
-        <el-option v-for="(v, k) in ANIMAL_STATUS" :key="k" :label="v.label" :value="k" />
-      </el-select>
       <template #actions>
         <el-button type="primary" @click="onSearch">查询</el-button>
         <el-button @click="resetFilters">重置</el-button>
@@ -75,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
@@ -91,8 +103,30 @@ const pageSize = 15
 const total = ref(0)
 const filters = reactive({ keyword: '', status: '' })
 const exporting = ref(false)
+const stats = ref({ total: 0, rescued: 0, available: 0, adopted: 0, fostered: 0 })
 
-onMounted(() => loadData())
+// 状态快捷筛选项（含数量）：全部 + ANIMAL_STATUS 字典各项
+const statusOptions = computed(() => [
+  { value: '', label: '全部', count: stats.value.total || 0 },
+  ...Object.entries(ANIMAL_STATUS).map(([k, v]) => ({ value: k, label: v.label, count: stats.value[k] || 0 })),
+])
+
+onMounted(() => {
+  loadData()
+  loadStats()
+})
+
+function selectStatus(val) {
+  filters.status = val
+  onSearch()
+}
+
+async function loadStats() {
+  try {
+    const res = await request.get('/animals/stats')
+    if (res.data) stats.value = res.data
+  } catch { /* 统计失败不阻塞列表 */ }
+}
 
 function onSearch() {
   page.value = 1
@@ -120,6 +154,7 @@ async function handleDelete(id) {
   await request.delete(`/animals/${id}`)
   ElMessage.success('删除成功')
   loadData()
+  loadStats()
 }
 
 async function exportData() {
@@ -144,6 +179,49 @@ async function exportData() {
 </script>
 
 <style scoped>
+.status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-regular);
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.status-pill:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.status-pill.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.pill-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+.status-pill.active .pill-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
 .cell-thumb {
   width: 48px;
   height: 48px;
