@@ -9,6 +9,13 @@ const Notification = require('../models/Notification');
 const { success, paginated, error } = require('../utils/response');
 const { parsePagination } = require('../utils/validator');
 const { fileWebPath } = require('../utils/file');
+const { withTransaction } = require('../utils/transaction');
+
+function businessError(message, statusCode = 400) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+}
 
 const adoptionController = {
   // 提交领养申请（用户）
@@ -120,30 +127,36 @@ const adoptionController = {
         return error(res, '状态值无效');
       }
 
-      const app = await Adoption.findById(req.params.id);
-      if (!app) return error(res, '申请不存在', 404);
-      if (app.status !== 'pending') return error(res, '该申请已处理');
+      await withTransaction(async (conn) => {
+        const locked = await Adoption.lockById(req.params.id, conn);
+        if (!locked) throw businessError('申请不存在', 404);
 
-      await Adoption.review(req.params.id, {
-        status,
-        reject_reason,
-        reviewed_by: req.user.id,
-      });
+        const app = await Adoption.findById(req.params.id, conn);
+        if (!app) throw businessError('申请不存在', 404);
+        if (app.status !== 'pending') throw businessError('该申请已处理');
 
-      // 如果批准，更新动物状态为已领养
-      if (status === 'approved') {
-        await Animal.update(app.animal_id, { status: 'adopted' });
-      }
+        const affected = await Adoption.review(req.params.id, {
+          status,
+          reject_reason,
+          reviewed_by: req.user.id,
+        }, conn);
+        if (!affected) throw businessError('审核更新失败', 404);
 
-      // 给申请人发送站内通知
-      await Notification.create({
-        user_id: app.user_id,
-        type: 'adoption',
-        title: status === 'approved' ? '领养申请已通过' : '领养申请未通过',
-        content: status === 'approved'
-          ? `您领养「${app.animal_name}」的申请已通过审核，请及时联系工作人员办理后续手续。`
-          : `很抱歉，您领养「${app.animal_name}」的申请未通过。${reject_reason ? '原因：' + reject_reason : ''}`,
-        related_id: app.id,
+        // 如果批准，申请状态、动物状态与通知必须一起提交。
+        if (status === 'approved') {
+          const animalAffected = await Animal.update(app.animal_id, { status: 'adopted' }, conn);
+          if (!animalAffected) throw businessError('动物状态更新失败', 500);
+        }
+
+        await Notification.create({
+          user_id: app.user_id,
+          type: 'adoption',
+          title: status === 'approved' ? '领养申请已通过' : '领养申请未通过',
+          content: status === 'approved'
+            ? `您领养「${app.animal_name}」的申请已通过审核，请及时联系工作人员办理后续手续。`
+            : `很抱歉，您领养「${app.animal_name}」的申请未通过。${reject_reason ? '原因：' + reject_reason : ''}`,
+          related_id: app.id,
+        }, conn);
       });
 
       success(res, null, status === 'approved' ? '已批准' : '已拒绝');
@@ -155,32 +168,35 @@ const adoptionController = {
   // 标记领养完成（管理员）：已通过 -> 已完成
   async complete(req, res, next) {
     try {
-      const app = await Adoption.findById(req.params.id);
-      if (!app) return error(res, '申请不存在', 404);
-      if (app.status !== 'approved') return error(res, '仅已通过的申请可标记完成');
-      const affected = await Adoption.complete(req.params.id);
+      await withTransaction(async (conn) => {
+        const locked = await Adoption.lockById(req.params.id, conn);
+        if (!locked) throw businessError('申请不存在', 404);
 
-      // 联动：给动物档案追加一条"被领养"事件（附属操作，失败不影响完成）
-      if (affected) {
-        try {
-          await AnimalEvent.create({
-            animal_id: app.animal_id,
-            event_type: 'adopted',
-            event_date: new Date().toISOString().slice(0, 10),
-            title: '被领养',
-            description: `由 ${app.applicant_name} 领养，完成领养手续`,
-            created_by: req.user.id,
-          });
-        } catch (e) { /* 档案事件为附属，忽略失败 */ }
-      }
+        const app = await Adoption.findById(req.params.id, conn);
+        if (!app) throw businessError('申请不存在', 404);
+        if (app.status !== 'approved') throw businessError('仅已通过的申请可标记完成');
 
-      await Notification.create({
-        user_id: app.user_id,
-        type: 'adoption',
-        title: '领养手续已完成',
-        content: `您领养「${app.animal_name}」的手续已全部完成，祝你们幸福相伴！`,
-        related_id: app.id,
+        const affected = await Adoption.complete(req.params.id, conn);
+        if (!affected) throw businessError('标记完成失败', 404);
+
+        await AnimalEvent.create({
+          animal_id: app.animal_id,
+          event_type: 'adopted',
+          event_date: new Date().toISOString().slice(0, 10),
+          title: '被领养',
+          description: `由 ${app.applicant_name} 领养，完成领养手续`,
+          created_by: req.user.id,
+        }, conn);
+
+        await Notification.create({
+          user_id: app.user_id,
+          type: 'adoption',
+          title: '领养手续已完成',
+          content: `您领养「${app.animal_name}」的手续已全部完成，祝你们幸福相伴！`,
+          related_id: app.id,
+        }, conn);
       });
+
       success(res, null, '已标记为完成');
     } catch (err) {
       next(err);

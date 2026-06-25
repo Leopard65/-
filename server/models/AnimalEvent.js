@@ -6,8 +6,8 @@ const db = require('../config/db');
 
 const AnimalEvent = {
   // 新增事件
-  async create({ animal_id, event_type, event_date, title, description, created_by }) {
-    const [result] = await db.execute(
+  async create({ animal_id, event_type, event_date, title, description, created_by }, executor = db) {
+    const [result] = await executor.execute(
       `INSERT INTO animal_events
         (animal_id, event_type, event_date, title, description, created_by)
        VALUES (?, ?, ?, ?, ?, ?)`,

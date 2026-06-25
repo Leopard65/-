@@ -34,3 +34,8 @@ Thumbs.db
 
 # ===== 本地工具配置（Claude Code 本地设置，不属于项目交付物）=====
 .claude/
+
+# ===== 答辩 PPT 及其素材/构建脚本（单独保管，不入代码库）=====
+docs/*.pptx
+docs/ppt_assets/
+docs/ppt_build/

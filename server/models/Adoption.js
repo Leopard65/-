@@ -19,8 +19,8 @@ const Adoption = {
   },
 
   // 根据 ID 查找
-  async findById(id) {
-    const [rows] = await db.execute(
+  async findById(id, executor = db) {
+    const [rows] = await executor.execute(
       `SELECT aa.*, a.name as animal_name, a.image_url as animal_image,
               u.nickname as user_nickname, u.phone as user_phone,
               r.nickname as reviewer_name
@@ -29,6 +29,15 @@ const Adoption = {
        LEFT JOIN users u ON aa.user_id = u.id
        LEFT JOIN users r ON aa.reviewed_by = r.id
        WHERE aa.id = ?`, [id]
+    );
+    return rows[0] || null;
+  },
+
+  // 事务内锁定申请主表行，防止并发重复审核/完成
+  async lockById(id, executor = db) {
+    const [rows] = await executor.execute(
+      'SELECT id FROM adoption_applications WHERE id = ? FOR UPDATE',
+      [id]
     );
     return rows[0] || null;
   },
@@ -78,8 +87,8 @@ const Adoption = {
   },
 
   // 审核申请
-  async review(id, { status, reject_reason, reviewed_by }) {
-    const [result] = await db.execute(
+  async review(id, { status, reject_reason, reviewed_by }, executor = db) {
+    const [result] = await executor.execute(
       `UPDATE adoption_applications SET status = ?, reject_reason = ?, reviewed_by = ?, reviewed_at = NOW()
        WHERE id = ?`, [status, reject_reason || '', reviewed_by, id]
     );
@@ -96,8 +105,8 @@ const Adoption = {
   },
 
   // 标记领养完成（已通过 -> 已完成）
-  async complete(id) {
-    const [result] = await db.execute(
+  async complete(id, executor = db) {
+    const [result] = await executor.execute(
       "UPDATE adoption_applications SET status = 'completed' WHERE id = ? AND status = 'approved'",
       [id]
     );

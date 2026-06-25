@@ -4,9 +4,9 @@
 const db = require('../config/db');
 
 const Notification = {
-  async create({ user_id, type, title, content, related_id }) {
+  async create({ user_id, type, title, content, related_id }, executor = db) {
     if (!user_id || !title) return null;
-    const [r] = await db.execute(
+    const [r] = await executor.execute(
       'INSERT INTO notifications (user_id, type, title, content, related_id) VALUES (?, ?, ?, ?, ?)',
       [user_id, type || 'system', title, content || '', related_id || null]
     );

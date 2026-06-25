@@ -80,7 +80,7 @@ const Animal = {
   },
 
   // 更新动物信息
-  async update(id, data) {
+  async update(id, data, executor = db) {
     const fields = [];
     const values = [];
     const allowedFields = [
@@ -96,7 +96,7 @@ const Animal = {
     }
     if (fields.length === 0) return 0;
     values.push(id);
-    const [result] = await db.execute(`UPDATE animals SET ${fields.join(', ')} WHERE id = ?`, values);
+    const [result] = await executor.execute(`UPDATE animals SET ${fields.join(', ')} WHERE id = ?`, values);
     return result.affectedRows;
   },
 
