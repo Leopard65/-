@@ -11,7 +11,14 @@ const contentController = {
   async getAnnouncementList(req, res, next) {
     try {
       const { page, pageSize, offset } = parsePagination(req.query);
-      const result = await Announcement.findAll({ page, pageSize, offset });
+      const { status, keyword } = req.query;
+      const result = await Announcement.findAll({
+        status,
+        keyword: sanitizeSearch(keyword),
+        page,
+        pageSize,
+        offset,
+      });
       paginated(res, { ...result, page, pageSize });
     } catch (err) { next(err); }
   },

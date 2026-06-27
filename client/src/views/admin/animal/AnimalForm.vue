@@ -5,96 +5,130 @@
     </PageHeader>
 
     <div class="table-card">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" style="max-width: 720px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="给它起个名字" />
-        </el-form-item>
-        <el-form-item label="分类" prop="category_id">
-          <el-select v-model="form.category_id" placeholder="请选择" @change="onCategoryChange">
-            <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="品种">
-          <el-select v-model="form.breed_id" clearable placeholder="请选择">
-            <el-option v-for="b in breeds" :key="b.id" :label="b.name" :value="b.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="性别">
-          <el-radio-group v-model="form.gender">
-            <el-radio value="unknown">未知</el-radio>
-            <el-radio value="male">公</el-radio>
-            <el-radio value="female">母</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="年龄">
-          <el-input v-model="form.age" placeholder="如：约 2 岁" />
-        </el-form-item>
-        <el-form-item label="体重(kg)">
-          <el-input-number v-model="form.weight" :min="0" :precision="1" />
-        </el-form-item>
-        <el-form-item label="毛色">
-          <el-input v-model="form.color" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status">
-            <el-option v-for="(v, k) in ANIMAL_STATUS" :key="k" :label="v.label" :value="k" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="健康情况">
-          <el-space>
-            <el-switch v-model="form.is_sterilized" :active-value="1" :inactive-value="0" active-text="已绝育" inline-prompt />
-            <el-switch v-model="form.is_vaccinated" :active-value="1" :inactive-value="0" active-text="已接种" inline-prompt />
-          </el-space>
-        </el-form-item>
-        <el-form-item label="健康状况">
-          <el-input v-model="form.health_status" type="textarea" :rows="2" />
-        </el-form-item>
-        <el-form-item label="性格描述">
-          <el-input v-model="form.personality" type="textarea" :rows="2" />
-        </el-form-item>
-        <el-form-item label="详细描述">
-          <el-input v-model="form.description" type="textarea" :rows="4" />
-        </el-form-item>
-        <el-form-item label="救助日期">
-          <el-date-picker v-model="form.rescue_date" type="date" value-format="YYYY-MM-DD" />
-        </el-form-item>
-        <el-form-item label="救助地点">
-          <el-input v-model="form.location" />
-        </el-form-item>
-        <el-form-item label="封面图片">
-          <ImageUpload v-model="imageUrl" :width="160" :height="120" placeholder="上传封面" @change="onImagePick" />
-        </el-form-item>
-        <el-form-item v-if="isEdit" label="相册图片">
-          <div class="gallery-edit">
-            <div v-for="(img, i) in galleryImages" :key="i" class="gimg">
-              <el-image :src="img" fit="cover">
-                <template #error><div class="gimg-ph">🐾</div></template>
-              </el-image>
-              <span class="gimg-del" title="删除" @click="removeImage(img)">×</span>
-            </div>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="96px" class="admin-form animal-profile-form">
+        <section class="form-section">
+          <div class="form-section__head">
+            <span class="form-section__title">基础档案</span>
+            <span class="form-section__subtitle">决定前台列表、详情页和后台筛选的核心信息。</span>
           </div>
-          <el-upload
-            v-model:file-list="galleryFiles"
-            :auto-upload="false"
-            list-type="picture-card"
-            accept="image/*"
-            :limit="8"
-          >
-            <el-icon><Plus /></el-icon>
-          </el-upload>
-          <el-button
-            size="small"
-            type="primary"
-            style="margin-top: 8px"
-            :loading="uploadingImages"
-            :disabled="!galleryFiles.length"
-            @click="uploadImages"
-          >上传选中图片</el-button>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="loading" @click="handleSubmit">保存</el-button>
+          <div class="form-grid">
+            <el-form-item label="名称" prop="name">
+              <el-input v-model="form.name" placeholder="给它起个名字" />
+            </el-form-item>
+            <el-form-item label="状态">
+              <el-select v-model="form.status">
+                <el-option v-for="(v, k) in ANIMAL_STATUS" :key="k" :label="v.label" :value="k" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="分类" prop="category_id">
+              <el-select v-model="form.category_id" placeholder="请选择" @change="onCategoryChange">
+                <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="品种">
+              <el-select v-model="form.breed_id" clearable placeholder="请选择">
+                <el-option v-for="b in breeds" :key="b.id" :label="b.name" :value="b.id" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="性别">
+              <el-radio-group v-model="form.gender">
+                <el-radio value="unknown">未知</el-radio>
+                <el-radio value="male">公</el-radio>
+                <el-radio value="female">母</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="年龄">
+              <el-input v-model="form.age" placeholder="如：约 2 岁" />
+            </el-form-item>
+            <el-form-item label="体重(kg)">
+              <el-input-number v-model="form.weight" :min="0" :precision="1" />
+            </el-form-item>
+            <el-form-item label="毛色">
+              <el-input v-model="form.color" />
+            </el-form-item>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section__head">
+            <span class="form-section__title">健康与描述</span>
+            <span class="form-section__subtitle">用简洁但具体的描述，帮助领养人判断是否适合。</span>
+          </div>
+          <div class="form-grid">
+            <el-form-item label="健康情况" class="span-2">
+              <div class="switch-pair">
+                <span class="switch-label">绝育</span>
+                <el-switch v-model="form.is_sterilized" :active-value="1" :inactive-value="0" active-text="是" inactive-text="否" inline-prompt />
+                <span class="switch-label">疫苗</span>
+                <el-switch v-model="form.is_vaccinated" :active-value="1" :inactive-value="0" active-text="是" inactive-text="否" inline-prompt />
+              </div>
+              <div class="field-help">未确认的信息建议先保持关闭，后续可通过档案事件补充。</div>
+            </el-form-item>
+            <el-form-item label="健康状况" class="span-2">
+              <el-input v-model="form.health_status" type="textarea" :rows="2" placeholder="如：体检正常，轻微皮肤问题已处理" />
+            </el-form-item>
+            <el-form-item label="性格描述" class="span-2">
+              <el-input v-model="form.personality" type="textarea" :rows="2" placeholder="如：亲人、胆小、适合安静家庭" />
+            </el-form-item>
+            <el-form-item label="详细描述" class="span-2">
+              <el-input v-model="form.description" type="textarea" :rows="4" placeholder="补充救助背景、日常习惯、领养注意事项" />
+            </el-form-item>
+            <el-form-item label="救助日期">
+              <el-date-picker v-model="form.rescue_date" type="date" value-format="YYYY-MM-DD" />
+            </el-form-item>
+            <el-form-item label="救助地点">
+              <el-input v-model="form.location" placeholder="如：大学城宿舍区" />
+            </el-form-item>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section__head">
+            <span class="form-section__title">图片素材</span>
+            <span class="form-section__subtitle">封面用于列表卡片，相册用于详情页补充展示。</span>
+          </div>
+          <div class="form-grid">
+            <el-form-item label="封面图片" class="span-2">
+              <div class="upload-field">
+                <ImageUpload v-model="imageUrl" :width="160" :height="120" placeholder="上传封面" @change="onImagePick" />
+                <div class="field-help">建议使用清晰正面照片，避免水印和过暗背景。</div>
+              </div>
+            </el-form-item>
+            <el-form-item v-if="isEdit" label="相册图片" class="span-2">
+              <div class="gallery-edit">
+                <div v-for="(img, i) in galleryImages" :key="i" class="gimg">
+                  <el-image :src="img" fit="cover">
+                    <template #error><div class="gimg-ph"><el-icon><Picture /></el-icon></div></template>
+                  </el-image>
+                  <span class="gimg-del" title="删除" @click="removeImage(img)">×</span>
+                </div>
+              </div>
+              <el-upload
+                v-model:file-list="galleryFiles"
+                :auto-upload="false"
+                list-type="picture-card"
+                accept="image/*"
+                :limit="8"
+              >
+                <el-icon><Plus /></el-icon>
+              </el-upload>
+              <div class="field-help">最多选择 8 张，选好后点击下方按钮上传。</div>
+              <el-button
+                size="small"
+                type="primary"
+                class="gallery-upload-btn"
+                :loading="uploadingImages"
+                :disabled="!galleryFiles.length"
+                @click="uploadImages"
+              >上传选中图片</el-button>
+            </el-form-item>
+          </div>
+        </section>
+
+        <div class="form-actions">
           <el-button @click="$router.back()">取消</el-button>
-        </el-form-item>
+          <el-button type="primary" :loading="loading" @click="handleSubmit">保存档案</el-button>
+        </div>
       </el-form>
     </div>
 
@@ -352,6 +386,28 @@ async function handleSubmit() {
 .ev-form {
   margin-top: 4px;
 }
+.animal-profile-form :deep(.el-form-item__content) {
+  display: block;
+}
+.upload-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.upload-field .field-help {
+  max-width: 280px;
+  margin-top: 4px;
+}
+.switch-pair {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.switch-label {
+  color: var(--text-regular);
+  font-size: 13px;
+  font-weight: 600;
+}
 .gallery-edit {
   display: flex;
   flex-wrap: wrap;
@@ -376,7 +432,11 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-placeholder);
   font-size: 28px;
+}
+.gallery-upload-btn {
+  margin-top: 8px;
 }
 .gimg-del {
   position: absolute;

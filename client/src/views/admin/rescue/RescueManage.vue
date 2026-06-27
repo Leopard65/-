@@ -19,6 +19,19 @@
       </template>
     </DataToolbar>
 
+    <div class="list-summary">
+      <div class="list-summary__main">
+        <span>当前结果</span>
+        <strong>{{ total }}</strong>
+        <span>条救助求助</span>
+      </div>
+      <div class="list-summary__meta">
+        <span>状态：{{ activeStatusLabel }}</span>
+        <span>紧急度：{{ activeUrgencyLabel }}</span>
+        <span>高/紧急事项建议优先受理</span>
+      </div>
+    </div>
+
     <div class="table-card">
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="60" />
@@ -49,61 +62,149 @@
       </div>
     </div>
 
-    <el-dialog v-model="detailVisible" title="求助详情" width="600px">
-      <el-descriptions :column="2" border v-if="currentItem">
-        <el-descriptions-item label="报告人">{{ currentItem.reporter_name }}</el-descriptions-item>
-        <el-descriptions-item label="电话">{{ currentItem.phone }}</el-descriptions-item>
-        <el-descriptions-item label="地点" :span="2">{{ currentItem.location }}</el-descriptions-item>
-        <el-descriptions-item label="动物类型">{{ currentItem.animal_type || '未填' }}</el-descriptions-item>
-        <el-descriptions-item label="紧急程度">
-          <StatusTag kind="urgency" :value="currentItem.urgency" size="small" />
-        </el-descriptions-item>
-        <el-descriptions-item label="描述" :span="2">{{ currentItem.description }}</el-descriptions-item>
-        <el-descriptions-item v-if="currentItem.image_url" label="现场照片" :span="2">
-          <el-image
-            :src="currentItem.image_url"
-            :preview-src-list="[currentItem.image_url]"
-            fit="cover"
-            class="rescue-photo"
-            preview-teleported
-          >
-            <template #error><div class="img-err">🐾</div></template>
-          </el-image>
-        </el-descriptions-item>
-      </el-descriptions>
-
-      <div v-if="currentItem" class="rescue-progress">
-        <div class="progress-title">处理进度</div>
-        <el-timeline>
-          <el-timeline-item :timestamp="fmtDate(currentItem.created_at, 16)" type="info" placement="top">
-            <StatusTag kind="rescueAction" value="created" size="small" />
-            <span class="log-note">{{ currentItem.reporter_name }} 提交了求助</span>
-          </el-timeline-item>
-          <el-timeline-item
-            v-for="log in logs"
-            :key="log.id"
-            :timestamp="fmtDate(log.created_at, 16) + (log.operator_name ? ' · ' + log.operator_name : '')"
-            :type="logType(log.action)"
-            placement="top"
-          >
-            <StatusTag kind="rescueAction" :value="log.action" size="small" />
-            <span v-if="log.note" class="log-note">{{ log.note }}</span>
-          </el-timeline-item>
-        </el-timeline>
-
-        <div class="add-note">
-          <el-input v-model="noteText" type="textarea" :rows="2" placeholder="添加处理备注（如：已联系志愿者前往现场）" />
-          <el-button type="primary" size="small" style="margin-top: 8px" :loading="savingNote" @click="addNote">
-            添加处理记录
-          </el-button>
+    <el-dialog
+      v-model="detailVisible"
+      title="求助详情"
+      width="920px"
+      top="5vh"
+      class="admin-detail-dialog"
+      destroy-on-close
+    >
+      <template v-if="currentItem">
+        <div class="detail-hero">
+          <div class="detail-hero__main">
+            <span class="detail-eyebrow">救助求助 #{{ currentItem.id }}</span>
+            <h3>{{ currentItem.location || '未知地点' }}</h3>
+            <p>
+              {{ currentItem.reporter_name || '匿名用户' }} 提交于
+              {{ fmtDate(currentItem.created_at, 16) }}，优先核对紧急程度、现场照片与联系方式。
+            </p>
+          </div>
+          <div class="detail-actions">
+            <StatusTag kind="urgency" :value="currentItem.urgency" size="small" />
+            <StatusTag kind="rescue" :value="currentItem.status" size="small" />
+            <el-button
+              v-if="currentItem.status === 'pending'"
+              type="primary"
+              size="small"
+              @click="updateStatus(currentItem.id, 'processing')"
+            >
+              受理
+            </el-button>
+            <el-button
+              v-if="currentItem.status === 'processing'"
+              type="success"
+              size="small"
+              @click="updateStatus(currentItem.id, 'resolved')"
+            >
+              标记解决
+            </el-button>
+          </div>
         </div>
-      </div>
+
+        <div class="detail-grid">
+          <section class="detail-panel">
+            <div class="detail-panel__head">
+              <div>
+                <span class="detail-panel__title">现场与联系人</span>
+                <span class="detail-panel__subtitle">用于快速派单、电话确认和路线定位</span>
+              </div>
+            </div>
+            <dl class="detail-kv-list">
+              <div class="detail-kv">
+                <dt>报告人</dt>
+                <dd>{{ currentItem.reporter_name || '未填写' }}</dd>
+              </div>
+              <div class="detail-kv">
+                <dt>联系电话</dt>
+                <dd>{{ currentItem.phone || '未填写' }}</dd>
+              </div>
+              <div class="detail-kv">
+                <dt>动物类型</dt>
+                <dd>{{ currentItem.animal_type || '未填写' }}</dd>
+              </div>
+              <div class="detail-kv">
+                <dt>当前状态</dt>
+                <dd><StatusTag kind="rescue" :value="currentItem.status" size="small" /></dd>
+              </div>
+              <div class="detail-kv detail-kv--wide">
+                <dt>详细地点</dt>
+                <dd class="detail-prose">{{ currentItem.location || '未填写' }}</dd>
+              </div>
+              <div class="detail-kv detail-kv--wide">
+                <dt>求助描述</dt>
+                <dd class="detail-prose">{{ currentItem.description || '未填写' }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="detail-panel">
+            <div class="detail-panel__head">
+              <div>
+                <span class="detail-panel__title">现场照片</span>
+                <span class="detail-panel__subtitle">点击图片可放大预览</span>
+              </div>
+            </div>
+            <el-image
+              v-if="currentItem.image_url"
+              :src="currentItem.image_url"
+              :preview-src-list="[currentItem.image_url]"
+              fit="cover"
+              class="rescue-photo"
+              preview-teleported
+            >
+              <template #error><div class="img-err"><el-icon><Picture /></el-icon></div></template>
+            </el-image>
+            <div v-else class="rescue-photo rescue-photo--empty">
+              <el-icon><Picture /></el-icon>
+              <span>未上传现场照片</span>
+            </div>
+          </section>
+
+          <section class="detail-panel span-2">
+            <div class="detail-panel__head">
+              <div>
+                <span class="detail-panel__title">处理进度</span>
+                <span class="detail-panel__subtitle">记录受理、备注和解决过程，便于后续追踪</span>
+              </div>
+            </div>
+            <div class="rescue-progress-layout">
+              <div class="rescue-timeline" v-loading="logsLoading">
+                <el-timeline>
+                  <el-timeline-item :timestamp="fmtDate(currentItem.created_at, 16)" type="info" placement="top">
+                    <StatusTag kind="rescueAction" value="created" size="small" />
+                    <span class="log-note">{{ currentItem.reporter_name || '用户' }} 提交了求助</span>
+                  </el-timeline-item>
+                  <el-timeline-item
+                    v-for="log in logs"
+                    :key="log.id"
+                    :timestamp="fmtDate(log.created_at, 16) + (log.operator_name ? ' · ' + log.operator_name : '')"
+                    :type="logType(log.action)"
+                    placement="top"
+                  >
+                    <StatusTag kind="rescueAction" :value="log.action" size="small" />
+                    <span v-if="log.note" class="log-note">{{ log.note }}</span>
+                  </el-timeline-item>
+                </el-timeline>
+              </div>
+
+              <div class="add-note">
+                <span class="add-note__title">新增处理记录</span>
+                <el-input v-model="noteText" type="textarea" :rows="5" placeholder="如：已联系志愿者前往现场，预计 30 分钟后反馈" />
+                <el-button type="primary" :loading="savingNote" @click="addNote">
+                  添加处理记录
+                </el-button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
@@ -122,8 +223,17 @@ const exporting = ref(false)
 const detailVisible = ref(false)
 const currentItem = ref(null)
 const logs = ref([])
+const logsLoading = ref(false)
 const savingNote = ref(false)
 const noteText = ref('')
+
+const activeStatusLabel = computed(() => (
+  filters.status ? dictLabel(RESCUE_STATUS, filters.status) : '全部状态'
+))
+
+const activeUrgencyLabel = computed(() => (
+  filters.urgency ? dictLabel(URGENCY, filters.urgency) : '全部紧急度'
+))
 
 onMounted(() => loadData())
 
@@ -151,6 +261,10 @@ async function loadData() {
 async function updateStatus(id, status) {
   await request.put(`/rescues/${id}/status`, { status })
   ElMessage.success('状态更新成功')
+  if (currentItem.value?.id === id) {
+    currentItem.value = { ...currentItem.value, status }
+    loadLogs(id)
+  }
   loadData()
 }
 
@@ -162,18 +276,24 @@ function showDetail(row) {
 }
 
 async function loadLogs(id) {
+  logsLoading.value = true
   logs.value = []
   try {
     const res = await request.get(`/rescues/${id}/logs`)
     logs.value = res.data || []
-  } catch { logs.value = [] }
+  } catch {
+    logs.value = []
+  } finally {
+    logsLoading.value = false
+  }
 }
 
 async function addNote() {
-  if (!noteText.value) return ElMessage.warning('请输入处理备注')
+  const note = noteText.value.trim()
+  if (!note) return ElMessage.warning('请输入处理备注')
   savingNote.value = true
   try {
-    await request.post(`/rescues/${currentItem.value.id}/logs`, { note: noteText.value })
+    await request.post(`/rescues/${currentItem.value.id}/logs`, { note })
     ElMessage.success('处理记录已添加')
     noteText.value = ''
     loadLogs(currentItem.value.id)
@@ -208,35 +328,60 @@ async function exportData() {
 </script>
 
 <style scoped>
-.rescue-progress {
-  margin-top: 18px;
+.rescue-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-sm);
+  display: block;
+  overflow: hidden;
 }
-.progress-title {
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 12px;
+.rescue-photo--empty,
+.img-err {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.img-err {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+}
+.rescue-photo--empty .el-icon,
+.img-err .el-icon {
+  font-size: 30px;
+}
+.rescue-progress-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+.rescue-timeline {
+  min-height: 180px;
 }
 .log-note {
   margin-left: 8px;
   color: var(--text-regular);
   font-size: 13px;
+  line-height: 1.7;
 }
 .add-note {
-  margin-top: 8px;
-}
-.rescue-photo {
-  width: 140px;
-  height: 100px;
-  border-radius: 6px;
-}
-.img-err {
-  width: 140px;
-  height: 100px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border-radius: var(--radius-sm);
   background: var(--bg-soft);
-  border-radius: 6px;
-  font-size: 28px;
+}
+.add-note__title {
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 14px;
 }
 </style>

@@ -24,6 +24,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+output/
+test-results/
+release/
 
 # ===== 编辑器 / 系统 =====
 .vscode/*

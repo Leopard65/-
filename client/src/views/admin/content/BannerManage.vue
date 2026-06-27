@@ -6,6 +6,19 @@
       </el-button>
     </PageHeader>
 
+    <div class="list-summary">
+      <div class="list-summary__main">
+        <span>当前配置</span>
+        <strong>{{ list.length }}</strong>
+        <span>张轮播图</span>
+      </div>
+      <div class="list-summary__meta">
+        <span>显示：{{ visibleCount }} 张</span>
+        <span>隐藏：{{ hiddenCount }} 张</span>
+        <span>按排序值从小到大展示</span>
+      </div>
+    </div>
+
     <div class="table-card">
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="60" />
@@ -18,7 +31,7 @@
               :preview-src-list="[row.image_url]"
               preview-teleported
             >
-              <template #error><div class="banner-thumb paw-mini">🐾</div></template>
+              <template #error><div class="banner-thumb paw-mini"><el-icon><Picture /></el-icon></div></template>
             </el-image>
           </template>
         </el-table-column>
@@ -45,37 +58,53 @@
       </el-table>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑轮播图' : '添加轮播图'" width="500px">
-      <el-form ref="formRef" :model="form" label-width="80px">
-        <el-form-item label="标题">
-          <el-input v-model="form.title" />
-        </el-form-item>
-        <el-form-item label="图片">
-          <ImageUpload v-model="imageUrl" :width="240" :height="110" placeholder="上传轮播图" @change="onImagePick" />
-        </el-form-item>
-        <el-form-item label="跳转链接">
-          <el-input v-model="form.link_url" placeholder="选填" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="form.sort_order" :min="0" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-radio-group v-model="form.status">
-            <el-radio :value="1">显示</el-radio>
-            <el-radio :value="0">隐藏</el-radio>
-          </el-radio-group>
-        </el-form-item>
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEdit ? '编辑轮播图' : '添加轮播图'"
+      width="640px"
+      class="admin-edit-dialog"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <div class="dialog-intro">轮播图会出现在首页首屏区域，建议使用横向构图、低文字密度、无明显水印的图片。</div>
+      <el-form ref="formRef" :model="form" label-width="78px">
+        <div class="dialog-grid">
+          <el-form-item label="标题" class="span-2">
+            <el-input v-model="form.title" maxlength="40" show-word-limit placeholder="用于后台识别和前台辅助展示" />
+          </el-form-item>
+          <el-form-item label="图片" class="span-2">
+            <div class="banner-upload-field">
+              <ImageUpload v-model="imageUrl" :width="260" :height="120" placeholder="上传轮播图" @change="onImagePick" />
+              <div class="field-help">推荐 16:9 或接近横幅比例，主体尽量居中，避免边缘裁切。</div>
+            </div>
+          </el-form-item>
+          <el-form-item label="跳转链接">
+            <el-input v-model="form.link_url" placeholder="选填，如 /animals" />
+          </el-form-item>
+          <el-form-item label="排序">
+            <el-input-number v-model="form.sort_order" :min="0" />
+          </el-form-item>
+          <el-form-item label="状态" class="span-2">
+            <el-radio-group v-model="form.status">
+              <el-radio :value="1">显示</el-radio>
+              <el-radio :value="0">隐藏</el-radio>
+            </el-radio-group>
+            <div class="field-help">{{ bannerStatusHelp }}</div>
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存</el-button>
+        <div class="dialog-actions">
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存轮播图</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
@@ -93,6 +122,12 @@ const imageFile = ref(null)
 
 const form = reactive({ title: '', link_url: '', sort_order: 0, status: 1 })
 
+const visibleCount = computed(() => list.value.filter((item) => item.status === 1).length)
+const hiddenCount = computed(() => list.value.filter((item) => item.status !== 1).length)
+const bannerStatusHelp = computed(() => (
+  form.status === 1 ? '显示状态会进入首页轮播队列。' : '隐藏后保留配置，但不会在首页展示。'
+))
+
 onMounted(() => loadData())
 
 async function loadData() {
@@ -105,13 +140,15 @@ async function loadData() {
   }
 }
 
-function openDialog(row) {
+async function openDialog(row) {
   isEdit.value = !!row
   editId.value = row?.id
   Object.assign(form, row || { title: '', link_url: '', sort_order: 0, status: 1 })
   imageUrl.value = row?.image_url || ''
   imageFile.value = null
   dialogVisible.value = true
+  await nextTick()
+  formRef.value?.clearValidate()
 }
 
 function onImagePick(file) {
@@ -119,6 +156,9 @@ function onImagePick(file) {
 }
 
 async function handleSubmit() {
+  if (!imageUrl.value && !imageFile.value) {
+    return ElMessage.warning('请先上传轮播图图片')
+  }
   submitLoading.value = true
   try {
     const formData = new FormData()

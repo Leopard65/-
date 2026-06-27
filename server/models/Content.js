@@ -5,13 +5,18 @@ const db = require('../config/db');
 
 // ---- 公告 ----
 const Announcement = {
-  async findAll({ page, pageSize, offset }) {
-    const [[{ total }]] = await db.execute('SELECT COUNT(*) as total FROM announcements');
+  async findAll({ status, keyword, page, pageSize, offset }) {
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (status !== undefined && status !== '') { where += ' AND a.status = ?'; params.push(Number(status)); }
+    if (keyword) { where += ' AND a.title LIKE ?'; params.push(`%${keyword}%`); }
+
+    const [[{ total }]] = await db.execute(`SELECT COUNT(*) as total FROM announcements a ${where}`, params);
     const [rows] = await db.execute(
       `SELECT a.*, u.nickname as author_name
        FROM announcements a LEFT JOIN users u ON a.created_by = u.id
-       ORDER BY a.is_top DESC, a.created_at DESC LIMIT ? OFFSET ?`,
-      [String(pageSize), String(offset)]
+       ${where} ORDER BY a.is_top DESC, a.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, String(pageSize), String(offset)]
     );
     return { list: rows, total };
   },

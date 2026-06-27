@@ -20,6 +20,19 @@
       </template>
     </DataToolbar>
 
+    <div class="list-summary">
+      <div class="list-summary__main">
+        <span>当前结果</span>
+        <strong>{{ total }}</strong>
+        <span>个账号</span>
+      </div>
+      <div class="list-summary__meta">
+        <span>状态：{{ activeStatusLabel }}</span>
+        <span v-if="filters.keyword">关键词：{{ filters.keyword }}</span>
+        <span>管理员账号不会在此处禁用</span>
+      </div>
+    </div>
+
     <div class="table-card">
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="60" />
@@ -70,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
@@ -85,6 +98,12 @@ const pageSize = 15
 const total = ref(0)
 const filters = reactive({ keyword: '', status: '' })
 const exporting = ref(false)
+
+const activeStatusLabel = computed(() => {
+  if (filters.status === 1) return '正常'
+  if (filters.status === 0) return '禁用'
+  return '全部状态'
+})
 
 onMounted(() => loadData())
 

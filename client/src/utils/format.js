@@ -98,6 +98,6 @@ export function genderText(g) {
  */
 export function fmtDate(v, len = 10) {
   if (!v) return ''
-  if (len === 'md') return String(v).slice(5, 16)
-  return String(v).slice(0, len)
+  if (len === 'md') return String(v).slice(5, 16).replace('T', ' ')
+  return String(v).slice(0, len).replace('T', ' ')
 }

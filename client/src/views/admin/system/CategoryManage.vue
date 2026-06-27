@@ -2,12 +2,28 @@
   <div class="category-manage admin-view">
     <PageHeader title="分类管理" subtitle="维护动物分类与品种" />
 
+    <div class="list-summary">
+      <div class="list-summary__main">
+        <span>当前配置</span>
+        <strong>{{ categories.length }}</strong>
+        <span>个动物分类</span>
+      </div>
+      <div class="list-summary__meta">
+        <span>已选：{{ selectedCategory ? selectedCategory.name : '未选择分类' }}</span>
+        <span>当前品种：{{ selectedCategory ? breeds.length + ' 个' : '请选择左侧分类' }}</span>
+        <span>删除分类会同步删除其下品种</span>
+      </div>
+    </div>
+
     <el-row :gutter="16">
       <!-- 分类列表 -->
       <el-col :xs="24" :md="10">
         <div class="table-card">
           <div class="block-head">
-            <span>动物分类</span>
+            <div>
+              <span class="block-title">动物分类</span>
+              <span class="block-subtitle">点击行查看对应品种</span>
+            </div>
             <el-button type="primary" size="small" @click="showAddCategory">添加分类</el-button>
           </div>
           <el-table :data="categories" stripe highlight-current-row @row-click="selectCategory">
@@ -31,7 +47,10 @@
       <el-col :xs="24" :md="14">
         <div class="table-card">
           <div class="block-head">
-            <span>{{ selectedCategory ? selectedCategory.name + ' · 品种' : '请先选择分类' }}</span>
+            <div>
+              <span class="block-title">{{ selectedCategory ? selectedCategory.name + ' · 品种' : '请先选择分类' }}</span>
+              <span class="block-subtitle">品种会用于动物档案录入和前台筛选</span>
+            </div>
             <el-button type="primary" size="small" :disabled="!selectedCategory" @click="showAddBreed">添加品种</el-button>
           </div>
           <el-table :data="breeds" stripe v-if="selectedCategory">
@@ -164,7 +183,18 @@ async function deleteBreed(id) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 14px;
-  font-weight: 700;
+  gap: 12px;
+}
+.block-title {
+  display: block;
   color: var(--text-main);
+  font-weight: 700;
+}
+.block-subtitle {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
 }
 </style>

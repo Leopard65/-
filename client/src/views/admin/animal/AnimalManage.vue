@@ -35,6 +35,19 @@
       </template>
     </DataToolbar>
 
+    <div class="list-summary">
+      <div class="list-summary__main">
+        <span>当前结果</span>
+        <strong>{{ total }}</strong>
+        <span>条动物档案</span>
+      </div>
+      <div class="list-summary__meta">
+        <span>状态：{{ activeStatusLabel }}</span>
+        <span v-if="filters.keyword">关键词：{{ filters.keyword }}</span>
+        <span>每页 {{ pageSize }} 条</span>
+      </div>
+    </div>
+
     <!-- 表格 -->
     <div class="table-card">
       <el-table :data="list" v-loading="loading" stripe>
@@ -49,9 +62,9 @@
               :preview-src-list="[row.image_url]"
               preview-teleported
             >
-              <template #error><div class="cell-thumb paw-mini">🐾</div></template>
+              <template #error><div class="cell-thumb paw-mini"><el-icon><Picture /></el-icon></div></template>
             </el-image>
-            <div v-else class="cell-thumb paw-mini">🐾</div>
+            <div v-else class="cell-thumb paw-mini"><el-icon><Picture /></el-icon></div>
           </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" width="120" show-overflow-tooltip />
@@ -67,8 +80,9 @@
         <el-table-column prop="created_at" label="录入时间" width="160">
           <template #default="{ row }">{{ fmtDate(row.created_at, 16) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="190" fixed="right">
           <template #default="{ row }">
+            <el-button text type="primary" size="small" @click="$router.push(`/animals/${row.id}`)">前台</el-button>
             <el-button text type="primary" size="small" @click="$router.push(`/admin/animals/edit/${row.id}`)">编辑</el-button>
             <el-popconfirm title="确认删除该动物档案？" width="220" @confirm="handleDelete(row.id)">
               <template #reference>
@@ -110,6 +124,10 @@ const statusOptions = computed(() => [
   { value: '', label: '全部', count: stats.value.total || 0 },
   ...Object.entries(ANIMAL_STATUS).map(([k, v]) => ({ value: k, label: v.label, count: stats.value[k] || 0 })),
 ])
+
+const activeStatusLabel = computed(() => (
+  filters.status ? dictLabel(ANIMAL_STATUS, filters.status) : '全部状态'
+))
 
 onMounted(() => {
   loadData()

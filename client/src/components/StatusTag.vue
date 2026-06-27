@@ -1,5 +1,5 @@
 <template>
-  <el-tag :type="meta.type" :size="size" :effect="effect" :round="round">
+  <el-tag :type="tagType" :size="size" :effect="effect" :round="round">
     {{ meta.label }}
   </el-tag>
 </template>
@@ -40,4 +40,6 @@ const props = defineProps({
 const meta = computed(
   () => MAPS[props.kind]?.[props.value] || { label: props.value, type: '' }
 )
+
+const tagType = computed(() => meta.value.type || undefined)
 </script>

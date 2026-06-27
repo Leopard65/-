@@ -24,6 +24,7 @@ defineProps({
   align-items: flex-end;
   gap: var(--space-4);
   margin-bottom: var(--space-5);
+  min-width: 0;
 }
 .ph-title {
   font-size: 22px;
@@ -39,6 +40,8 @@ defineProps({
   display: flex;
   gap: var(--space-2);
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 @media (max-width: 768px) {
   .page-header {
@@ -47,6 +50,9 @@ defineProps({
   }
   .ph-title {
     font-size: 19px;
+  }
+  .ph-actions {
+    justify-content: flex-start;
   }
 }
 </style>
