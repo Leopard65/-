@@ -5,18 +5,18 @@ const path = require('path');
 const dbPath = path.join(__dirname, 'server/supermarket.db');
 const db = new Database(dbPath);
 
-// 图片映射 - 根据商品ID和对应的图片路径
+// 图片映射 - 使用 Vite public/ 目录下的路径（部署时自动包含在前端包中）
 const productImages = {
-    1: '/uploads/products/2026-06-30/kelecola.jpg',   // 可口可乐
-    2: '/uploads/products/2026-06-30/nongfushanquan.jpg', // 农夫山泉
-    3: '/uploads/products/2026-06-30/yili.jpg',         // 伊利纯牛奶
-    4: '/uploads/products/2026-06-30/shufujia.jpg',     // 舒肤佳香皂
-    5: '/uploads/products/2026-06-30/vida.jpg',         // 维达纸巾
-    6: '/uploads/products/2026-06-30/hongfushi.jpg',    // 红富士苹果
-    7: '/uploads/products/2026-06-30/jinlongyu.jpg',    // 金龙鱼调和油
-    8: '/uploads/products/2026-06-30/laoganma.jpg',    // 老干妈辣酱
-    9: '/uploads/products/2026-06-30/leshisupian.jpg', // 乐事薯片
-    10: '/uploads/products/2026-06-30/devor.jpg'       // 德芙巧克力
+    1: '/products/kelecola.jpg',      // 可口可乐
+    2: '/products/nongfushanquan.jpg', // 农夫山泉
+    3: '/products/yili.jpg',           // 伊利纯牛奶
+    4: '/products/shufujia.jpg',       // 舒肤佳香皂
+    5: '/products/vida.jpg',           // 维达纸巾
+    6: '/products/hongfushi.jpg',      // 红富士苹果
+    7: '/products/jinlongyu.jpg',      // 金龙鱼调和油
+    8: '/products/laoganma.jpg',       // 老干妈辣酱
+    9: '/products/leshisupian.jpg',    // 乐事薯片
+    10: '/products/devor.jpg'          // 德芙巧克力
 };
 
 // 更新商品图片
