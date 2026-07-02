@@ -1,10 +1,13 @@
 <template>
-  <el-container class="layout">
+  <el-container class="layout" :class="{ 'layout--collapsed': isCollapse, 'layout--mobile': isMobile }">
     <!-- 侧边栏 -->
     <el-aside :width="isCollapse ? 'var(--layout-aside-collapsed)' : 'var(--layout-aside)'" class="sidebar">
       <div class="brand" :class="{ 'brand--collapsed': isCollapse }">
         <el-icon class="brand__mark"><Shop /></el-icon>
-        <span v-if="!isCollapse" class="brand__name">超市管理系统</span>
+        <div v-if="!isCollapse" class="brand__copy">
+          <span class="brand__name">超市管理系统</span>
+          <span class="brand__sub">StoreOps Console</span>
+        </div>
       </div>
 
       <el-scrollbar class="menu-scroll">
@@ -34,13 +37,22 @@
 
     <!-- 主内容区 -->
     <el-container>
+      <div v-if="isMobile && !isCollapse" class="sidebar-scrim" @click="toggleSidebar"></div>
       <el-header class="topbar">
         <div class="topbar__left">
-          <el-icon class="topbar__toggle" @click="toggleSidebar">
+          <el-button
+            class="topbar__toggle"
+            text
+            :aria-label="isCollapse ? '展开侧边栏' : '收起侧边栏'"
+            @click="toggleSidebar"
+          >
             <Fold v-if="!isCollapse" />
             <Expand v-else />
-          </el-icon>
-          <h1 class="topbar__title">{{ $route.meta.title || '超市管理系统' }}</h1>
+          </el-button>
+          <div class="topbar__heading">
+            <span class="topbar__eyebrow">今日门店工作台</span>
+            <h1 class="topbar__title">{{ $route.meta.title || '超市管理系统' }}</h1>
+          </div>
         </div>
 
         <div class="topbar__right">
@@ -92,6 +104,7 @@ import { formatDate } from '@/utils/format'
 const router = useRouter()
 const userStore = useUserStore()
 const isCollapse = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+const isMobile = ref(false)
 const warningCount = ref(0)
 let warningInterval = null
 
@@ -137,6 +150,15 @@ const toggleSidebar = () => {
   localStorage.setItem('sidebarCollapsed', isCollapse.value)
 }
 
+const updateViewport = () => {
+  const nextIsMobile = window.innerWidth <= 720
+  if (nextIsMobile && !isMobile.value && !isCollapse.value) {
+    isCollapse.value = true
+    localStorage.setItem('sidebarCollapsed', 'true')
+  }
+  isMobile.value = nextIsMobile
+}
+
 const handleCommand = async (command) => {
   if (command === 'logout') {
     await ElMessageBox.confirm('确定退出登录？', '提示', { type: 'warning' })
@@ -157,14 +179,17 @@ const fetchWarningCount = async () => {
 }
 
 onMounted(() => {
+  updateViewport()
   fetchWarningCount()
   warningInterval = setInterval(fetchWarningCount, 5 * 60 * 1000)
+  window.addEventListener('resize', updateViewport)
 })
 
 onUnmounted(() => {
   if (warningInterval) {
     clearInterval(warningInterval)
   }
+  window.removeEventListener('resize', updateViewport)
 })
 </script>
 
@@ -173,26 +198,42 @@ onUnmounted(() => {
 
 /* ===== 侧边栏 ===== */
 .sidebar {
-  background: var(--sidebar-bg);
+  background:
+    linear-gradient(180deg, rgba(217, 154, 24, 0.08), transparent 180px),
+    var(--sidebar-bg);
   transition: width 0.25s;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 .brand {
   height: var(--layout-header);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 20px;
+  gap: 12px;
+  padding: 0 18px;
   color: #fff;
   background: var(--sidebar-bg-deep);
   white-space: nowrap;
   overflow: hidden;
 }
 .brand--collapsed { justify-content: center; padding: 0; }
-.brand__mark { font-size: 22px; color: var(--color-primary); flex-shrink: 0; }
-.brand__name { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
+.brand__mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  background: rgba(217, 154, 24, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.brand__copy { display: flex; flex-direction: column; line-height: 1.15; }
+.brand__name { font-size: 15px; font-weight: 700; letter-spacing: 0; }
+.brand__sub { margin-top: 3px; font-size: 11px; color: var(--sidebar-text-muted); font-family: var(--font-data); }
 
 .menu-scroll { flex: 1; }
 .side-menu { border-right: none; padding: 8px 0; }
@@ -200,7 +241,7 @@ onUnmounted(() => {
 .menu-group-title {
   font-size: 12px;
   color: var(--sidebar-text-muted);
-  letter-spacing: 1px;
+  letter-spacing: 0;
 }
 .menu-item-text { flex: 1; }
 
@@ -210,14 +251,17 @@ onUnmounted(() => {
   height: 44px;
   margin: 2px 10px;
   border-radius: var(--radius-md);
+  transition: background var(--motion-fast), color var(--motion-fast), transform var(--motion-fast);
 }
 .side-menu :deep(.el-menu-item:hover) {
   background: var(--sidebar-active-bg);
   color: #fff;
+  transform: translateX(2px);
 }
 .side-menu :deep(.el-menu-item.is-active) {
-  background: var(--color-primary);
+  background: linear-gradient(90deg, var(--color-primary), #1f805e);
   color: #fff;
+  box-shadow: inset 3px 0 0 var(--color-accent);
 }
 .side-menu :deep(.el-menu-item.is-active .el-icon) { color: #fff; }
 .side-menu :deep(.el-menu-item-group__title) {
@@ -234,22 +278,36 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-color);
   padding: 0 20px;
 }
-.topbar__left { display: flex; align-items: center; gap: 16px; }
-.topbar__toggle { font-size: 20px; cursor: pointer; color: var(--text-regular); }
-.topbar__toggle:hover { color: var(--color-primary); }
+.topbar__left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.topbar__toggle {
+  width: 40px;
+  height: 40px;
+  color: var(--text-regular);
+  border-radius: var(--radius-md);
+}
+.topbar__toggle:hover { color: var(--color-primary); background: var(--bg-muted); }
+.topbar__heading { min-width: 0; }
+.topbar__eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-data);
+}
 .topbar__title { font-size: 17px; font-weight: 600; color: var(--text-primary); margin: 0; }
 
 .topbar__right { display: flex; align-items: center; gap: 8px; }
 .topbar__biz { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
-.biz-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-success); box-shadow: 0 0 0 3px rgba(47, 170, 110, 0.18); }
+.biz-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-success); box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.18); }
 .biz-text { color: var(--color-success); }
 .biz-date { color: var(--text-secondary); }
 
-.user-chip { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-md); }
+.user-chip { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 8px; border-radius: var(--radius-md); }
 .user-chip:hover { background: var(--bg-muted); }
 .user-chip__avatar { background: var(--color-primary); color: #fff; font-size: 13px; }
 .user-chip__name { font-size: 14px; color: var(--text-primary); }
@@ -257,8 +315,56 @@ onUnmounted(() => {
 
 /* ===== 内容区：统一底色 / 内边距 / 滚动 ===== */
 .content {
-  background: var(--bg-page);
+  background:
+    linear-gradient(90deg, rgba(23, 107, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(23, 107, 77, 0.035) 1px, transparent 1px),
+    var(--bg-page);
+  background-size: 28px 28px;
   padding: var(--space-5);
   overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .topbar__biz,
+  .user-chip__role,
+  .biz-date {
+    display: none;
+  }
+
+  .topbar {
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 720px) {
+  .layout {
+    position: relative;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--layout-aside) !important;
+    height: 100dvh;
+    z-index: 40;
+    transform: translateX(0);
+    box-shadow: 18px 0 40px rgba(16, 26, 22, 0.26);
+  }
+
+  .layout--collapsed .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(16, 26, 22, 0.36);
+  }
+
+  .topbar,
+  .content {
+    width: 100vw;
+  }
 }
 </style>

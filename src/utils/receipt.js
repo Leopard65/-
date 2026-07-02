@@ -3,6 +3,19 @@
  * @param {Object} sale - 销售数据
  * @returns {string} HTML 字符串
  */
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function toMoney(value) {
+  return Number(value || 0).toFixed(2);
+}
+
 export function generateReceiptHTML(sale) {
   const paymentMap = {
     cash: '现金',
@@ -13,15 +26,17 @@ export function generateReceiptHTML(sale) {
   const items = sale.items || [];
   const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
   const discountAmount = sale.originalTotal ? (sale.originalTotal - (sale.total || 0)) : 0;
+  const receiptDate = sale.created_at ? new Date(sale.created_at) : new Date();
+  const safePayment = paymentMap[sale.payment] || sale.payment || '-';
 
   return `
     <div class="receipt" style="width: 300px; font-family: 'Courier New', 'Consolas', monospace; padding: 15px; margin: 0 auto; color: #000;">
       <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px;">
         <h2 style="margin: 0; font-size: 22px; letter-spacing: 2px;">超市管理系统</h2>
         <p style="margin: 5px 0; font-size: 14px;">销 售 小 票</p>
-        <p style="margin: 3px 0; font-size: 11px; color: #333;">日期: ${new Date(sale.created_at).toLocaleString('zh-CN')}</p>
-        <p style="margin: 3px 0; font-size: 11px; color: #333;">单号: ${sale.id || '--'}</p>
-        <p style="margin: 3px 0; font-size: 11px; color: #333;">收银员: ${sale.cashier || 'admin'}</p>
+        <p style="margin: 3px 0; font-size: 11px; color: #333;">日期: ${escapeHtml(receiptDate.toLocaleString('zh-CN'))}</p>
+        <p style="margin: 3px 0; font-size: 11px; color: #333;">单号: ${escapeHtml(sale.id || '--')}</p>
+        <p style="margin: 3px 0; font-size: 11px; color: #333;">收银员: ${escapeHtml(sale.cashier || 'admin')}</p>
       </div>
 
       <table style="width: 100%; margin: 8px 0; border-collapse: collapse; font-size: 11px;">
@@ -36,10 +51,10 @@ export function generateReceiptHTML(sale) {
         <tbody>
           ${items.map(item => `
             <tr>
-              <td style="text-align: left; padding: 3px 0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name || item.product_name || ''}</td>
-              <td style="text-align: right; padding: 3px 0;">¥${(item.price || 0).toFixed(2)}</td>
-              <td style="text-align: right; padding: 3px 0;">${item.quantity || 0}</td>
-              <td style="text-align: right; padding: 3px 0;">¥${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</td>
+              <td style="text-align: left; padding: 3px 0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.name || item.product_name || '')}</td>
+              <td style="text-align: right; padding: 3px 0;">¥${toMoney(item.price)}</td>
+              <td style="text-align: right; padding: 3px 0;">${escapeHtml(item.quantity || 0)}</td>
+              <td style="text-align: right; padding: 3px 0;">¥${toMoney((item.price || 0) * (item.quantity || 0))}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -49,29 +64,29 @@ export function generateReceiptHTML(sale) {
         ${sale.originalTotal && sale.originalTotal !== sale.total ? `
           <p style="display: flex; justify-content: space-between; margin: 3px 0;">
             <span>原价:</span>
-            <span>¥${sale.originalTotal.toFixed(2)}</span>
+            <span>¥${toMoney(sale.originalTotal)}</span>
           </p>
           <p style="display: flex; justify-content: space-between; margin: 3px 0; color: #f56c6c;">
             <span>会员折扣:</span>
-            <span>-¥${discountAmount.toFixed(2)}</span>
+            <span>-¥${toMoney(discountAmount)}</span>
           </p>
         ` : ''}
         <p style="display: flex; justify-content: space-between; margin: 5px 0; font-weight: bold;">
           <span>合计:</span>
-          <span style="font-size: 16px;">¥${(sale.total || 0).toFixed(2)}</span>
+          <span style="font-size: 16px;">¥${toMoney(sale.total)}</span>
         </p>
         <p style="display: flex; justify-content: space-between; margin: 3px 0;">
           <span>支付方式:</span>
-          <span>${paymentMap[sale.payment] || sale.payment}</span>
+          <span>${escapeHtml(safePayment)}</span>
         </p>
         ${sale.member_name ? `
           <p style="display: flex; justify-content: space-between; margin: 3px 0;">
             <span>会员:</span>
-            <span>${sale.member_name}</span>
+            <span>${escapeHtml(sale.member_name)}</span>
           </p>
           <p style="display: flex; justify-content: space-between; margin: 3px 0;">
             <span>获得积分:</span>
-            <span>+${Math.floor(sale.total || 0)}</span>
+            <span>+${escapeHtml(sale.points ?? Math.floor(sale.total || 0))}</span>
           </p>
         ` : ''}
       </div>
@@ -108,13 +123,24 @@ export function previewReceipt(sale, onClose) {
   // 操作栏
   const toolbar = document.createElement('div');
   toolbar.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 15px;border-bottom:1px solid #eee;background:#fafafa;border-radius:8px 8px 0 0;';
-  toolbar.innerHTML = `
-    <span style="font-weight:bold;font-size:14px;">📄 小票预览</span>
-    <div>
-      <button id="receipt-print-btn" style="margin-right:8px;padding:6px 16px;background:#409eff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">打印</button>
-      <button id="receipt-close-btn" style="padding:6px 16px;background:#909399;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">关闭</button>
-    </div>
-  `;
+  const toolbarTitle = document.createElement('span');
+  toolbarTitle.textContent = '小票预览';
+  toolbarTitle.style.cssText = 'font-weight:bold;font-size:14px;';
+  const toolbarActions = document.createElement('div');
+  const printButton = document.createElement('button');
+  printButton.id = 'receipt-print-btn';
+  printButton.type = 'button';
+  printButton.textContent = '打印';
+  printButton.style.cssText = 'margin-right:8px;padding:6px 16px;background:#409eff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;';
+  const closeButton = document.createElement('button');
+  closeButton.id = 'receipt-close-btn';
+  closeButton.type = 'button';
+  closeButton.textContent = '关闭';
+  closeButton.style.cssText = 'padding:6px 16px;background:#909399;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;';
+  toolbarActions.appendChild(printButton);
+  toolbarActions.appendChild(closeButton);
+  toolbar.appendChild(toolbarTitle);
+  toolbar.appendChild(toolbarActions);
 
   // 小票内容
   const content = document.createElement('div');
@@ -172,7 +198,7 @@ function printReceiptArea(sale) {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>销售小票 - ${sale.id || ''}</title>
+        <title>销售小票 - ${escapeHtml(sale.id || '')}</title>
         <style>
           @media print {
             body { margin: 0; padding: 10px; }

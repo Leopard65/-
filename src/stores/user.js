@@ -5,10 +5,19 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api'
 
+function readStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null')
+  } catch {
+    localStorage.removeItem('user')
+    return null
+  }
+}
+
 export const useUserStore = defineStore('user', () => {
   // 状态
   const token = ref(localStorage.getItem('token') || '')
-  const userInfo = ref(JSON.parse(localStorage.getItem('user') || 'null'))
+  const userInfo = ref(readStoredUser())
 
   // 计算属性
   const isLoggedIn = computed(() => !!token.value)

@@ -44,11 +44,21 @@ const iconStyle = computed(() => ({
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-5);
-  background: var(--bg-card);
+  background:
+    linear-gradient(180deg, #fff, var(--bg-muted));
   border: 1px solid var(--border-color-light);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   transition: box-shadow 0.15s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.metric::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--color-accent);
 }
 .metric--clickable { cursor: pointer; }
 .metric--clickable:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
@@ -62,9 +72,10 @@ const iconStyle = computed(() => ({
   justify-content: center;
   font-size: 24px;
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent);
 }
 .metric__body { min-width: 0; }
-.metric__label { font-size: var(--font-aux); color: var(--text-secondary); }
+.metric__label { font-size: var(--font-aux); color: var(--text-secondary); font-weight: 600; }
 .metric__value {
   font-size: var(--font-metric);
   font-weight: 700;

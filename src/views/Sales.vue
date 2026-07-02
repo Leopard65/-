@@ -3,7 +3,7 @@
 
   <el-row :gutter="16" class="cashier">
     <!-- 左：选购商品 -->
-    <el-col :span="7">
+    <el-col :xs="24" :lg="7">
       <SectionPanel class="col-panel">
         <template #title><el-icon><Search /></el-icon> 选购商品</template>
 
@@ -40,7 +40,7 @@
     </el-col>
 
     <!-- 中：购物车清单 -->
-    <el-col :span="10">
+    <el-col :xs="24" :lg="10">
       <SectionPanel class="col-panel">
         <template #title><el-icon><ShoppingCart /></el-icon> 购物车清单</template>
         <template #actions>
@@ -55,7 +55,7 @@
           </el-table-column>
           <el-table-column label="数量" width="120" align="center">
             <template #default="{ row }">
-              <el-input-number v-model="row.quantity" :min="1" :max="row.stock" size="small" controls-position="right" style="width:96px" />
+              <el-input-number v-model="row.quantity" :min="1" :max="row.stock" size="small" controls-position="right" class="qty-input" />
             </template>
           </el-table-column>
           <el-table-column label="小计" width="92" align="right">
@@ -72,16 +72,16 @@
     </el-col>
 
     <!-- 右：结算面板 -->
-    <el-col :span="7">
+    <el-col :xs="24" :lg="7">
       <SectionPanel class="col-panel">
         <template #title><el-icon><Money /></el-icon> 结算</template>
 
         <div class="settle-field">
           <label>会员（可选）</label>
-          <el-select v-model="memberId" placeholder="选择会员享折扣与积分" clearable filterable style="width:100%">
+          <el-select v-model="memberId" placeholder="选择会员享折扣与积分" clearable filterable class="full-field">
             <el-option v-for="m in members" :key="m.id" :label="`${m.name} (${m.phone})`" :value="m.id">
-              <span style="float:left">{{ m.name }}</span>
-              <span style="float:right;color:var(--text-secondary);font-size:13px">{{ m.level }}</span>
+              <span class="member-option__name">{{ m.name }}</span>
+              <span class="member-option__level">{{ m.level }}</span>
             </el-option>
           </el-select>
           <div v-if="selectedMember" class="member-hint">
@@ -133,7 +133,7 @@
 
   <!-- 最近销售记录 -->
   <SectionPanel title="最近销售记录">
-    <el-table :data="recentSales" stripe size="small" style="width:100%">
+    <el-table :data="recentSales" stripe size="small" class="recent-table">
       <el-table-column prop="id" label="单号" width="80" />
       <el-table-column prop="member_name" label="会员" min-width="100">
         <template #default="{ row }">{{ row.member_name || '-' }}</template>
@@ -408,6 +408,7 @@ onBeforeRouteLeave((to, from, next) => {
 
 <style scoped>
 .cashier { margin-bottom: 20px; }
+.cashier :deep(.el-col) { margin-bottom: var(--space-5); }
 /* 三栏等高，内容区像收银界面 */
 .col-panel { height: 560px; display: flex; flex-direction: column; }
 .col-panel :deep(.panel__body) { flex: 1; overflow-y: auto; }
@@ -437,10 +438,14 @@ onBeforeRouteLeave((to, from, next) => {
 /* 购物车 */
 .cart-count { font-size: 13px; color: var(--text-secondary); margin-right: 8px; }
 .cart-table { width: 100%; }
+.qty-input { width: 96px; }
 
 /* 结算 */
 .settle-field { margin-bottom: 16px; }
 .settle-field label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-regular); }
+.full-field { width: 100%; }
+.member-option__name { float: left; }
+.member-option__level { float: right; color: var(--text-secondary); font-size: 13px; }
 .pay-group { display: flex; }
 .pay-group :deep(.el-radio-button) { flex: 1; }
 .pay-group :deep(.el-radio-button__inner) { width: 100%; }
@@ -456,5 +461,13 @@ onBeforeRouteLeave((to, from, next) => {
 
 .checkout-btn { width: 100%; height: 52px; font-size: 17px; font-weight: 600; }
 
+.recent-table { width: 100%; }
 .pager { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+@media (max-width: 1200px) {
+  .col-panel {
+    height: auto;
+    min-height: 420px;
+  }
+}
 </style>

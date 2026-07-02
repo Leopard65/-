@@ -120,6 +120,7 @@ async function runChecks() {
   check('[P2] 收银员访问会员等级 403', (await req('GET', '/member-levels', ctoken)).status === 403);
   await req('PUT', `/users/${cu.data.id}`, token, { status: 0 });
   check('被禁用账号登录 403', (await req('POST', '/auth/login', null, { username: 'smoke_cashier', password: 'pass1234' })).status === 403);
+  check('被禁用账号旧 token 访问业务 403', (await req('GET', '/members', ctoken)).status === 403);
   check('不能禁用当前登录账号(400)', (await req('PUT', `/users/${adminId}`, token, { status: 0 })).status === 400);
   check('不能降级最后一个管理员(400)', (await req('PUT', `/users/${adminId}`, token, { role: 'cashier' })).status === 400);
 

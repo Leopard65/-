@@ -31,7 +31,12 @@ api.interceptors.response.use(
         window.location.href = '/login';
         break;
       case 403:
-        ElMessage.error('权限不足');
+        ElMessage.error(data?.error || '权限不足');
+        if (data?.error?.includes('禁用')) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
         break;
       case 404:
         ElMessage.error('请求的资源不存在');

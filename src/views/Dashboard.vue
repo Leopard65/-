@@ -3,10 +3,29 @@
     <!-- 页面标题 -->
     <PageHeader title="仪表盘" description="今日经营概览与待办事项">
       <template #actions>
-        <span style="color:var(--text-secondary);font-size:13px">最后更新: {{ lastUpdated }}</span>
+        <span class="dashboard-meta">最后更新: {{ lastUpdated }}</span>
         <el-button :icon="Refresh" @click="handleRefresh" :loading="fetching">刷新</el-button>
       </template>
     </PageHeader>
+
+    <div class="ops-strip">
+      <div class="ops-strip__item">
+        <span class="ops-strip__label">营业状态</span>
+        <strong>营业中</strong>
+      </div>
+      <div class="ops-strip__item">
+        <span class="ops-strip__label">库存预警</span>
+        <strong>{{ data.lowStock?.length || 0 }} 项</strong>
+      </div>
+      <div class="ops-strip__item">
+        <span class="ops-strip__label">待审核退货</span>
+        <strong>{{ data.pendingReturns || 0 }} 单</strong>
+      </div>
+      <div class="ops-strip__item">
+        <span class="ops-strip__label">临期批次</span>
+        <strong>{{ (data.nearExpiry || 0) + (data.expiredBatches || 0) }} 批</strong>
+      </div>
+    </div>
 
     <!-- 核心 KPI -->
     <div class="metric-grid">
@@ -25,14 +44,14 @@
     </div>
 
     <!-- 趋势 + 今日目标完成率 -->
-    <el-row :gutter="20" style="margin-bottom: 20px">
-      <el-col :span="16">
+    <el-row :gutter="20" class="dashboard-row">
+      <el-col :xs="24" :lg="16">
         <SectionPanel title="近 7 天销售趋势">
           <div v-show="data.trend && data.trend.length" ref="trendChartRef" class="chart chart--lg"></div>
           <EmptyState v-if="!data.trend || !data.trend.length" description="暂无销售数据" />
         </SectionPanel>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :lg="8">
         <SectionPanel title="今日目标完成率">
           <div ref="gaugeChartRef" class="chart chart--lg"></div>
           <div class="target-foot">
@@ -43,8 +62,8 @@
     </el-row>
 
     <!-- 热销排行 + 占比 + 待办提醒 -->
-    <el-row :gutter="20" style="margin-bottom: 20px">
-      <el-col :span="8">
+    <el-row :gutter="20" class="dashboard-row">
+      <el-col :xs="24" :md="12" :xl="8">
         <SectionPanel title="热销排行 TOP5">
           <div v-if="data.hotProducts?.length" class="hot-list">
             <div v-for="(item, i) in data.hotProducts" :key="i" class="hot-item">
@@ -56,21 +75,21 @@
           <EmptyState v-else description="暂无销售数据" />
         </SectionPanel>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :md="12" :xl="8">
         <SectionPanel title="热销销量占比">
           <div v-show="data.hotProducts?.length" ref="donutChartRef" class="chart chart--md"></div>
           <EmptyState v-if="!data.hotProducts?.length" description="暂无销售数据" />
         </SectionPanel>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :xl="8">
         <SectionPanel title="待办提醒">
           <div v-if="todos.length" class="todo-list">
             <div v-for="t in todos" :key="t.key" class="todo-row" @click="goTo(t.path)">
-              <span class="todo-icon" :style="{ color: `var(--color-${t.tone})`, background: `color-mix(in srgb, var(--color-${t.tone}) 12%, transparent)` }">
+              <span class="todo-icon" :style="todoVars(t)">
                 <el-icon><component :is="t.icon" /></el-icon>
               </span>
               <span class="todo-label">{{ t.label }}</span>
-              <span class="todo-count" :style="{ color: `var(--color-${t.tone})` }">{{ t.count }}</span>
+              <span class="todo-count" :style="todoVars(t)">{{ t.count }}</span>
               <el-icon class="todo-arrow"><ArrowRight /></el-icon>
             </div>
           </div>
@@ -81,7 +100,7 @@
 
     <!-- 库存预警明细 -->
     <SectionPanel title="库存预警明细">
-      <el-table :data="data.lowStock || []" style="width:100%" max-height="320" stripe>
+      <el-table :data="data.lowStock || []" class="dashboard-table" max-height="320" stripe>
         <el-table-column prop="name" label="商品" min-width="160" />
         <el-table-column prop="category_name" label="分类" width="120" />
         <el-table-column prop="stock" label="库存" width="100">
@@ -159,6 +178,11 @@ const todos = computed(() => {
     { key: 'out', label: '缺货商品', count: outOfStock, tone: 'danger', icon: CircleClose, path: '/inventory' }
   ]
   return items.filter(i => i.count > 0)
+})
+
+const todoVars = (item) => ({
+  '--todo-tone': `var(--color-${item.tone})`,
+  '--todo-bg': `color-mix(in srgb, var(--color-${item.tone}) 12%, transparent)`
 })
 
 const renderTrendChart = () => {
@@ -273,6 +297,57 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.dashboard-meta {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-data);
+}
+
+.ops-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.ops-strip__item {
+  padding: 12px 14px;
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #fff, var(--bg-muted));
+  box-shadow: var(--shadow-card);
+  border-left: 4px solid var(--color-accent);
+}
+
+.ops-strip__label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.ops-strip__item strong {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-family: var(--font-data);
+}
+
+.dashboard-row {
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-row :deep(.el-col) {
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-row :deep(.el-col) .panel {
+  height: 100%;
+}
+
+.dashboard-table {
+  width: 100%;
+}
+
 /* 图表容器高度稳定 */
 .chart { width: 100%; }
 .chart--lg { height: 300px; }
@@ -294,8 +369,20 @@ onUnmounted(() => {
 .todo-list { display: flex; flex-direction: column; gap: 10px; }
 .todo-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-color-light); border-radius: var(--radius-md); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .todo-row:hover { background: var(--bg-muted); border-color: var(--border-color); }
-.todo-icon { width: 34px; height: 34px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.todo-icon { width: 34px; height: 34px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: var(--todo-tone); background: var(--todo-bg); }
 .todo-label { flex: 1; color: var(--text-regular); }
-.todo-count { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.todo-count { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--todo-tone); }
 .todo-arrow { color: var(--text-placeholder); }
+
+@media (max-width: 900px) {
+  .ops-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .ops-strip {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

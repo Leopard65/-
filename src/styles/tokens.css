@@ -6,42 +6,44 @@
  */
 :root {
   /* ===== 品牌 / 语义色 ===== */
-  --color-primary: #3b6fe0;          /* 主色：稳重商务蓝 */
-  --color-primary-dark: #2f59b3;
-  --color-success: #2faa6e;
-  --color-warning: #e6932e;
-  --color-danger: #e0564f;
-  --color-info: #86909c;
-  --color-accent: #11998e;           /* 第二强调色：墨青，用于数据/亮点，打破单一蓝 */
+  --color-primary: #176b4d;          /* 主色：库存绿，贴合超市运营状态 */
+  --color-primary-dark: #0f513a;
+  --color-success: #198754;
+  --color-warning: #c47a12;
+  --color-danger: #cf3f35;
+  --color-info: #667085;
+  --color-accent: #d99a18;           /* 货架价签黄，用于关键操作与高亮 */
+  --color-ink: #18251f;
 
   /* ===== 主色阶梯（供 hover / 浅底使用） ===== */
-  --color-primary-light-3: #769ae9;
-  --color-primary-light-5: #9db7f0;
-  --color-primary-light-7: #c4d4f6;
-  --color-primary-light-8: #d8e2fa;
-  --color-primary-light-9: #ebf1fc;
+  --color-primary-light-3: #62a98c;
+  --color-primary-light-5: #91c4ae;
+  --color-primary-light-7: #c0dfd0;
+  --color-primary-light-8: #d8ece3;
+  --color-primary-light-9: #edf7f2;
 
   /* ===== 文本 ===== */
-  --text-primary: #1f2329;           /* 标题 / 主要数字 */
-  --text-regular: #4e5969;           /* 正文 */
-  --text-secondary: #86909c;         /* 辅助 / 标签 */
-  --text-placeholder: #a8abb2;
+  --text-primary: #16221d;           /* 标题 / 主要数字 */
+  --text-regular: #43524b;           /* 正文 */
+  --text-secondary: #748079;         /* 辅助 / 标签 */
+  --text-placeholder: #9da7a1;
 
   /* ===== 边框 / 分割线 ===== */
-  --border-color: #e5e6eb;
-  --border-color-light: #eef0f3;
+  --border-color: #dfe6df;
+  --border-color-light: #e9eee8;
 
   /* ===== 背景 ===== */
-  --bg-page: #f5f6f8;                /* 内容区底色 */
+  --bg-page: #f4f7f2;                /* 内容区底色 */
   --bg-card: #ffffff;                /* 卡片 / 面板 */
-  --bg-muted: #f7f8fa;              /* 浅色填充块（结算框、表头等） */
+  --bg-muted: #f7faf5;              /* 浅色填充块（结算框、表头等） */
+  --bg-warm: #fff9e8;               /* 价签/提示底色 */
 
   /* ===== 侧栏（深色） ===== */
-  --sidebar-bg: #20232a;
-  --sidebar-bg-deep: #1a1d23;
-  --sidebar-text: #c2c8d1;
-  --sidebar-text-muted: #7d8694;
-  --sidebar-active-bg: #2b3340;
+  --sidebar-bg: #16221d;
+  --sidebar-bg-deep: #101a16;
+  --sidebar-text: #cdd8d1;
+  --sidebar-text-muted: #7f9188;
+  --sidebar-active-bg: #22362e;
 
   /* ===== 间距比例（4 的倍数） ===== */
   --space-1: 4px;
@@ -58,8 +60,8 @@
   --radius-lg: 8px;
 
   /* ===== 阴影（两级，全站统一） ===== */
-  --shadow-card: 0 1px 2px rgba(31, 35, 41, 0.04), 0 2px 8px rgba(31, 35, 41, 0.04);
-  --shadow-hover: 0 4px 16px rgba(31, 35, 41, 0.08);
+  --shadow-card: 0 1px 2px rgba(22, 34, 29, 0.04), 0 10px 28px rgba(22, 34, 29, 0.06);
+  --shadow-hover: 0 12px 30px rgba(22, 34, 29, 0.10);
 
   /* ===== 字号 ===== */
   --font-page-title: 20px;
@@ -67,11 +69,14 @@
   --font-body: 14px;
   --font-aux: 13px;
   --font-metric: 26px;
+  --font-data: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
   /* ===== 布局尺寸 ===== */
   --layout-aside: 220px;
   --layout-aside-collapsed: 64px;
   --layout-header: 56px;
+  --motion-fast: 160ms ease;
+  --motion-normal: 220ms ease;
 }
 
 /* ===== 映射到 Element Plus 主题变量，使内置组件与令牌一致 ===== */
