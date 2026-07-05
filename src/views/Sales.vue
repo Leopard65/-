@@ -1,135 +1,32 @@
 <template>
   <PageHeader title="销售收银" description="商品结算、会员折扣与小票打印" />
 
-  <el-row :gutter="16" class="cashier">
-    <!-- 左：选购商品 -->
-    <el-col :xs="24" :lg="7">
-      <SectionPanel class="col-panel">
-        <template #title><el-icon><Search /></el-icon> 选购商品</template>
-
-        <el-input
-          ref="searchInputRef"
-          v-model="searchKeyword"
-          placeholder="商品名称 / 条码（支持扫码枪）"
-          clearable
-          size="large"
-          @keyup.enter="searchProduct"
-        >
-          <template #append>
-            <el-button :icon="Search" @click="searchProduct" />
-          </template>
-        </el-input>
-
-        <div v-if="scanMode" class="scan-hint">
-          <el-icon><Cpu /></el-icon> 扫码枪模式已激活 — 请扫描条形码
-        </div>
-
-        <div class="result-list">
-          <div v-if="searchResults.length">
-            <div v-for="p in searchResults" :key="p.id" class="result-item" @click="addToCart(p)">
-              <div class="result-main">
-                <span class="result-name">{{ p.name }}</span>
-                <span class="result-stock">库存 {{ p.stock }}{{ p.unit }}</span>
-              </div>
-              <span class="result-price num">{{ formatMoney(p.price) }}</span>
-            </div>
-          </div>
-          <EmptyState v-else :image-size="60" description="搜索商品名称或条码" />
-        </div>
-      </SectionPanel>
-    </el-col>
-
-    <!-- 中：购物车清单 -->
-    <el-col :xs="24" :lg="10">
-      <SectionPanel class="col-panel">
-        <template #title><el-icon><ShoppingCart /></el-icon> 购物车清单</template>
-        <template #actions>
-          <span class="cart-count">共 {{ cartTotal.quantity }} 件</span>
-          <el-button v-if="cart.length" link type="danger" :icon="Delete" @click="cart = []">清空</el-button>
-        </template>
-
-        <el-table v-if="cart.length" :data="cart" size="default" class="cart-table">
-          <el-table-column prop="name" label="商品" min-width="110" show-overflow-tooltip />
-          <el-table-column label="单价" width="78" align="right">
-            <template #default="{ row }"><span class="num">{{ formatMoney(row.price) }}</span></template>
-          </el-table-column>
-          <el-table-column label="数量" width="120" align="center">
-            <template #default="{ row }">
-              <el-input-number v-model="row.quantity" :min="1" :max="row.stock" size="small" controls-position="right" class="qty-input" />
-            </template>
-          </el-table-column>
-          <el-table-column label="小计" width="92" align="right">
-            <template #default="{ row }"><span class="num amount">{{ formatMoney(row.price * row.quantity) }}</span></template>
-          </el-table-column>
-          <el-table-column width="46" align="center">
-            <template #default="{ $index }">
-              <el-button type="danger" :icon="Delete" circle size="small" plain @click="cart.splice($index, 1)" />
-            </template>
-          </el-table-column>
-        </el-table>
-        <EmptyState v-else description="购物车为空，请从左侧搜索添加商品" />
-      </SectionPanel>
-    </el-col>
-
-    <!-- 右：结算面板 -->
-    <el-col :xs="24" :lg="7">
-      <SectionPanel class="col-panel">
-        <template #title><el-icon><Money /></el-icon> 结算</template>
-
-        <div class="settle-field">
-          <label>会员（可选）</label>
-          <el-select v-model="memberId" placeholder="选择会员享折扣与积分" clearable filterable class="full-field">
-            <el-option v-for="m in members" :key="m.id" :label="`${m.name} (${m.phone})`" :value="m.id">
-              <span class="member-option__name">{{ m.name }}</span>
-              <span class="member-option__level">{{ m.level }}</span>
-            </el-option>
-          </el-select>
-          <div v-if="selectedMember" class="member-hint">
-            <el-tag size="small" :type="settlement.hasDiscount ? 'warning' : 'info'" effect="light">{{ selectedMember.level }}</el-tag>
-            <span v-if="settlement.hasDiscount">享 {{ (settlement.discount * 10).toFixed(2) }} 折</span>
-            <span v-else>无折扣</span>
-            <span>· 积分 ×{{ settlement.pointsRate }}</span>
-          </div>
-        </div>
-
-        <div class="settle-field">
-          <label>支付方式</label>
-          <el-radio-group v-model="payment" class="pay-group">
-            <el-radio-button value="cash">现金</el-radio-button>
-            <el-radio-button value="wechat">微信</el-radio-button>
-            <el-radio-button value="alipay">支付宝</el-radio-button>
-          </el-radio-group>
-        </div>
-
-        <div class="settle-box">
-          <div class="settle-row">
-            <span>商品数量</span>
-            <span class="num">{{ cartTotal.quantity }} 件</span>
-          </div>
-          <div class="settle-row">
-            <span>原价小计</span>
-            <span class="num">{{ formatMoney(settlement.original) }}</span>
-          </div>
-          <div v-if="memberId && settlement.hasDiscount" class="settle-row settle-discount">
-            <span>会员优惠（{{ (settlement.discount * 10).toFixed(2) }} 折）</span>
-            <span class="num">-{{ formatMoney(settlement.savings) }}</span>
-          </div>
-          <div class="settle-total">
-            <span>应付金额</span>
-            <span class="settle-amount num">{{ formatMoney(settlement.payable) }}</span>
-          </div>
-          <div v-if="memberId" class="settle-row settle-points">
-            <span>预计获得积分</span>
-            <span class="num">+{{ settlement.points }}</span>
-          </div>
-        </div>
-
-        <el-button type="primary" size="large" class="checkout-btn" :icon="Checked" :disabled="!cart.length" @click="handleCheckout">
-          确认结算 · {{ formatMoney(settlement.payable) }}
-        </el-button>
-      </SectionPanel>
-    </el-col>
-  </el-row>
+  <div class="cashier-grid">
+    <ProductPicker
+      ref="productPickerRef"
+      v-model:search-keyword="searchKeyword"
+      :search-results="searchResults"
+      :scan-mode="scanMode"
+      @search="searchProduct"
+      @add="addToCart"
+    />
+    <CartPanel
+      :cart="cart"
+      :cart-total="cartTotal"
+      @clear="clearCart"
+      @remove="removeCartItem"
+    />
+    <CheckoutPanel
+      v-model:member-id="memberId"
+      v-model:payment="payment"
+      :members="members"
+      :selected-member="selectedMember"
+      :settlement="settlement"
+      :cart-total="cartTotal"
+      :disabled="!cart.length"
+      @checkout="handleCheckout"
+    />
+  </div>
 
   <!-- 最近销售记录 -->
   <SectionPanel title="最近销售记录">
@@ -166,16 +63,18 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Search, ShoppingCart, Money, Checked, Cpu } from '@element-plus/icons-vue'
 import { productsApi, membersApi, salesApi } from '@/api'
 import { printReceipt } from '@/utils/receipt'
 import { formatMoney } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
 import SectionPanel from '@/components/SectionPanel.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import ProductPicker from '@/components/cashier/ProductPicker.vue'
+import CartPanel from '@/components/cashier/CartPanel.vue'
+import CheckoutPanel from '@/components/cashier/CheckoutPanel.vue'
 
 const router = useRouter()
-const searchInputRef = ref(null)
+const productPickerRef = ref(null)
 const allProducts = ref([])
 const searchKeyword = ref('')
 const searchResults = ref([])
@@ -328,6 +227,14 @@ const addToCart = (product) => {
   searchResults.value = []
 }
 
+const clearCart = () => {
+  cart.value = []
+}
+
+const removeCartItem = (index) => {
+  cart.value.splice(index, 1)
+}
+
 const loadSales = async () => {
   const res = await salesApi.getSales({ page: salesPage.value, pageSize: salesPageSize.value })
   recentSales.value = res.data
@@ -407,65 +314,42 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <style scoped>
-.cashier { margin-bottom: 20px; }
-.cashier :deep(.el-col) { margin-bottom: var(--space-5); }
-/* 三栏等高，内容区像收银界面 */
-.col-panel { height: 560px; display: flex; flex-direction: column; }
-.col-panel :deep(.panel__body) { flex: 1; overflow-y: auto; }
-
-/* 扫码提示 */
-.scan-hint {
-  display: flex; align-items: center; gap: 6px;
-  margin-top: 12px; padding: 8px 12px;
-  background: var(--color-primary-light-9); color: var(--color-primary);
-  border-radius: var(--radius-md); font-size: 12px;
+.cashier-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.86fr) minmax(440px, 1.28fr) minmax(300px, 0.86fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
-/* 搜索结果 */
-.result-list { margin-top: 14px; }
-.result-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px; cursor: pointer; border-radius: var(--radius-md);
-  border: 1px solid var(--border-color-light); margin-bottom: 8px;
-  transition: background 0.15s, border-color 0.15s;
+.cashier-grid :deep(.cashier-panel) {
+  height: 590px;
+  display: flex;
+  flex-direction: column;
 }
-.result-item:hover { background: var(--color-primary-light-9); border-color: var(--color-primary-light-7); }
-.result-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.result-name { color: var(--text-primary); font-weight: 500; }
-.result-stock { font-size: 12px; color: var(--text-secondary); }
-.result-price { color: var(--color-primary); font-weight: 600; }
 
-/* 购物车 */
-.cart-count { font-size: 13px; color: var(--text-secondary); margin-right: 8px; }
-.cart-table { width: 100%; }
-.qty-input { width: 96px; }
+.cashier-grid :deep(.panel__header) {
+  min-height: 58px;
+}
 
-/* 结算 */
-.settle-field { margin-bottom: 16px; }
-.settle-field label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-regular); }
-.full-field { width: 100%; }
-.member-option__name { float: left; }
-.member-option__level { float: right; color: var(--text-secondary); font-size: 13px; }
-.pay-group { display: flex; }
-.pay-group :deep(.el-radio-button) { flex: 1; }
-.pay-group :deep(.el-radio-button__inner) { width: 100%; }
-.member-hint { margin-top: 8px; font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
-
-.settle-box { background: var(--bg-muted); padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; }
-.settle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: var(--text-regular); font-size: 14px; }
-.settle-discount { color: var(--color-warning); }
-.settle-points { color: var(--color-success); margin-bottom: 0; margin-top: 10px; }
-.settle-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; border-top: 1px dashed var(--border-color); }
-.settle-total > span:first-child { font-size: 15px; color: var(--text-primary); font-weight: 600; }
-.settle-amount { font-size: 30px; font-weight: 700; color: var(--color-danger); }
-
-.checkout-btn { width: 100%; height: 52px; font-size: 17px; font-weight: 600; }
+.cashier-grid :deep(.panel__body) {
+  flex: 1;
+}
 
 .recent-table { width: 100%; }
 .pager { display: flex; justify-content: flex-end; margin-top: 12px; }
 
-@media (max-width: 1200px) {
-  .col-panel {
+@media (max-width: 1280px) {
+  .cashier-grid {
+    grid-template-columns: minmax(280px, 0.9fr) minmax(390px, 1.2fr) minmax(280px, 0.9fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .cashier-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cashier-grid :deep(.cashier-panel) {
     height: auto;
     min-height: 420px;
   }
