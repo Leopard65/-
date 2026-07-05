@@ -32,16 +32,21 @@ const emit = defineEmits(['clear', 'remove'])
           <span class="num">{{ formatMoney(row.price) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" width="124" align="center">
+      <el-table-column label="数量" width="148" align="center">
         <template #default="{ row }">
-          <el-input-number
-            v-model="row.quantity"
-            :min="1"
-            :max="row.stock"
-            size="small"
-            controls-position="right"
-            class="qty-input"
-          />
+          <div class="qty-cell">
+            <el-input-number
+              v-model="row.quantity"
+              :min="1"
+              :max="row.stock"
+              size="small"
+              controls-position="right"
+              class="qty-input"
+            />
+            <span class="stock-limit" :class="{ 'is-limit': row.quantity >= row.stock }">
+              上限 {{ row.stock }}
+            </span>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="小计" width="106" align="right">
@@ -77,5 +82,23 @@ const emit = defineEmits(['clear', 'remove'])
 
 .qty-input {
   width: 96px;
+}
+
+.qty-cell {
+  display: inline-flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stock-limit {
+  color: var(--text-placeholder);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.stock-limit.is-limit {
+  color: var(--color-warning);
+  font-weight: 700;
 }
 </style>

@@ -6,6 +6,7 @@
       ref="productPickerRef"
       v-model:search-keyword="searchKeyword"
       :search-results="searchResults"
+      :quick-products="quickProducts"
       :scan-mode="scanMode"
       @search="searchProduct"
       @add="addToCart"
@@ -200,6 +201,19 @@ const settlement = computed(() => {
   return { original, discount, pointsRate, payable, savings, points, hasDiscount: discount < 1 }
 })
 
+const quickProducts = computed(() => {
+  return allProducts.value
+    .filter(p => p.status === 1 && p.stock > 0)
+    .slice()
+    .sort((a, b) => {
+      const aHealthy = a.min_stock == null || a.stock > a.min_stock
+      const bHealthy = b.min_stock == null || b.stock > b.min_stock
+      if (aHealthy !== bHealthy) return aHealthy ? -1 : 1
+      return String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN')
+    })
+    .slice(0, 12)
+})
+
 const searchProduct = () => {
   const kw = searchKeyword.value.trim().toLowerCase()
   if (!kw) { searchResults.value = []; return }
@@ -210,6 +224,14 @@ const searchProduct = () => {
 }
 
 const addToCart = (product) => {
+  if (product.status !== 1) {
+    ElMessage.warning(`商品「${product.name}」已下架`)
+    return
+  }
+  if (product.stock <= 0) {
+    ElMessage.warning(`商品「${product.name}」库存不足`)
+    return
+  }
   const exist = cart.value.find(c => c.product_id === product.id)
   if (exist) {
     if (exist.quantity < product.stock) exist.quantity++
