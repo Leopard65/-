@@ -338,7 +338,13 @@ const isEditableTarget = (target) => {
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || Boolean(target.closest?.('.el-input, .el-textarea, .el-select'))
 }
 
-const isOverlayOpen = () => Boolean(document.querySelector('.el-overlay, .el-select-dropdown'))
+const isOverlayOpen = () => {
+  return Array.from(document.querySelectorAll('.el-overlay, .el-select-dropdown')).some((node) => {
+    const style = window.getComputedStyle(node)
+    const rect = node.getBoundingClientRect()
+    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0
+  })
+}
 
 const handleCashierShortcut = (e) => {
   if (e.ctrlKey || e.altKey || e.metaKey) return false

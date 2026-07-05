@@ -26,13 +26,13 @@ const emit = defineEmits(['clear', 'remove'])
     </template>
 
     <el-table v-if="cart.length" :data="cart" size="default" class="cart-table">
-      <el-table-column prop="name" label="商品" min-width="130" show-overflow-tooltip />
-      <el-table-column label="单价" width="86" align="right">
+      <el-table-column prop="name" label="商品" min-width="104" show-overflow-tooltip />
+      <el-table-column label="单价" width="74" align="right">
         <template #default="{ row }">
           <span class="num">{{ formatMoney(row.price) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" width="148" align="center">
+      <el-table-column label="数量" width="112" align="center">
         <template #default="{ row }">
           <div class="qty-cell">
             <el-input-number
@@ -49,12 +49,12 @@ const emit = defineEmits(['clear', 'remove'])
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="小计" width="106" align="right">
+      <el-table-column label="小计" width="88" align="right">
         <template #default="{ row }">
           <span class="num amount">{{ formatMoney(row.price * row.quantity) }}</span>
         </template>
       </el-table-column>
-      <el-table-column width="50" align="center">
+      <el-table-column width="40" align="center">
         <template #default="{ $index }">
           <el-button type="danger" :icon="Delete" circle size="small" plain @click="emit('remove', $index)" />
         </template>
@@ -81,7 +81,7 @@ const emit = defineEmits(['clear', 'remove'])
 }
 
 .qty-input {
-  width: 96px;
+  width: 86px;
 }
 
 .qty-cell {
