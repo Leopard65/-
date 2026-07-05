@@ -8,7 +8,7 @@
       :search-results="searchResults"
       :quick-products="quickProducts"
       :scan-mode="scanMode"
-      @search="searchProduct"
+      @search="handleSearchSubmit"
       @add="addToCart"
     />
     <CartPanel
@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { productsApi, membersApi, salesApi } from '@/api'
@@ -105,6 +105,8 @@ const MIN_BARCODE_LENGTH = 4 // 最短条码长度
  * 3. 输入速度远快于人工打字
  */
 const handleKeyDown = (e) => {
+  if (handleCashierShortcut(e)) return
+
   // 忽略组合键和功能键
   if (e.ctrlKey || e.altKey || e.metaKey) return
   if (['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'].includes(e.key)) return
@@ -214,22 +216,40 @@ const quickProducts = computed(() => {
     .slice(0, 12)
 })
 
-const searchProduct = () => {
+const isSellableProduct = (product) => product.status === 1 && product.stock > 0
+
+const focusSearch = () => {
+  nextTick(() => productPickerRef.value?.focusSearch?.())
+}
+
+const clearSearch = () => {
+  searchKeyword.value = ''
+  searchResults.value = []
+}
+
+const getSearchMatches = () => {
   const kw = searchKeyword.value.trim().toLowerCase()
-  if (!kw) { searchResults.value = []; return }
-  searchResults.value = allProducts.value.filter(p =>
+  if (!kw) return []
+  return allProducts.value.filter(p =>
     (p.name && p.name.toLowerCase().includes(kw)) ||
     (p.barcode && p.barcode.includes(kw))
   )
 }
 
+const searchProduct = () => {
+  searchResults.value = getSearchMatches()
+}
+
+const handleSearchSubmit = ({ source } = {}) => {
+  searchProduct()
+  if (source !== 'enter') return
+  const sellable = searchResults.value.filter(isSellableProduct)
+  if (sellable.length === 1) addToCart(sellable[0])
+}
+
 const addToCart = (product) => {
-  if (product.status !== 1) {
-    ElMessage.warning(`商品「${product.name}」已下架`)
-    return
-  }
-  if (product.stock <= 0) {
-    ElMessage.warning(`商品「${product.name}」库存不足`)
+  if (!isSellableProduct(product)) {
+    ElMessage.warning(product.status !== 1 ? `商品「${product.name}」已下架` : `商品「${product.name}」库存不足`)
     return
   }
   const exist = cart.value.find(c => c.product_id === product.id)
@@ -245,12 +265,19 @@ const addToCart = (product) => {
       quantity: 1
     })
   }
-  searchKeyword.value = ''
-  searchResults.value = []
+  clearSearch()
+  focusSearch()
 }
 
-const clearCart = () => {
-  cart.value = []
+const clearCart = async () => {
+  if (!cart.value.length) return
+  try {
+    await ElMessageBox.confirm('确定清空当前购物车？', '清空确认', { type: 'warning' })
+    cart.value = []
+    focusSearch()
+  } catch {
+    // 用户取消
+  }
 }
 
 const removeCartItem = (index) => {
@@ -299,9 +326,46 @@ const handleCheckout = async () => {
     // 刷新数据
     allProducts.value = (await productsApi.getProducts({ pageSize: 1000 })).data
     loadSales()
+    focusSearch()
   } catch (e) {
     // 错误已由拦截器处理
   }
+}
+
+const isEditableTarget = (target) => {
+  if (!target) return false
+  const tag = target.tagName
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || Boolean(target.closest?.('.el-input, .el-textarea, .el-select'))
+}
+
+const isOverlayOpen = () => Boolean(document.querySelector('.el-overlay, .el-select-dropdown'))
+
+const handleCashierShortcut = (e) => {
+  if (e.ctrlKey || e.altKey || e.metaKey) return false
+  if (isEditableTarget(e.target) || isOverlayOpen()) return false
+
+  if (e.key === '/') {
+    e.preventDefault()
+    focusSearch()
+    return true
+  }
+
+  if (e.key === 'F8') {
+    e.preventDefault()
+    if (!cart.value.length) return true
+    handleCheckout()
+    return true
+  }
+
+  if (e.key === 'Escape') {
+    if (!searchKeyword.value && !searchResults.value.length) return true
+    e.preventDefault()
+    clearSearch()
+    focusSearch()
+    return true
+  }
+
+  return false
 }
 
 onMounted(async () => {

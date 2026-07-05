@@ -50,10 +50,10 @@ defineExpose({ focusSearch })
       clearable
       size="large"
       class="product-search"
-      @keyup.enter="emit('search')"
+      @keyup.enter="emit('search', { source: 'enter' })"
     >
       <template #append>
-        <el-button :icon="Search" @click="emit('search')" />
+        <el-button :icon="Search" @click="emit('search', { source: 'button' })" />
       </template>
     </el-input>
 
