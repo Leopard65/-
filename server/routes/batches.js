@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
   try {
     const today = getToday();
     const warnDays = parseInt(req.query.warn_days) || DEFAULT_WARN_DAYS;
-    const filter = req.query.filter || 'all';          // all/near/expired/normal/cleared
+    const filter = req.query.filter || 'all';          // all/risk/near/expired/normal/cleared
     const productId = req.query.product_id ? parseInt(req.query.product_id) : null;
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 20;
@@ -47,6 +47,8 @@ router.get('/', (req, res) => {
     let filtered = enriched;
     if (filter === 'cleared') {
       filtered = enriched.filter(r => r.status === 'cleared');
+    } else if (filter === 'risk') {
+      filtered = enriched.filter(r => r.status === 'active' && ['near', 'expired'].includes(r.expiry_status));
     } else if (['near', 'expired', 'normal'].includes(filter)) {
       filtered = enriched.filter(r => r.status === 'active' && r.expiry_status === filter);
     }

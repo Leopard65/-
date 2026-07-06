@@ -134,7 +134,6 @@
         </div>
       </div>
 
-      <div class="brand-foot">毕业设计演示系统 · v1.0</div>
     </div>
 
     <!-- 右侧登录表单 -->
@@ -488,13 +487,6 @@ const handleLogin = async () => {
   width: 80px; height: 4px;
   background: #2D2D2D; border-radius: 999px;
   transition: all 0.2s ease-out;
-}
-
-.brand-foot {
-  position: relative; z-index: 2;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-  font-family: var(--font-data);
 }
 
 /* ===== 眼睛 / 瞳孔（子组件内部用类名，样式集中在此） ===== */

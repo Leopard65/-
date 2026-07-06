@@ -32,16 +32,20 @@
         <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="onFileChange" />
       </template>
 
-      <el-table-column label="图片" width="70">
+      <el-table-column label="商品信息" min-width="260">
         <template #default="{ row }">
-          <el-image v-if="row.image" :src="row.image" style="width:40px;height:40px;border-radius:4px" fit="cover" />
-          <span v-else class="no-img">无</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="商品" min-width="200">
-        <template #default="{ row }">
-          <div class="cell-name">{{ row.name }}</div>
-          <div class="cell-sub num">{{ row.barcode || '无条码' }}</div>
+          <div class="product-cell">
+            <div class="product-thumb">
+              <el-image v-if="row.image" :src="row.image" class="product-thumb__image" fit="cover" />
+              <span v-else class="product-thumb__placeholder" :style="productThumbStyle(row)">
+                {{ productInitial(row.name) }}
+              </span>
+            </div>
+            <div class="product-main">
+              <div class="cell-name">{{ row.name }}</div>
+              <div class="cell-sub num">{{ row.barcode || '无条码' }}</div>
+            </div>
+          </div>
         </template>
       </el-table-column>
       <el-table-column prop="category_name" label="分类" width="100">
@@ -57,6 +61,19 @@
         <template #default="{ row }">
           <div class="num" :class="{ 'amount--danger': row.stock <= row.min_stock }">{{ row.stock }}{{ row.unit }}</div>
           <div class="cell-sub num">{{ row.min_stock }}{{ row.unit }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="库存健康" width="170">
+        <template #default="{ row }">
+          <div class="stock-health">
+            <div class="stock-health__head">
+              <el-tag :type="stockHealth(row).type" size="small" effect="light">{{ stockHealth(row).text }}</el-tag>
+              <span class="stock-health__desc">{{ stockHealth(row).desc }}</span>
+            </div>
+            <div class="stock-meter" :class="`stock-meter--${stockHealth(row).tone}`">
+              <span :style="{ width: `${stockHealth(row).percent}%` }" />
+            </div>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="90">
@@ -205,6 +222,7 @@ const form = ref({})
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+const thumbColors = ['#176b4d', '#c08423', '#3b6fe0', '#8b5cdd', '#c95050', '#227a8a']
 
 // 商品状态：下架 > 缺货 > 低库存 > 正常（用于表格展示）
 const productStatus = (row) => {
@@ -212,6 +230,35 @@ const productStatus = (row) => {
   if (row.stock === 0) return { type: 'danger', text: '缺货' }
   if (row.stock <= row.min_stock) return { type: 'warning', text: '低库存' }
   return { type: 'success', text: '正常' }
+}
+
+const productInitial = (name) => String(name || '?').trim().slice(0, 1).toUpperCase() || '?'
+
+const productThumbStyle = (row) => {
+  const seed = String(row.name || row.barcode || row.id || '')
+  const sum = Array.from(seed).reduce((total, char) => total + char.charCodeAt(0), 0)
+  const color = thumbColors[sum % thumbColors.length]
+  return {
+    backgroundColor: color,
+    boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${color} 72%, #ffffff)`
+  }
+}
+
+const stockHealth = (row) => {
+  if (row.status !== 1) return { type: 'info', tone: 'info', text: '已下架', desc: '不参与销售', percent: 0 }
+  if (row.stock === 0) return { type: 'danger', tone: 'danger', text: '缺货', desc: '需立即补货', percent: 6 }
+
+  const stock = Number(row.stock) || 0
+  const minStock = Number(row.min_stock) || 0
+  if (minStock > 0 && stock <= minStock) {
+    const percent = Math.max(12, Math.min(45, Math.round((stock / minStock) * 45)))
+    return { type: 'warning', tone: 'warning', text: '低库存', desc: `安全线 ${minStock}${row.unit}`, percent }
+  }
+  if (minStock > 0 && stock <= minStock * 2) {
+    const percent = Math.max(46, Math.min(72, Math.round((stock / (minStock * 2)) * 72)))
+    return { type: 'primary', tone: 'primary', text: '需关注', desc: `接近预警线`, percent }
+  }
+  return { type: 'success', tone: 'success', text: '健康', desc: '库存充足', percent: 100 }
 }
 
 // Excel 导入
@@ -395,9 +442,88 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.no-img { color: var(--text-placeholder); font-size: 13px; }
+.product-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.product-thumb {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.product-thumb__image,
+.product-thumb__placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-thumb__image {
+  border: 1px solid var(--border-color-light);
+  background: var(--bg-muted);
+}
+
+.product-thumb__placeholder {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--font-data);
+}
+
+.product-main {
+  min-width: 0;
+}
+
 .cell-name { color: var(--text-primary); font-weight: 500; }
 .cell-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+.stock-health {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.stock-health__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stock-health__desc {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-muted);
+}
+
+.stock-meter span {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+}
+
+.stock-meter--danger span { background: var(--color-danger); }
+.stock-meter--warning span { background: var(--color-warning); }
+.stock-meter--primary span { background: var(--color-primary); }
+.stock-meter--success span { background: var(--color-success); }
+.stock-meter--info span { background: var(--color-info); }
 
 .product-uploader {
   width: 120px;

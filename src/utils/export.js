@@ -79,6 +79,92 @@ export function exportSales(sales) {
 }
 
 /**
+ * 导出经营周报（多工作表 Excel）
+ */
+export function exportBusinessWeeklyReport({ range, daily = [], products = [], categories = [], payments = [], profit = [] }) {
+  const totalAmount = daily.reduce((sum, item) => sum + (item.total_amount || 0), 0);
+  const totalRefund = daily.reduce((sum, item) => sum + (item.refund_amount || 0), 0);
+  const netAmount = daily.reduce((sum, item) => sum + (item.net_amount ?? ((item.total_amount || 0) - (item.refund_amount || 0))), 0);
+  const totalOrders = daily.reduce((sum, item) => sum + (item.order_count || 0), 0);
+  const grossProfit = profit.reduce((sum, item) => sum + (item.gross_profit || 0), 0);
+  const avgOrderValue = totalOrders > 0 ? netAmount / totalOrders : 0;
+
+  const wb = XLSX.utils.book_new();
+  const addSheet = (name, rows, cols = []) => {
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    if (cols.length) ws['!cols'] = cols.map(wch => ({ wch }));
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  };
+
+  addSheet('周报概览', [
+    ['经营周报', `${range[0]} 至 ${range[1]}`],
+    [],
+    ['净销售额', netAmount],
+    ['销售额', totalAmount],
+    ['退款合计', totalRefund],
+    ['订单数', totalOrders],
+    ['客单价', avgOrderValue],
+    ['毛利润', grossProfit]
+  ], [16, 20]);
+
+  addSheet('日销售', [
+    ['日期', '订单数', '销售额', '退款', '净销售额', '会员订单数'],
+    ...daily.map(item => [
+      item.date,
+      item.order_count || 0,
+      item.total_amount || 0,
+      item.refund_amount || 0,
+      item.net_amount ?? ((item.total_amount || 0) - (item.refund_amount || 0)),
+      item.member_count || 0
+    ])
+  ], [14, 10, 14, 14, 14, 12]);
+
+  addSheet('商品排行', [
+    ['商品', '条码', '销量', '销售额', '订单数'],
+    ...products.map(item => [
+      item.name,
+      item.barcode || '',
+      item.total_quantity || 0,
+      item.total_amount || 0,
+      item.order_count || 0
+    ])
+  ], [24, 18, 10, 14, 10]);
+
+  addSheet('分类占比', [
+    ['分类', '销量', '销售额', '订单数'],
+    ...categories.map(item => [
+      item.category_name || '未分类',
+      item.total_quantity || 0,
+      item.total_amount || 0,
+      item.order_count || 0
+    ])
+  ], [18, 10, 14, 10]);
+
+  addSheet('支付方式', [
+    ['支付方式', '订单数', '销售额'],
+    ...payments.map(item => [
+      ({ cash: '现金', wechat: '微信', alipay: '支付宝' }[item.payment] || item.payment || '其他'),
+      item.order_count || 0,
+      item.total_amount || 0
+    ])
+  ], [14, 10, 14]);
+
+  addSheet('毛利润', [
+    ['日期', '收入', '成本', '毛利润'],
+    ...profit.map(item => [
+      item.date,
+      item.revenue || 0,
+      item.cost || 0,
+      item.gross_profit || 0
+    ])
+  ], [14, 14, 14, 14]);
+
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], { type: 'application/octet-stream' });
+  saveAs(blob, `经营周报_${range[0]}_${range[1]}.xlsx`);
+}
+
+/**
  * 导出会员数据
  */
 export function exportMembers(members) {

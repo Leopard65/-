@@ -1,6 +1,29 @@
 <template>
   <div>
-    <PageHeader title="报表统计" description="销售、库存、利润与会员多维分析" />
+    <PageHeader title="报表统计" description="销售、库存、利润与会员多维分析">
+      <template #actions>
+        <div class="report-actions">
+          <el-radio-group v-model="rangePreset" size="small" @change="handleRangePresetChange">
+            <el-radio-button value="today">今日</el-radio-button>
+            <el-radio-button value="7d">近7天</el-radio-button>
+            <el-radio-button value="month">本月</el-radio-button>
+            <el-radio-button value="custom">自定义</el-radio-button>
+          </el-radio-group>
+          <el-date-picker
+            v-model="reportDateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            size="small"
+            class="report-range-picker"
+            @change="handleCustomRangeChange"
+          />
+          <el-button :icon="Document" size="small" @click="handleExportWeeklyReport">导出周报</el-button>
+        </div>
+      </template>
+    </PageHeader>
     <el-tabs v-model="activeTab" @tab-change="handleTabChange" class="report-tabs">
       <!-- 销售报表 -->
       <el-tab-pane label="销售报表" name="sales">
@@ -21,7 +44,7 @@
 
         <SectionPanel title="销售趋势">
           <template #actions>
-            <el-date-picker v-model="salesDateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" @change="loadSalesData" />
+            <span class="range-hint">{{ reportRangeText }}</span>
           </template>
           <div v-show="salesData.length" ref="salesChartRef" class="chart"></div>
           <EmptyState v-if="!salesData.length" description="所选区间暂无销售数据" />
@@ -96,7 +119,7 @@
       <el-tab-pane label="利润分析" name="profit">
         <SectionPanel title="毛利润趋势">
           <template #actions>
-            <el-date-picker v-model="profitDateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" @change="loadProfitData" />
+            <span class="range-hint">{{ reportRangeText }}</span>
           </template>
           <div v-show="profitData.length" ref="profitChartRef" class="chart"></div>
           <EmptyState v-if="!profitData.length" description="所选区间暂无利润数据" />
@@ -214,16 +237,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
 // echarts 按需引入（仅打包用到的图表/组件，显著减小体积）
 import * as echarts from 'echarts/core'
 import { LineChart, BarChart, PieChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { TrendCharts, Tickets, Calendar, RefreshLeft } from '@element-plus/icons-vue'
+import { TrendCharts, Tickets, Calendar, RefreshLeft, Document } from '@element-plus/icons-vue'
 import { reportsApi } from '@/api'
 import { formatMoney, formatNumber } from '@/utils/format'
 import { CHART_PALETTE, GRID, TOOLTIP, SPLIT_LINE, AXIS_LINE } from '@/utils/chart'
+import { exportBusinessWeeklyReport } from '@/utils/export'
 import PageHeader from '@/components/PageHeader.vue'
 import SectionPanel from '@/components/SectionPanel.vue'
 import MetricCard from '@/components/MetricCard.vue'
@@ -233,8 +258,8 @@ import StatusTag from '@/components/StatusTag.vue'
 echarts.use([LineChart, BarChart, PieChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
 
 const activeTab = ref('sales')
-const salesDateRange = ref(null)
-const profitDateRange = ref(null)
+const rangePreset = ref('7d')
+const reportDateRange = ref([])
 
 // 销售数据
 const salesData = ref([])
@@ -261,6 +286,73 @@ const segType = (seg) => ({ 核心客户: 'success', 潜力客户: 'warning', �
 const segColor = (seg) => ({ 核心客户: '#2faa6e', 潜力客户: '#e6932e', 流失预警: '#e0564f', 沉睡客户: '#86909c' }[seg] || '#86909c')
 const payText = (p) => ({ cash: '现金', wechat: '微信', alipay: '支付宝' }[p] || p || '其他')
 
+const toDateValue = (date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const addDays = (date, days) => {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+const getPresetRange = (preset) => {
+  const today = new Date()
+  if (preset === 'today') return [toDateValue(today), toDateValue(today)]
+  if (preset === 'month') return [toDateValue(new Date(today.getFullYear(), today.getMonth(), 1)), toDateValue(today)]
+  return [toDateValue(addDays(today, -6)), toDateValue(today)]
+}
+
+const reportRangeText = computed(() => {
+  if (!reportDateRange.value?.length) return '未选择时间范围'
+  return `${reportDateRange.value[0]} 至 ${reportDateRange.value[1]}`
+})
+
+const reportParams = () => {
+  if (!reportDateRange.value?.length) return {}
+  return {
+    start_date: reportDateRange.value[0],
+    end_date: reportDateRange.value[1]
+  }
+}
+
+const reloadCurrentRangeData = () => {
+  if (activeTab.value === 'sales') loadSalesData()
+  if (activeTab.value === 'profit') loadProfitData()
+}
+
+const handleRangePresetChange = (preset) => {
+  if (preset !== 'custom') reportDateRange.value = getPresetRange(preset)
+  reloadCurrentRangeData()
+}
+
+const handleCustomRangeChange = () => {
+  rangePreset.value = 'custom'
+  reloadCurrentRangeData()
+}
+
+const handleExportWeeklyReport = async () => {
+  try {
+    const weeklyRange = getPresetRange('7d')
+    const params = { start_date: weeklyRange[0], end_date: weeklyRange[1] }
+    const [daily, products, categories, payments, profit] = await Promise.all([
+      reportsApi.getDailySales(params),
+      reportsApi.getProductSalesRank({ ...params, limit: 10 }),
+      reportsApi.getCategorySales(params),
+      reportsApi.getPaymentStats(params),
+      reportsApi.getGrossProfit(params)
+    ])
+    exportBusinessWeeklyReport({ range: weeklyRange, daily, products, categories, payments, profit })
+    ElMessage.success('经营周报已导出')
+  } catch (e) {
+    console.error('导出经营周报失败:', e)
+    ElMessage.error('导出周报失败')
+  }
+}
+
 // 图表引用
 const salesChartRef = ref(null)
 const categoryChartRef = ref(null)
@@ -277,11 +369,7 @@ let levelChart = null
 // 加载销售数据
 const loadSalesData = async () => {
   try {
-    const params = {}
-    if (salesDateRange.value) {
-      params.start_date = salesDateRange.value[0]
-      params.end_date = salesDateRange.value[1]
-    }
+    const params = reportParams()
 
     const [daily, products, categories, payments] = await Promise.all([
       reportsApi.getDailySales(params),
@@ -333,11 +421,7 @@ const loadInventoryData = async () => {
 // 加载利润数据
 const loadProfitData = async () => {
   try {
-    const params = {}
-    if (profitDateRange.value) {
-      params.start_date = profitDateRange.value[0]
-      params.end_date = profitDateRange.value[1]
-    }
+    const params = reportParams()
 
     const [gross, monthly] = await Promise.all([
       reportsApi.getGrossProfit(params),
@@ -478,6 +562,7 @@ const handleTabChange = (tab) => {
 const onResize = () => { salesChart?.resize(); categoryChart?.resize(); paymentChart?.resize(); profitChart?.resize(); levelChart?.resize() }
 
 onMounted(() => {
+  reportDateRange.value = getPresetRange(rangePreset.value)
   loadSalesData()
   window.addEventListener('resize', onResize)
 })
@@ -491,6 +576,25 @@ onUnmounted(() => {
 
 <style scoped>
 .report-tabs :deep(.el-tabs__item) { font-size: 15px; }
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.report-range-picker {
+  width: 260px;
+}
+
+.range-hint {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-data);
+}
+
 /* 图表容器统一高度，避免抖动 */
 .chart { width: 100%; height: 320px; }
 .chart--tall { height: 360px; }

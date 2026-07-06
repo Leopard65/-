@@ -129,7 +129,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Plus, View, Select, CloseBold } from '@element-plus/icons-vue'
 import { returnsApi, salesApi } from '@/api'
@@ -139,6 +140,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import StatusTag from '@/components/StatusTag.vue'
 
+const route = useRoute()
 const userStore = useUserStore()
 const returns = ref([])
 const page = ref(1)
@@ -153,6 +155,7 @@ const saleItems = ref([])
 const saleDiscount = ref(1)
 
 const isAdmin = userStore.isAdmin
+const statusOptions = new Set(['', 'pending', 'completed', 'rejected'])
 
 const formTotal = computed(() =>
   (form.value.items.reduce((s, i) => s + i.quantity * i.price, 0) * saleDiscount.value).toFixed(2)
@@ -160,6 +163,19 @@ const formTotal = computed(() =>
 
 // 待审核行高亮，使审核任务更醒目
 const rowClass = ({ row }) => (row.status === 'pending' ? 'row-pending' : '')
+
+const normalizeStatus = (value) => {
+  const status = Array.isArray(value) ? value[0] : value
+  return statusOptions.has(status) ? status : ''
+}
+
+const applyRouteStatus = () => {
+  const nextStatus = normalizeStatus(route.query.status)
+  if (filterStatus.value !== nextStatus) {
+    filterStatus.value = nextStatus
+    page.value = 1
+  }
+}
 
 const onFilterChange = () => {
   page.value = 1
@@ -258,7 +274,18 @@ const handleReject = async (row) => {
   }
 }
 
-onMounted(load)
+watch(
+  () => route.query.status,
+  () => {
+    applyRouteStatus()
+    load()
+  }
+)
+
+onMounted(() => {
+  applyRouteStatus()
+  load()
+})
 </script>
 
 <style scoped>

@@ -84,7 +84,7 @@
       <el-col :xs="24" :xl="8">
         <SectionPanel title="待办提醒">
           <div v-if="todos.length" class="todo-list">
-            <div v-for="t in todos" :key="t.key" class="todo-row" @click="goTo(t.path)">
+            <div v-for="t in todos" :key="t.key" class="todo-row" @click="goTo(t.route)">
               <span class="todo-icon" :style="todoVars(t)">
                 <el-icon><component :is="t.icon" /></el-icon>
               </span>
@@ -150,7 +150,7 @@ let gaugeChart = null
 let donutChart = null
 let refreshInterval = null
 
-const goTo = (path) => router.push(path)
+const goTo = (route) => router.push(route)
 
 // 今日客单价 = 今日销售额 / 今日订单数
 const avgOrderValue = computed(() => {
@@ -169,13 +169,14 @@ const targetPercent = computed(() => {
 // 待办提醒（全部来自仪表盘数据，无额外请求；空项不展示）
 const todos = computed(() => {
   const low = data.value.lowStock || []
+  const lowInStock = low.filter(s => s.stock > 0)
   const outOfStock = low.filter(s => s.stock === 0).length
   const expiryCount = (data.value.nearExpiry || 0) + (data.value.expiredBatches || 0)
   const items = [
-    { key: 'returns', label: '待审核退货', count: data.value.pendingReturns || 0, tone: 'warning', icon: RefreshLeft, path: '/returns' },
-    { key: 'expiry', label: '临期/过期预警', count: expiryCount, tone: 'warning', icon: Calendar, path: '/batches' },
-    { key: 'low', label: '低库存预警', count: low.length, tone: 'danger', icon: Warning, path: '/inventory' },
-    { key: 'out', label: '缺货商品', count: outOfStock, tone: 'danger', icon: CircleClose, path: '/inventory' }
+    { key: 'returns', label: '待审核退货', count: data.value.pendingReturns || 0, tone: 'warning', icon: RefreshLeft, route: { path: '/returns', query: { status: 'pending' } } },
+    { key: 'expiry', label: '临期/过期预警', count: expiryCount, tone: 'warning', icon: Calendar, route: { path: '/batches', query: { filter: 'risk' } } },
+    { key: 'low', label: '低库存预警', count: lowInStock.length, tone: 'danger', icon: Warning, route: { path: '/inventory', query: { type: 'low' } } },
+    { key: 'out', label: '缺货商品', count: outOfStock, tone: 'danger', icon: CircleClose, route: { path: '/inventory', query: { type: 'out' } } }
   ]
   return items.filter(i => i.count > 0)
 })

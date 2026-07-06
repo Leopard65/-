@@ -3,9 +3,20 @@
     <PageHeader title="库存预警" description="低库存与按销售速度的智能补货建议">
       <template #actions>
         <span style="font-size:13px;color:#909399">备货周期 {{ leadDays }} 天</span>
-        <el-tag type="danger" size="large">需补货 {{ list.length }} 项</el-tag>
+        <el-tag type="danger" size="large">需补货 {{ rawList.length }} 项</el-tag>
       </template>
     </PageHeader>
+
+    <FilterBar>
+      <el-radio-group v-model="filterType" @change="handleFilterChange">
+        <el-radio-button value="all">全部</el-radio-button>
+        <el-radio-button value="low">低库存</el-radio-button>
+        <el-radio-button value="out">缺货</el-radio-button>
+      </el-radio-group>
+      <template #actions>
+        <el-tag effect="plain">{{ currentFilterLabel }} {{ list.length }} 项</el-tag>
+      </template>
+    </FilterBar>
 
     <el-card v-loading="loading">
       <el-table :data="list" border stripe style="width:100%">
@@ -46,33 +57,75 @@
         </el-table-column>
       </el-table>
 
-      <el-empty v-if="!loading && !list.length" description="库存充足，暂无需补货商品" />
+      <el-empty v-if="!loading && !list.length" :description="emptyText" />
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { reportsApi } from '@/api'
 import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
 
+const route = useRoute()
 const router = useRouter()
-const list = ref([])
+const rawList = ref([])
+const filterType = ref('all')
 const leadDays = ref(7)
 const loading = ref(false)
+const filterOptions = new Set(['all', 'low', 'out'])
+
+const normalizeFilter = (value) => {
+  const nextFilter = Array.isArray(value) ? value[0] : value
+  return filterOptions.has(nextFilter) ? nextFilter : 'all'
+}
+
+const applyRouteFilter = () => {
+  filterType.value = normalizeFilter(route.query.type)
+}
+
+const list = computed(() => {
+  if (filterType.value === 'low') {
+    return rawList.value.filter(row => row.stock > 0 && row.stock <= row.min_stock)
+  }
+  if (filterType.value === 'out') {
+    return rawList.value.filter(row => row.stock === 0)
+  }
+  return rawList.value
+})
+
+const currentFilterLabel = computed(() => ({
+  all: '当前需补货',
+  low: '低库存',
+  out: '缺货'
+}[filterType.value] || '当前需补货'))
+
+const emptyText = computed(() => ({
+  all: '库存充足，暂无需补货商品',
+  low: '暂无低库存商品',
+  out: '暂无缺货商品'
+}[filterType.value] || '库存充足，暂无需补货商品'))
 
 const load = async () => {
   loading.value = true
   try {
     const res = await reportsApi.getInventoryReplenish()
-    list.value = res.data || []
+    rawList.value = res.data || []
     if (res.lead_days) leadDays.value = res.lead_days
   } catch (e) {
     console.error('获取补货建议失败:', e)
   } finally {
     loading.value = false
   }
+}
+
+const handleFilterChange = () => {
+  const query = { ...route.query }
+  if (filterType.value === 'all') delete query.type
+  else query.type = filterType.value
+  router.replace({ path: '/inventory', query })
 }
 
 const goToPurchase = (product) => {
@@ -82,5 +135,10 @@ const goToPurchase = (product) => {
   })
 }
 
-onMounted(load)
+watch(() => route.query.type, applyRouteFilter)
+
+onMounted(() => {
+  applyRouteFilter()
+  load()
+})
 </script>

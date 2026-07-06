@@ -18,6 +18,7 @@
     <FilterBar>
       <el-radio-group v-model="filter" @change="handleFilterChange">
         <el-radio-button value="all">全部</el-radio-button>
+        <el-radio-button value="risk">预警</el-radio-button>
         <el-radio-button value="near">临期</el-radio-button>
         <el-radio-button value="expired">过期</el-radio-button>
         <el-radio-button value="normal">正常</el-radio-button>
@@ -106,7 +107,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Clock, CircleClose, Money } from '@element-plus/icons-vue'
 import { batchesApi, productsApi } from '@/api'
@@ -118,6 +120,7 @@ import FilterBar from '@/components/FilterBar.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import EmptyState from '@/components/EmptyState.vue'
 
+const route = useRoute()
 const list = ref([])
 const products = ref([])
 const summary = ref({ near: 0, expired: 0, lossAmount: 0 })
@@ -134,6 +137,28 @@ const form = ref({})
 const rules = {
   product_id: [{ required: true, message: '请选择商品', trigger: 'change' }],
   expiry_date: [{ required: true, message: '请选择到期日', trigger: 'change' }]
+}
+const filterOptions = new Set(['all', 'risk', 'near', 'expired', 'normal', 'cleared'])
+
+const normalizeFilter = (value) => {
+  const nextFilter = Array.isArray(value) ? value[0] : value
+  return filterOptions.has(nextFilter) ? nextFilter : 'all'
+}
+
+const normalizeProductId = (value) => {
+  const nextProductId = Array.isArray(value) ? value[0] : value
+  const id = Number(nextProductId)
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
+const applyRouteFilters = () => {
+  const nextFilter = normalizeFilter(route.query.filter)
+  const nextProductId = normalizeProductId(route.query.product_id)
+  const changed = filter.value !== nextFilter || productId.value !== nextProductId
+  filter.value = nextFilter
+  productId.value = nextProductId
+  if (changed) page.value = 1
+  return changed
 }
 
 // 剩余天数文案（已清理或无到期日不显示）
@@ -230,6 +255,7 @@ const handleDelete = async (row) => {
 }
 
 onMounted(async () => {
+  applyRouteFilters()
   try {
     const res = await productsApi.getProducts({ pageSize: 1000 })
     products.value = res.data || res
@@ -238,6 +264,13 @@ onMounted(async () => {
   }
   refresh()
 })
+
+watch(
+  () => [route.query.filter, route.query.product_id],
+  () => {
+    if (applyRouteFilters()) refresh()
+  }
+)
 </script>
 
 <style scoped>
