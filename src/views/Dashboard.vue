@@ -25,6 +25,14 @@
         <span class="ops-strip__label">临期批次</span>
         <strong>{{ (data.nearExpiry || 0) + (data.expiredBatches || 0) }} 批</strong>
       </div>
+      <div v-if="isAdmin" class="ops-strip__item" :class="{ 'ops-strip__item--risk': data.returnRisk?.is_high }">
+        <span class="ops-strip__label">7日退货率</span>
+        <strong>{{ data.returnRisk?.return_rate || 0 }}%</strong>
+      </div>
+      <div v-if="isAdmin" class="ops-strip__item" :class="{ 'ops-strip__item--risk': data.memberOps?.churn_risk_count }">
+        <span class="ops-strip__label">会员流失预警</span>
+        <strong>{{ data.memberOps?.churn_risk_count || 0 }} 人</strong>
+      </div>
     </div>
 
     <!-- 核心 KPI -->
@@ -88,8 +96,11 @@
               <span class="todo-icon" :style="todoVars(t)">
                 <el-icon><component :is="t.icon" /></el-icon>
               </span>
-              <span class="todo-label">{{ t.label }}</span>
-              <span class="todo-count" :style="todoVars(t)">{{ t.count }}</span>
+              <span class="todo-copy">
+                <span class="todo-label">{{ t.label }}</span>
+                <small v-if="t.desc">{{ t.desc }}</small>
+              </span>
+              <span class="todo-count" :style="todoVars(t)">{{ t.value || t.count }}</span>
               <el-icon class="todo-arrow"><ArrowRight /></el-icon>
             </div>
           </div>
@@ -123,12 +134,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Refresh, Money, Tickets, Wallet, UserFilled, RefreshLeft, Warning, CircleClose, ArrowRight, Calendar } from '@element-plus/icons-vue'
+import { Refresh, Money, Tickets, Wallet, UserFilled, RefreshLeft, Warning, CircleClose, ArrowRight, Calendar, DataAnalysis } from '@element-plus/icons-vue'
 import * as echarts from 'echarts/core'
 import { LineChart, PieChart, GaugeChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { dashboardApi } from '@/api'
+import { useUserStore } from '@/stores/user'
 import { formatMoney, formatNumber } from '@/utils/format'
 import { CHART_PALETTE, GRID, TOOLTIP, SPLIT_LINE, AXIS_LINE } from '@/utils/chart'
 import PageHeader from '@/components/PageHeader.vue'
@@ -139,6 +151,7 @@ import EmptyState from '@/components/EmptyState.vue'
 echarts.use([LineChart, PieChart, GaugeChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const router = useRouter()
+const userStore = useUserStore()
 const data = ref({})
 const fetching = ref(false)
 const lastUpdated = ref('--:--:--')
@@ -149,6 +162,7 @@ let trendChart = null
 let gaugeChart = null
 let donutChart = null
 let refreshInterval = null
+const isAdmin = computed(() => userStore.isAdmin)
 
 const goTo = (route) => router.push(route)
 
@@ -172,13 +186,23 @@ const todos = computed(() => {
   const lowInStock = low.filter(s => s.stock > 0)
   const outOfStock = low.filter(s => s.stock === 0).length
   const expiryCount = (data.value.nearExpiry || 0) + (data.value.expiredBatches || 0)
-  const items = [
-    { key: 'returns', label: '待审核退货', count: data.value.pendingReturns || 0, tone: 'warning', icon: RefreshLeft, route: { path: '/returns', query: { status: 'pending' } } },
-    { key: 'expiry', label: '临期/过期预警', count: expiryCount, tone: 'warning', icon: Calendar, route: { path: '/batches', query: { filter: 'risk' } } },
-    { key: 'low', label: '低库存预警', count: lowInStock.length, tone: 'danger', icon: Warning, route: { path: '/inventory', query: { type: 'low' } } },
-    { key: 'out', label: '缺货商品', count: outOfStock, tone: 'danger', icon: CircleClose, route: { path: '/inventory', query: { type: 'out' } } }
+  const returnRisk = data.value.returnRisk || {}
+  const memberOps = data.value.memberOps || {}
+  const sharedItems = [
+    { key: 'returns', label: '待审核退货', desc: '需要确认退款与库存恢复', count: data.value.pendingReturns || 0, priority: 2, tone: 'warning', icon: RefreshLeft, route: { path: '/returns', query: { status: 'pending' } } }
   ]
+
+  const adminItems = isAdmin.value ? [
+    { key: 'out', label: '缺货商品', desc: '建议优先生成采购草稿', count: outOfStock, priority: 1, tone: 'danger', icon: CircleClose, route: { path: '/inventory', query: { type: 'out' } } },
+    { key: 'return-risk', label: '退货率异常', desc: `近7天已退 ${returnRisk.returns_7d || 0} 单`, count: returnRisk.is_high ? (returnRisk.returns_7d || 0) : 0, value: `${returnRisk.return_rate || 0}%`, priority: 2, tone: 'danger', icon: RefreshLeft, route: { path: '/returns', query: { status: 'completed' } } },
+    { key: 'expiry', label: '临期/过期预警', desc: '优先处理过期与临期批次', count: expiryCount, priority: 3, tone: 'warning', icon: Calendar, route: { path: '/batches', query: { filter: 'risk' } } },
+    { key: 'low', label: '低库存预警', desc: '可批量转进货草稿', count: lowInStock.length, priority: 4, tone: 'warning', icon: Warning, route: { path: '/inventory', query: { type: 'low' } } },
+    { key: 'member-churn', label: '会员流失预警', desc: `高价值 ${memberOps.active_days || 14} 天未消费`, count: memberOps.churn_risk_count || 0, priority: 5, tone: 'danger', icon: DataAnalysis, route: { path: '/reports', query: { tab: 'members', focus: 'rfm' } } }
+  ] : []
+
+  const items = [...sharedItems, ...adminItems]
   return items.filter(i => i.count > 0)
+    .sort((a, b) => a.priority - b.priority)
 })
 
 const todoVars = (item) => ({
@@ -306,7 +330,7 @@ onUnmounted(() => {
 
 .ops-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--space-3);
   margin-bottom: var(--space-5);
 }
@@ -318,6 +342,10 @@ onUnmounted(() => {
   background: linear-gradient(180deg, #fff, var(--bg-muted));
   box-shadow: var(--shadow-card);
   border-left: 4px solid var(--color-accent);
+}
+
+.ops-strip__item--risk {
+  border-left-color: var(--color-danger);
 }
 
 .ops-strip__label {
@@ -371,7 +399,9 @@ onUnmounted(() => {
 .todo-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-color-light); border-radius: var(--radius-md); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .todo-row:hover { background: var(--bg-muted); border-color: var(--border-color); }
 .todo-icon { width: 34px; height: 34px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: var(--todo-tone); background: var(--todo-bg); }
-.todo-label { flex: 1; color: var(--text-regular); }
+.todo-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.todo-label { color: var(--text-regular); }
+.todo-copy small { color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .todo-count { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--todo-tone); }
 .todo-arrow { color: var(--text-placeholder); }
 

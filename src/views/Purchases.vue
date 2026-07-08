@@ -38,6 +38,14 @@
 
     <!-- 新建进货单弹窗 -->
     <el-dialog v-model="dialogVisible" title="新建进货单" width="700px">
+      <el-alert
+        v-if="draftNotice"
+        class="purchase-draft-alert"
+        type="success"
+        :title="draftNotice"
+        show-icon
+        :closable="false"
+      />
       <el-form :model="form" label-width="80px">
         <el-form-item label="供应商">
           <el-select v-model="form.supplier_id" placeholder="选择供应商" clearable style="width:100%">
@@ -54,6 +62,7 @@
                 </el-select>
                 <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="flex:1" />
                 <el-input-number v-model="item.cost" :min="0" :precision="2" placeholder="单价" style="flex:1" />
+                <el-tag v-if="item.source === 'replenish'" type="success" effect="plain">建议</el-tag>
                 <span style="width:90px;text-align:right" class="num">{{ formatMoney(item.quantity * item.cost) }}</span>
                 <el-button type="danger" :icon="Delete" circle size="small" @click="form.items.splice(i, 1)" />
               </div>
@@ -63,7 +72,7 @@
                 <el-input v-model="item.batch_no" placeholder="批次号" style="width:150px" />
               </div>
             </div>
-            <el-button @click="form.items.push({ product_id: null, quantity: 1, cost: 0, batch_no: '', expiry_date: null })" style="width:100%">
+            <el-button @click="form.items.push(createLine())" style="width:100%">
               + 添加商品
             </el-button>
           </div>
@@ -93,15 +102,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Delete, View } from '@element-plus/icons-vue'
 import { purchasesApi, suppliersApi, productsApi } from '@/api'
 import { formatMoney } from '@/utils/format'
+import { parsePurchaseDraft } from '@/utils/purchaseDraft'
 import PageHeader from '@/components/PageHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 
+const route = useRoute()
 const router = useRouter()
 
 const purchases = ref([])
@@ -112,6 +123,8 @@ const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const detailItems = ref([])
 const form = ref({ supplier_id: null, items: [] })
+const draftNotice = ref('')
+const catalogLoaded = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -131,9 +144,64 @@ const load = async () => {
   }
 }
 
-const openDialog = () => {
-  form.value = { supplier_id: null, items: [{ product_id: null, quantity: 1, cost: 0, batch_no: '', expiry_date: null }] }
+const createLine = (overrides = {}) => ({
+  product_id: null,
+  quantity: 1,
+  cost: 0,
+  batch_no: '',
+  expiry_date: null,
+  source: '',
+  ...overrides
+})
+
+const getProductCost = (productId) => {
+  const product = products.value.find(p => Number(p.id) === Number(productId))
+  return Number(product?.cost || 0)
+}
+
+const openDialog = (items) => {
+  draftNotice.value = ''
+  form.value = { supplier_id: null, items: items?.length ? items : [createLine()] }
   dialogVisible.value = true
+}
+
+const clearDraftQuery = () => {
+  if (route.query.draft || route.query.product_id || route.query.source) {
+    router.replace({ path: '/purchases' })
+  }
+}
+
+const buildDraftLines = () => {
+  const draftItems = parsePurchaseDraft(route.query.draft)
+  if (draftItems.length) {
+    return draftItems.map(item => createLine({
+      product_id: item.product_id,
+      quantity: item.quantity,
+      cost: getProductCost(item.product_id),
+      source: item.source
+    }))
+  }
+
+  const productId = Number(Array.isArray(route.query.product_id) ? route.query.product_id[0] : route.query.product_id)
+  if (!productId) return []
+
+  const qty = Number(Array.isArray(route.query.qty) ? route.query.qty[0] : route.query.qty)
+  return [createLine({
+    product_id: productId,
+    quantity: qty > 0 ? Math.ceil(qty) : 1,
+    cost: getProductCost(productId),
+    source: route.query.source || 'replenish'
+  })]
+}
+
+const applyDraftFromRoute = () => {
+  if (!catalogLoaded.value) return
+  const lines = buildDraftLines()
+  if (!lines.length) return
+
+  openDialog(lines)
+  const leadDays = route.query.lead_days ? `，备货周期 ${route.query.lead_days} 天` : ''
+  draftNotice.value = `已根据智能补货建议预填 ${lines.length} 个商品${leadDays}。成本价按商品档案带入，入库前可继续调整。`
 }
 
 const showDetail = (row) => {
@@ -148,6 +216,7 @@ const handleSave = async () => {
     await purchasesApi.addPurchase({ supplier_id: form.value.supplier_id, items: valid })
     ElMessage.success('入库成功')
     dialogVisible.value = false
+    clearDraftQuery()
     load()
   } catch (e) {
     // 错误提示已由 request 拦截器统一处理
@@ -162,22 +231,25 @@ onMounted(async () => {
     ])
     suppliers.value = suppliersRes.data || suppliersRes
     products.value = productsRes.data || productsRes
+    catalogLoaded.value = true
     load()
-
-    // 处理从库存预警页面跳转过来的参数
-    if (router.currentRoute.value.query.product_id) {
-      openDialog()
-      form.value.items[0].product_id = Number(router.currentRoute.value.query.product_id)
-      const qty = Number(router.currentRoute.value.query.qty)
-      if (qty > 0) form.value.items[0].quantity = qty
-    }
+    applyDraftFromRoute()
   } catch (e) {
     console.error('加载数据失败:', e)
   }
 })
+
+watch(
+  () => [route.query.draft, route.query.product_id, route.query.qty],
+  applyDraftFromRoute
+)
 </script>
 
 <style scoped>
+.purchase-draft-alert {
+  margin-bottom: var(--space-4);
+}
+
 .purchase-line {
   padding: 10px;
   border: 1px solid var(--border-color-light);

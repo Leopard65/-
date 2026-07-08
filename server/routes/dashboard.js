@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { expiryStatus } = require('../utils/calc');
+const { expiryStatus, rfmSegment, round2 } = require('../utils/calc');
 
 // 批次临期预警阈值（天），与批次页/汇总口径一致
 const WARN_DAYS = 30;
@@ -13,6 +13,66 @@ function getToday() {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function getRecentReturnRisk(today) {
+  const sales = db.prepare(`
+    SELECT COUNT(*) as orders, COALESCE(SUM(total), 0) as amount
+    FROM sales
+    WHERE date(created_at) >= date(?, '-6 days')
+  `).get(today);
+
+  const returns = db.prepare(`
+    SELECT COUNT(*) as returns, COALESCE(SUM(total), 0) as amount
+    FROM returns
+    WHERE status = 'completed' AND date(created_at) >= date(?, '-6 days')
+  `).get(today);
+
+  const orderRate = sales.orders > 0 ? round2((returns.returns / sales.orders) * 100) : 0;
+  const amountRate = sales.amount > 0 ? round2((returns.amount / sales.amount) * 100) : 0;
+
+  return {
+    orders_7d: sales.orders,
+    returns_7d: returns.returns,
+    refund_amount_7d: round2(returns.amount),
+    return_rate: orderRate,
+    refund_rate: amountRate,
+    is_high: returns.returns >= 2 && orderRate >= 10
+  };
+}
+
+function getMemberOpsSummary() {
+  const activeDays = 14;
+  const buyers = db.prepare(`
+    SELECT m.id,
+      COALESCE(SUM(sa.total), 0) AS total,
+      CAST(julianday('now', 'localtime') - julianday(MAX(sa.created_at)) AS INTEGER) AS last_days
+    FROM members m
+    JOIN sales sa ON sa.member_id = m.id
+    WHERE m.status != -1
+    GROUP BY m.id
+  `).all();
+
+  const totals = buyers.map(b => b.total).sort((a, b) => a - b);
+  const n = totals.length;
+  const valueSplit = n === 0 ? 0
+    : (n % 2 ? totals[(n - 1) / 2] : (totals[n / 2 - 1] + totals[n / 2]) / 2);
+
+  const segments = buyers.reduce((acc, buyer) => {
+    const segment = rfmSegment({ total: buyer.total, lastDays: buyer.last_days, valueSplit, activeDays });
+    acc[segment] = (acc[segment] || 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    buyer_count: buyers.length,
+    active_days: activeDays,
+    value_split: round2(valueSplit),
+    core_count: segments['核心客户'] || 0,
+    churn_risk_count: segments['流失预警'] || 0,
+    potential_count: segments['潜力客户'] || 0,
+    sleeping_count: segments['沉睡客户'] || 0
+  };
 }
 
 router.get('/', (req, res) => {
@@ -73,6 +133,9 @@ router.get('/', (req, res) => {
     else if (s === 'near') nearExpiry++;
   });
 
+  const returnRisk = getRecentReturnRisk(today);
+  const memberOps = getMemberOpsSummary();
+
   res.json({
     todaySales: todaySales.amount,
     todayOrders: todaySales.count,
@@ -82,6 +145,8 @@ router.get('/', (req, res) => {
     salesTarget,
     nearExpiry,
     expiredBatches,
+    returnRisk,
+    memberOps,
     lowStock,
     hotProducts,
     trend

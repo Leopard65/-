@@ -200,44 +200,47 @@
           </el-row>
         </SectionPanel>
 
-        <SectionPanel title="RFM 客户分层" style="margin-top:20px">
-          <template #actions>
-            <span style="font-size:12px;color:var(--text-secondary)">价值分界(中位数) {{ formatMoney(rfm.value_split) }} · 活跃门槛 {{ rfm.active_days || 14 }} 天</span>
-          </template>
-          <el-row :gutter="16" style="margin-bottom:16px">
-            <el-col :span="6" v-for="seg in rfm.segments || []" :key="seg.segment">
-              <div class="rfm-tile" :style="{ borderTopColor: segColor(seg.segment) }">
-                <div class="rfm-seg">{{ seg.segment }}</div>
-                <div class="rfm-count num">{{ seg.count }} <small>人</small></div>
-                <div class="rfm-total">消费 {{ formatMoney(seg.total) }}</div>
-              </div>
-            </el-col>
-          </el-row>
-          <el-table :data="rfm.members || []" stripe size="small" max-height="320">
-            <el-table-column type="index" label="#" width="50" />
-            <el-table-column prop="name" label="会员" min-width="100" />
-            <el-table-column label="分层" width="110">
-              <template #default="{ row }">
-                <el-tag :type="segType(row.segment)" effect="light">{{ row.segment }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="最近消费(R)" width="120" align="right">
-              <template #default="{ row }">{{ row.last_days }} 天前</template>
-            </el-table-column>
-            <el-table-column prop="orders" label="订单数(F)" width="100" align="right" />
-            <el-table-column prop="total" label="累计消费(M)" width="130" align="right">
-              <template #default="{ row }"><span class="num amount">{{ formatMoney(row.total) }}</span></template>
-            </el-table-column>
-          </el-table>
-          <EmptyState v-if="!rfm.members?.length" description="暂无会员消费数据" />
-        </SectionPanel>
+        <div ref="rfmPanelRef">
+          <SectionPanel title="RFM 客户分层" style="margin-top:20px">
+            <template #actions>
+              <span style="font-size:12px;color:var(--text-secondary)">价值分界(中位数) {{ formatMoney(rfm.value_split) }} · 活跃门槛 {{ rfm.active_days || 14 }} 天</span>
+            </template>
+            <el-row :gutter="16" style="margin-bottom:16px">
+              <el-col :span="6" v-for="seg in rfm.segments || []" :key="seg.segment">
+                <div class="rfm-tile" :style="{ borderTopColor: segColor(seg.segment) }">
+                  <div class="rfm-seg">{{ seg.segment }}</div>
+                  <div class="rfm-count num">{{ seg.count }} <small>人</small></div>
+                  <div class="rfm-total">消费 {{ formatMoney(seg.total) }}</div>
+                </div>
+              </el-col>
+            </el-row>
+            <el-table :data="rfm.members || []" stripe size="small" max-height="320">
+              <el-table-column type="index" label="#" width="50" />
+              <el-table-column prop="name" label="会员" min-width="100" />
+              <el-table-column label="分层" width="110">
+                <template #default="{ row }">
+                  <el-tag :type="segType(row.segment)" effect="light">{{ row.segment }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="最近消费(R)" width="120" align="right">
+                <template #default="{ row }">{{ row.last_days }} 天前</template>
+              </el-table-column>
+              <el-table-column prop="orders" label="订单数(F)" width="100" align="right" />
+              <el-table-column prop="total" label="累计消费(M)" width="130" align="right">
+                <template #default="{ row }"><span class="num amount">{{ formatMoney(row.total) }}</span></template>
+              </el-table-column>
+            </el-table>
+            <EmptyState v-if="!rfm.members?.length" description="暂无会员消费数据" />
+          </SectionPanel>
+        </div>
       </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 // echarts 按需引入（仅打包用到的图表/组件，显著减小体积）
 import * as echarts from 'echarts/core'
@@ -257,7 +260,15 @@ import StatusTag from '@/components/StatusTag.vue'
 
 echarts.use([LineChart, BarChart, PieChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
 
-const activeTab = ref('sales')
+const route = useRoute()
+const router = useRouter()
+const tabOptions = new Set(['sales', 'inventory', 'profit', 'members'])
+const normalizeTab = (tab) => {
+  const value = Array.isArray(tab) ? tab[0] : tab
+  return tabOptions.has(value) ? value : 'sales'
+}
+
+const activeTab = ref(normalizeTab(route.query.tab))
 const rangePreset = ref('7d')
 const reportDateRange = ref([])
 
@@ -359,6 +370,7 @@ const categoryChartRef = ref(null)
 const paymentChartRef = ref(null)
 const profitChartRef = ref(null)
 const levelChartRef = ref(null)
+const rfmPanelRef = ref(null)
 
 let salesChart = null
 let categoryChart = null
@@ -528,7 +540,10 @@ const loadMemberData = async () => {
     levelDist.value = levels
     repurchase.value = repurch
     rfm.value = rfmRes
-    nextTick(() => renderLevelChart())
+    nextTick(() => {
+      renderLevelChart()
+      scrollToFocusedPanel()
+    })
   } catch (e) {
     console.error('加载会员分析失败:', e)
   }
@@ -552,18 +567,36 @@ const renderLevelChart = () => {
   })
 }
 
-const handleTabChange = (tab) => {
+const scrollToFocusedPanel = () => {
+  if (route.query.focus !== 'rfm') return
+  nextTick(() => {
+    rfmPanelRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
+const loadTabData = (tab) => {
   if (tab === 'sales') loadSalesData()
   else if (tab === 'inventory') loadInventoryData()
   else if (tab === 'profit') loadProfitData()
   else if (tab === 'members') loadMemberData()
 }
 
+const syncRouteTab = (tab) => {
+  if (normalizeTab(route.query.tab) === tab) return
+  router.replace({ path: '/reports', query: { ...route.query, tab } })
+}
+
+const handleTabChange = (tab) => {
+  const nextTab = normalizeTab(tab)
+  loadTabData(nextTab)
+  syncRouteTab(nextTab)
+}
+
 const onResize = () => { salesChart?.resize(); categoryChart?.resize(); paymentChart?.resize(); profitChart?.resize(); levelChart?.resize() }
 
 onMounted(() => {
   reportDateRange.value = getPresetRange(rangePreset.value)
-  loadSalesData()
+  loadTabData(activeTab.value)
   window.addEventListener('resize', onResize)
 })
 
@@ -572,6 +605,23 @@ onUnmounted(() => {
   salesChart?.dispose(); categoryChart?.dispose(); paymentChart?.dispose(); profitChart?.dispose(); levelChart?.dispose()
   salesChart = categoryChart = paymentChart = profitChart = levelChart = null
 })
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const nextTab = normalizeTab(tab)
+    if (activeTab.value === nextTab) return
+    activeTab.value = nextTab
+    loadTabData(nextTab)
+  }
+)
+
+watch(
+  () => route.query.focus,
+  () => {
+    if (activeTab.value === 'members') scrollToFocusedPanel()
+  }
+)
 </script>
 
 <style scoped>

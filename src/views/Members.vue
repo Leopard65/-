@@ -1,5 +1,12 @@
 <template>
   <PageHeader title="会员管理" description="会员档案、等级与积分" />
+  <MemberOpsPanel
+    v-if="userStore.isAdmin"
+    :rfm="memberRfm"
+    :repurchase="memberRepurchase"
+    :loading="memberInsightLoading"
+    @open-reports="goMemberReports"
+  />
   <el-card>
     <CrudTable
       :data="members"
@@ -61,19 +68,27 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download } from '@element-plus/icons-vue'
-import { membersApi } from '@/api'
+import { membersApi, reportsApi } from '@/api'
+import { useUserStore } from '@/stores/user'
 import { exportMembers } from '@/utils/export'
 import { formatMoney } from '@/utils/format'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import MemberOpsPanel from '@/components/members/MemberOpsPanel.vue'
 
+const router = useRouter()
+const userStore = useUserStore()
 const members = ref([])
 const keyword = ref('')
 const loading = ref(false)
+const memberInsightLoading = ref(false)
+const memberRfm = ref({})
+const memberRepurchase = ref({})
 const dialogRef = ref(null)
 const form = ref({})
 const page = ref(1)
@@ -118,6 +133,27 @@ const handleReset = () => {
   load()
 }
 
+const loadMemberInsights = async () => {
+  if (!userStore.isAdmin) return
+  memberInsightLoading.value = true
+  try {
+    const [rfm, repurchase] = await Promise.all([
+      reportsApi.getMemberRfm(),
+      reportsApi.getMemberRepurchase()
+    ])
+    memberRfm.value = rfm
+    memberRepurchase.value = repurchase
+  } catch (e) {
+    console.error('加载会员运营洞察失败:', e)
+  } finally {
+    memberInsightLoading.value = false
+  }
+}
+
+const goMemberReports = () => {
+  router.push({ path: '/reports', query: { tab: 'members', focus: 'rfm' } })
+}
+
 const openDialog = (row) => {
   form.value = row ? { ...row } : { name: '', phone: '' }
   dialogRef.value?.open(form.value)
@@ -129,6 +165,7 @@ const handleSave = async (formData) => {
   } else {
     await membersApi.addMember(formData)
   }
+  loadMemberInsights()
 }
 
 const handleDelete = async (row) => {
@@ -137,6 +174,7 @@ const handleDelete = async (row) => {
     await membersApi.deleteMember(row.id)
     ElMessage.success('已删除')
     load()
+    loadMemberInsights()
   } catch (err) {
     if (err !== 'cancel') {
       // 错误已由拦截器处理
@@ -149,5 +187,8 @@ const handleExport = () => {
   ElMessage.success('导出成功')
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadMemberInsights()
+})
 </script>

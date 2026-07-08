@@ -38,7 +38,7 @@ npm run build
 
 **默认账号**：管理员 `admin` / `admin123`；收银员 `cashier` / `cashier123`（演示角色权限差异）。
 
-> 端口 5173 被占用时 Vite 会自动顺延（5174…），以终端输出为准。
+> 端口 5173 被占用时 Vite 会自动顺延（5174…），以终端输出为准。若 3000 也被占用，PowerShell 可先用 `$env:PORT='3001'; npm run server` 启动后端，再另开窗口用 `$env:VITE_API_TARGET='http://localhost:3001'; $env:VITE_PORT='5174'; npm run dev` 启动前端。
 
 ## npm 脚本
 
