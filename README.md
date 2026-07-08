@@ -34,6 +34,9 @@ npm start
 
 # 生产构建
 npm run build
+
+# 生成演示包（输出到 output/supermarket-system-demo.zip）
+npm run package:demo
 ```
 
 **默认账号**：管理员 `admin` / `admin123`；收银员 `cashier` / `cashier123`（演示角色权限差异）。
@@ -50,6 +53,7 @@ npm run build
 | `npm run build` | 前端生产构建到 `dist/` |
 | `npm run seed:demo` | 生成演示数据（重置交易类数据后写入约 30 天历史） |
 | `npm run smoke` | 冒烟测试（自启隔离后端 → 断言核心业务/权限/导入 → 自动清理） |
+| `npm run package:demo` | 构建前端并生成可解压运行的演示包 |
 
 ## 功能模块
 

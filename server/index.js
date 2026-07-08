@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const path = require('path');
 const config = require('./config');
 const authMiddleware = require('./middleware/auth');
@@ -35,6 +36,17 @@ app.use('/api/inventory', authMiddleware, roleMiddleware('admin'), require('./ro
 app.use('/api/batches', authMiddleware, roleMiddleware('admin'), require('./routes/batches'));
 app.use('/api/reports', authMiddleware, roleMiddleware('admin'), require('./routes/reports'));
 app.use('/api/logs', authMiddleware, roleMiddleware('admin'), require('./routes/logs'));
+
+// 生产/演示包：若存在 dist，则由后端托管前端静态资源
+const distPath = path.join(__dirname, '..', 'dist');
+const distIndex = path.join(distPath, 'index.html');
+if (fs.existsSync(distIndex)) {
+  app.use(express.static(distPath));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(distIndex);
+  });
+}
 
 // 404 处理
 app.use((req, res) => {

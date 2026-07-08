@@ -10,7 +10,8 @@
     "smoke": "node smoke-test.js",
     "test": "node --test \"server/**/*.test.js\"",
     "start": "concurrently \"node server/index.js\" \"vite\"",
-    "build": "vite build"
+    "build": "vite build",
+    "package:demo": "npm run build && node scripts/create-demo-package.js"
   },
   "keywords": [],
   "author": "",
