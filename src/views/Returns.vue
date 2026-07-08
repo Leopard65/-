@@ -291,10 +291,14 @@ onMounted(() => {
 <style scoped>
 /* 待审核行高亮：左侧琥珀强调，使审核任务一眼可辨 */
 :deep(.row-pending td.el-table__cell) {
-  background: color-mix(in srgb, var(--color-warning) 8%, transparent) !important;
+  background: color-mix(in srgb, var(--color-warning) 5%, #fff) !important;
 }
 :deep(.row-pending td.el-table__cell:first-child) {
   box-shadow: inset 3px 0 0 var(--color-warning);
+}
+
+:deep(.table-actions) {
+  flex-wrap: wrap;
 }
 </style>
 

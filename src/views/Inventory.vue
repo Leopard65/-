@@ -38,7 +38,7 @@
       </template>
     </FilterBar>
 
-    <el-card v-loading="loading">
+    <SectionPanel v-loading="loading" :padding="false" class="inventory-table-panel">
       <el-table
         :data="list"
         row-key="id"
@@ -87,7 +87,7 @@
       </el-table>
 
       <el-empty v-if="!loading && !list.length" :description="emptyText" />
-    </el-card>
+    </SectionPanel>
 
     <SectionPanel title="库存操作记录" style="margin-top:20px">
       <template #actions>
@@ -124,7 +124,7 @@
           :page-sizes="[10, 20, 50]"
           :total="adjustmentTotal"
           layout="total, sizes, prev, pager, next"
-          small
+          size="small"
           @size-change="loadAdjustments"
           @current-change="loadAdjustments"
         />
@@ -398,10 +398,20 @@ onMounted(() => {
   font-size: 13px;
 }
 
+.inventory-table-panel {
+  margin-bottom: var(--space-4);
+}
+
+.inventory-table-panel :deep(.el-table) {
+  border-radius: 0;
+}
+
 .adjustment-pager {
   display: flex;
   justify-content: flex-end;
+  padding-top: var(--space-3);
   margin-top: var(--space-3);
+  border-top: 1px solid var(--border-color-soft);
 }
 
 .stock-preview {

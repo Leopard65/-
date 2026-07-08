@@ -506,10 +506,10 @@ onMounted(async () => {
 }
 
 .stock-meter {
-  height: 6px;
+  height: 5px;
   overflow: hidden;
   border-radius: 999px;
-  background: var(--bg-muted);
+  background: var(--border-color-soft);
 }
 
 .stock-meter span {
@@ -528,17 +528,18 @@ onMounted(async () => {
 .product-uploader {
   width: 120px;
   height: 120px;
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--bg-muted);
 }
 
 .product-uploader:hover {
-  border-color: #409EFF;
+  border-color: var(--color-primary);
 }
 
 .product-image {
@@ -549,6 +550,6 @@ onMounted(async () => {
 
 .upload-icon {
   font-size: 28px;
-  color: #8c939d;
+  color: var(--text-placeholder);
 }
 </style>

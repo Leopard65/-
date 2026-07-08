@@ -330,18 +330,21 @@ onUnmounted(() => {
 
 .ops-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-3);
-  margin-bottom: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-2);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-line);
 }
 
 .ops-strip__item {
-  padding: 12px 14px;
-  border: 1px solid var(--border-color-light);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, #fff, var(--bg-muted));
-  box-shadow: var(--shadow-card);
-  border-left: 4px solid var(--color-accent);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  border-left: 3px solid var(--color-accent);
 }
 
 .ops-strip__item--risk {
@@ -362,7 +365,7 @@ onUnmounted(() => {
 }
 
 .dashboard-row {
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .dashboard-row :deep(.el-col) {
@@ -395,10 +398,21 @@ onUnmounted(() => {
 .rank-3 { background: var(--color-primary); }
 
 /* 待办提醒 */
-.todo-list { display: flex; flex-direction: column; gap: 10px; }
-.todo-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-color-light); border-radius: var(--radius-md); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-.todo-row:hover { background: var(--bg-muted); border-color: var(--border-color); }
-.todo-icon { width: 34px; height: 34px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: var(--todo-tone); background: var(--todo-bg); }
+.todo-list { display: flex; flex-direction: column; gap: 8px; }
+.todo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color-light);
+  border-left: 3px solid var(--todo-tone);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.15s, border-color 0.15s;
+}
+.todo-row:hover { background: var(--bg-muted); border-color: var(--border-color); border-left-color: var(--todo-tone); }
+.todo-icon { width: 30px; height: 30px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; color: var(--todo-tone); background: var(--todo-bg); }
 .todo-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .todo-label { color: var(--text-regular); }
 .todo-copy small { color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

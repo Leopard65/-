@@ -183,18 +183,18 @@ defineExpose({ focusSearch })
   flex-direction: column;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px;
+  padding: 9px 10px;
   cursor: pointer;
   text-align: left;
   border: 1px solid var(--border-color-light);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, #fff, var(--bg-muted));
+  background: #fff;
   transition: border-color var(--motion-fast), transform var(--motion-fast), box-shadow var(--motion-fast);
 }
 
 .quick-card:hover {
   border-color: var(--color-primary-light-5);
-  box-shadow: 0 8px 20px rgba(22, 34, 29, 0.08);
+  box-shadow: 0 6px 16px rgba(23, 33, 30, 0.06);
   transform: translateY(-1px);
 }
 
@@ -240,12 +240,12 @@ defineExpose({ focusSearch })
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 9px 11px;
   cursor: pointer;
   text-align: left;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color-light);
-  background: #fff;
+  background: var(--bg-card);
   transition: background var(--motion-fast), border-color var(--motion-fast), transform var(--motion-fast);
 }
 

@@ -197,7 +197,7 @@ const isCashShort = computed(() => props.payment === 'cash' && Number(props.cash
   display: flex;
   justify-content: space-between;
   margin-top: 8px;
-  padding: 8px 10px;
+  padding: 7px 10px;
   color: var(--color-success);
   background: var(--color-primary-light-9);
   border-radius: var(--radius-md);
@@ -214,10 +214,11 @@ const isCashShort = computed(() => props.payment === 'cash' && Number(props.cash
 }
 
 .settle-box {
-  margin-bottom: 16px;
-  padding: 16px;
+  margin-bottom: 14px;
+  padding: 14px;
   border-radius: var(--radius-lg);
-  background: var(--bg-muted);
+  background: linear-gradient(180deg, var(--bg-subtle), var(--bg-muted));
+  border: 1px solid var(--border-color-light);
 }
 
 .settle-row {
@@ -255,13 +256,13 @@ const isCashShort = computed(() => props.payment === 'cash' && Number(props.cash
 
 .settle-amount {
   color: var(--color-danger);
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 800;
 }
 
 .checkout-btn {
   width: 100%;
-  height: 52px;
+  height: 50px;
   margin-top: auto;
   font-size: 17px;
   font-weight: 700;

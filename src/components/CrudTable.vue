@@ -95,17 +95,30 @@ const handleSelectionChange = (selection) => {
   min-width: 0;
 }
 
-.crud-table__search,
+.crud-table__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-lg);
+  background: var(--bg-muted);
+}
+
 .crud-table__actions {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .crud-table__actions {
   justify-content: space-between;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color-soft);
 }
 
 .crud-table__primary-actions {
@@ -122,7 +135,9 @@ const handleSelectionChange = (selection) => {
 .crud-table__pager {
   display: flex;
   justify-content: flex-end;
-  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border-color-soft);
 }
 
 @media (max-width: 640px) {

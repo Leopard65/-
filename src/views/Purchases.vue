@@ -251,12 +251,20 @@ watch(
 }
 
 .purchase-line {
-  padding: 10px;
+  padding: 10px 12px;
   border: 1px solid var(--border-color-light);
   border-radius: var(--radius-md);
   margin-bottom: 10px;
+  background: var(--bg-subtle);
 }
 .purchase-line__main { display: flex; gap: 10px; align-items: center; }
-.purchase-line__batch { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.purchase-line__batch {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color-light);
+}
 .purchase-line__hint { font-size: 12px; color: var(--text-secondary); flex: 1; }
 </style>

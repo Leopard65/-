@@ -278,5 +278,8 @@ watch(
   margin-left: 8px;
   font-size: 12px;
   color: var(--text-secondary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted);
 }
 </style>

@@ -6,14 +6,14 @@
  */
 :root {
   /* ===== 品牌 / 语义色 ===== */
-  --color-primary: #176b4d;          /* 主色：库存绿，贴合超市运营状态 */
-  --color-primary-dark: #0f513a;
-  --color-success: #198754;
-  --color-warning: #c47a12;
-  --color-danger: #cf3f35;
-  --color-info: #667085;
-  --color-accent: #d99a18;           /* 货架价签黄，用于关键操作与高亮 */
-  --color-ink: #18251f;
+  --color-primary: #245c4a;          /* 主色：门店货架绿，稳定、安静、适合高频后台 */
+  --color-primary-dark: #173d32;
+  --color-success: #237a57;
+  --color-warning: #b86d18;
+  --color-danger: #b83f3a;
+  --color-info: #66737d;
+  --color-accent: #d69a2d;           /* 货架价签黄，用于关键操作与高亮 */
+  --color-ink: #18221f;
 
   /* ===== 主色阶梯（供 hover / 浅底使用） ===== */
   --color-primary-light-3: #62a98c;
@@ -23,27 +23,29 @@
   --color-primary-light-9: #edf7f2;
 
   /* ===== 文本 ===== */
-  --text-primary: #16221d;           /* 标题 / 主要数字 */
-  --text-regular: #43524b;           /* 正文 */
-  --text-secondary: #748079;         /* 辅助 / 标签 */
-  --text-placeholder: #9da7a1;
+  --text-primary: #17211e;           /* 标题 / 主要数字 */
+  --text-regular: #3f4d49;           /* 正文 */
+  --text-secondary: #707d78;         /* 辅助 / 标签 */
+  --text-placeholder: #9aa6a1;
 
   /* ===== 边框 / 分割线 ===== */
-  --border-color: #dfe6df;
-  --border-color-light: #e9eee8;
+  --border-color: #d7dfda;
+  --border-color-light: #e8eeea;
+  --border-color-soft: #f1f4f2;
 
   /* ===== 背景 ===== */
-  --bg-page: #f4f7f2;                /* 内容区底色 */
+  --bg-page: #f6f8f5;                /* 内容区底色 */
   --bg-card: #ffffff;                /* 卡片 / 面板 */
-  --bg-muted: #f7faf5;              /* 浅色填充块（结算框、表头等） */
-  --bg-warm: #fff9e8;               /* 价签/提示底色 */
+  --bg-muted: #f8faf7;              /* 浅色填充块（结算框、表头等） */
+  --bg-subtle: #fbfcfa;
+  --bg-warm: #fff7e5;               /* 价签/提示底色 */
 
   /* ===== 侧栏（深色） ===== */
-  --sidebar-bg: #16221d;
-  --sidebar-bg-deep: #101a16;
-  --sidebar-text: #cdd8d1;
-  --sidebar-text-muted: #7f9188;
-  --sidebar-active-bg: #22362e;
+  --sidebar-bg: #17211e;
+  --sidebar-bg-deep: #101714;
+  --sidebar-text: #d0d9d5;
+  --sidebar-text-muted: #81928b;
+  --sidebar-active-bg: #22352e;
 
   /* ===== 间距比例（4 的倍数） ===== */
   --space-1: 4px;
@@ -60,21 +62,23 @@
   --radius-lg: 8px;
 
   /* ===== 阴影（两级，全站统一） ===== */
-  --shadow-card: 0 1px 2px rgba(22, 34, 29, 0.04), 0 10px 28px rgba(22, 34, 29, 0.06);
-  --shadow-hover: 0 12px 30px rgba(22, 34, 29, 0.10);
+  --shadow-card: 0 1px 2px rgba(23, 33, 30, 0.04), 0 8px 22px rgba(23, 33, 30, 0.045);
+  --shadow-hover: 0 10px 26px rgba(23, 33, 30, 0.08);
+  --shadow-line: 0 1px 0 rgba(23, 33, 30, 0.05);
 
   /* ===== 字号 ===== */
-  --font-page-title: 20px;
+  --font-page-title: 21px;
   --font-section-title: 15px;
   --font-body: 14px;
   --font-aux: 13px;
-  --font-metric: 26px;
+  --font-metric: 24px;
   --font-data: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
   /* ===== 布局尺寸 ===== */
   --layout-aside: 220px;
   --layout-aside-collapsed: 64px;
   --layout-header: 56px;
+  --table-row-height: 46px;
   --motion-fast: 160ms ease;
   --motion-normal: 220ms ease;
 }

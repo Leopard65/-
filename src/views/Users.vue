@@ -160,3 +160,15 @@ const toggleStatus = async (row) => {
 
 onMounted(load)
 </script>
+
+<style scoped>
+:deep(.el-table .el-tag) {
+  min-width: 58px;
+  text-align: center;
+}
+
+:deep(.el-table__cell:nth-child(2) .cell) {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+</style>

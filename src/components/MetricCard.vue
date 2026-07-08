@@ -42,40 +42,48 @@ const iconStyle = computed(() => ({
 .metric {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  background:
-    linear-gradient(180deg, #fff, var(--bg-muted));
+  gap: var(--space-3);
+  min-height: 96px;
+  padding: 15px var(--space-4);
+  background: var(--bg-card);
   border: 1px solid var(--border-color-light);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  transition: box-shadow 0.15s, transform 0.15s;
+  box-shadow: var(--shadow-line);
+  transition: border-color var(--motion-fast), background var(--motion-fast), transform var(--motion-fast);
   position: relative;
   overflow: hidden;
 }
 .metric::before {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--color-accent);
+  inset: auto 14px 0 14px;
+  height: 2px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
 }
 .metric--clickable { cursor: pointer; }
-.metric--clickable:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+.metric--clickable:hover {
+  background: var(--bg-subtle);
+  border-color: var(--color-primary-light-7);
+  transform: translateY(-1px);
+}
 
 .metric__icon {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 19px;
   flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent);
 }
 .metric__body { min-width: 0; }
-.metric__label { font-size: var(--font-aux); color: var(--text-secondary); font-weight: 600; }
+.metric__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
 .metric__value {
   font-size: var(--font-metric);
   font-weight: 700;

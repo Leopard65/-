@@ -59,7 +59,7 @@
         layout="total, sizes, prev, pager, next"
         @size-change="loadSales"
         @current-change="loadSales"
-        small
+        size="small"
       />
     </div>
   </SectionPanel>
@@ -532,27 +532,34 @@ onBeforeRouteLeave((to, from, next) => {
 <style scoped>
 .cashier-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.86fr) minmax(440px, 1.28fr) minmax(300px, 0.86fr);
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
+  grid-template-columns: minmax(300px, 0.92fr) minmax(440px, 1.22fr) minmax(300px, 0.86fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .cashier-grid :deep(.cashier-panel) {
-  height: 590px;
+  height: 600px;
   display: flex;
   flex-direction: column;
 }
 
 .cashier-grid :deep(.panel__header) {
-  min-height: 58px;
+  min-height: 54px;
 }
 
 .cashier-grid :deep(.panel__body) {
   flex: 1;
+  min-height: 0;
 }
 
 .recent-table { width: 100%; }
-.pager { display: flex; justify-content: flex-end; margin-top: 12px; }
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border-color-soft);
+}
 
 @media (max-width: 1280px) {
   .cashier-grid {

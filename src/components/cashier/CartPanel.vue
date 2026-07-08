@@ -71,9 +71,11 @@ const emit = defineEmits(['clear', 'remove'])
 }
 
 .cart-count {
-  margin-right: 8px;
   color: var(--text-secondary);
   font-size: 13px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted);
 }
 
 .cart-table {
@@ -81,7 +83,7 @@ const emit = defineEmits(['clear', 'remove'])
 }
 
 .qty-input {
-  width: 86px;
+  width: 82px;
 }
 
 .qty-cell {

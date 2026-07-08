@@ -199,3 +199,19 @@ const load = async () => {
 
 onMounted(load)
 </script>
+
+<style scoped>
+:deep(.toolbar) {
+  align-items: center;
+}
+
+:deep(.el-table .el-tag) {
+  min-width: 52px;
+  text-align: center;
+}
+
+:deep(.el-table__cell:nth-child(8) .cell) {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+</style>

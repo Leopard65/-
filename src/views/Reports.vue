@@ -767,7 +767,14 @@ watch(
 </script>
 
 <style scoped>
-.report-tabs :deep(.el-tabs__item) { font-size: 15px; }
+.report-tabs :deep(.el-tabs__header) {
+  margin-bottom: var(--space-4);
+}
+
+.report-tabs :deep(.el-tabs__item) {
+  font-size: 14px;
+  font-weight: 700;
+}
 
 .report-actions {
   display: flex;
@@ -794,14 +801,14 @@ watch(
 }
 
 .hour-cell {
-  min-height: 82px;
+  min-height: 78px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 10px;
   border: 1px solid color-mix(in srgb, var(--color-primary) calc(var(--hour-alpha) * 45%), var(--border-color-light));
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-primary) calc(var(--hour-alpha) * 24%), #fff);
+  background: color-mix(in srgb, var(--color-primary) calc(var(--hour-alpha) * 18%), #fff);
 }
 
 .hour-cell span,
@@ -821,10 +828,10 @@ watch(
 
 .rfm-tile {
   border: 1px solid var(--border-color-light);
-  border-top: 3px solid var(--color-info);
+  border-left: 3px solid var(--color-info);
   border-radius: var(--radius-md);
   padding: 14px 16px;
-  background: var(--bg-muted);
+  background: var(--bg-subtle);
 }
 .rfm-seg { font-size: 14px; color: var(--text-regular); }
 .rfm-count { font-size: 24px; font-weight: bold; color: var(--text-primary); margin: 4px 0; }

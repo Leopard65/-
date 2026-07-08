@@ -81,7 +81,7 @@ const segmentClass = (segment) => ({
 
 <style scoped>
 .member-ops-panel {
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .ops-metrics {
@@ -92,10 +92,10 @@ const segmentClass = (segment) => ({
 }
 
 .ops-metric {
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid var(--border-color-light);
   border-radius: var(--radius-md);
-  background: var(--bg-muted);
+  background: var(--bg-subtle);
 }
 
 .ops-metric span {
@@ -121,11 +121,11 @@ const segmentClass = (segment) => ({
 
 .segment-card {
   --segment-color: var(--color-info);
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid var(--border-color-light);
-  border-left: 4px solid var(--segment-color);
+  border-left: 3px solid var(--segment-color);
   border-radius: var(--radius-md);
-  background: var(--bg-card);
+  background: var(--bg-subtle);
 }
 
 .segment-card span,

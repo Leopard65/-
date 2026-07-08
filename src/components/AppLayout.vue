@@ -199,7 +199,7 @@ onUnmounted(() => {
 /* ===== 侧边栏 ===== */
 .sidebar {
   background:
-    linear-gradient(180deg, rgba(217, 154, 24, 0.08), transparent 180px),
+    linear-gradient(180deg, rgba(214, 154, 45, 0.07), transparent 180px),
     var(--sidebar-bg);
   transition: width 0.25s;
   display: flex;
@@ -215,6 +215,7 @@ onUnmounted(() => {
   padding: 0 18px;
   color: #fff;
   background: var(--sidebar-bg-deep);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -248,7 +249,7 @@ onUnmounted(() => {
 /* Element 菜单深色配色（scoped 下需穿透内部节点） */
 .side-menu :deep(.el-menu-item) {
   color: var(--sidebar-text);
-  height: 44px;
+  height: 42px;
   margin: 2px 10px;
   border-radius: var(--radius-md);
   transition: background var(--motion-fast), color var(--motion-fast), transform var(--motion-fast);
@@ -259,9 +260,9 @@ onUnmounted(() => {
   transform: translateX(2px);
 }
 .side-menu :deep(.el-menu-item.is-active) {
-  background: linear-gradient(90deg, var(--color-primary), #1f805e);
+  background: linear-gradient(90deg, var(--color-primary), #2f765e);
   color: #fff;
-  box-shadow: inset 3px 0 0 var(--color-accent);
+  box-shadow: inset 3px 0 0 var(--color-accent), 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .side-menu :deep(.el-menu-item.is-active .el-icon) { color: #fff; }
 .side-menu :deep(.el-menu-item-group__title) {
@@ -278,7 +279,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-color);
   padding: 0 20px;
@@ -316,10 +317,8 @@ onUnmounted(() => {
 /* ===== 内容区：统一底色 / 内边距 / 滚动 ===== */
 .content {
   background:
-    linear-gradient(90deg, rgba(23, 107, 77, 0.035) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(23, 107, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0) 180px),
     var(--bg-page);
-  background-size: 28px 28px;
   padding: var(--space-5);
   overflow-y: auto;
 }
