@@ -187,6 +187,22 @@ async function runChecks() {
   check('重复清理被拒 400', (await req('POST', `/batches/${expiredBatch.data.id}/clear`, token)).status === 400);
   check('收银员访问批次 403', (await req('GET', '/batches', ctoken)).status === 403);
 
+  // ===== 库存盘点 / 调整 / 报损 =====
+  console.log('\n[库存] 盘点 / 调整 / 报损流水');
+  const stockBeforeAdjust = db.prepare('SELECT stock FROM products WHERE id=?').get(prod.id).stock;
+  const adj = await req('POST', '/inventory/adjustments', token, {
+    product_id: prod.id,
+    type: 'adjust',
+    quantity: 2,
+    reason: 'smoke adjust'
+  });
+  check('管理员库存调整成功', adj.status === 200 && adj.data.quantity_delta === 2, JSON.stringify(adj.data));
+  const stockAfterAdjust = db.prepare('SELECT stock FROM products WHERE id=?').get(prod.id).stock;
+  check('库存调整后增加2', stockAfterAdjust === stockBeforeAdjust + 2, `前 ${stockBeforeAdjust} 后 ${stockAfterAdjust}`);
+  const adjList = await req('GET', '/inventory/adjustments?pageSize=5', token);
+  check('库存流水列表含记录', adjList.status === 200 && Array.isArray(adjList.data.data) && adjList.data.data.some(a => a.id === adj.data.id));
+  check('收银员库存调整 403', (await req('POST', '/inventory/adjustments', ctoken, { product_id: prod.id, type: 'adjust', quantity: 1 })).status === 403);
+
   // ===== 巩固：登录失败限流（放最后，会锁定本 IP）=====
   console.log('\n[巩固] 登录失败限流');
   let lastStatus = 0;

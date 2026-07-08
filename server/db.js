@@ -163,6 +163,19 @@ db.exec(`
     FOREIGN KEY (purchase_id) REFERENCES purchases(id)
   );
 
+  CREATE TABLE IF NOT EXISTS inventory_adjustments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    type TEXT NOT NULL,            -- count 盘点 / adjust 调整 / loss 报损
+    quantity_delta INTEGER NOT NULL,
+    before_stock INTEGER NOT NULL,
+    after_stock INTEGER NOT NULL,
+    reason TEXT,
+    operator TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+  );
+
   CREATE TABLE IF NOT EXISTS operation_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
