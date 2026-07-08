@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { calcReplenish, rfmSegment } = require('../utils/calc');
+const { calcReplenish, rfmSegment, round2 } = require('../utils/calc');
 
 // 日销售报表（含退款与净销售额）
 router.get('/sales/daily', (req, res) => {
@@ -159,6 +159,176 @@ router.get('/sales/payments', (req, res) => {
   } catch (err) {
     console.error('获取支付方式统计失败:', err);
     res.status(500).json({ error: '获取支付方式统计失败' });
+  }
+});
+
+// 时段销售热力（按小时聚合）
+router.get('/sales/hourly', (req, res) => {
+  try {
+    const { start_date, end_date } = req.query;
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (start_date) {
+      where += ' AND DATE(created_at) >= ?';
+      params.push(start_date);
+    }
+    if (end_date) {
+      where += ' AND DATE(created_at) <= ?';
+      params.push(end_date);
+    }
+
+    const rows = db.prepare(`
+      SELECT strftime('%H', created_at) as hour,
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as total_amount
+      FROM sales
+      ${where}
+      GROUP BY strftime('%H', created_at)
+      ORDER BY hour
+    `).all(...params);
+
+    const byHour = new Map(rows.map(row => [Number(row.hour), row]));
+    const data = Array.from({ length: 24 }, (_, hour) => {
+      const row = byHour.get(hour);
+      return {
+        hour,
+        label: `${String(hour).padStart(2, '0')}:00`,
+        order_count: row?.order_count || 0,
+        total_amount: round2(row?.total_amount || 0)
+      };
+    });
+
+    res.json(data);
+  } catch (err) {
+    console.error('获取时段销售失败:', err);
+    res.status(500).json({ error: '获取时段销售失败' });
+  }
+});
+
+// 商品退货率排行（按所选区间销售与已审核退货聚合）
+router.get('/returns/products', (req, res) => {
+  try {
+    const { start_date, end_date, limit = 20 } = req.query;
+    let saleWhere = 'WHERE 1=1';
+    let returnWhere = "WHERE r.status = 'completed'";
+    const saleParams = [];
+    const returnParams = [];
+
+    if (start_date) {
+      saleWhere += ' AND DATE(s.created_at) >= ?';
+      returnWhere += ' AND DATE(r.created_at) >= ?';
+      saleParams.push(start_date);
+      returnParams.push(start_date);
+    }
+    if (end_date) {
+      saleWhere += ' AND DATE(s.created_at) <= ?';
+      returnWhere += ' AND DATE(r.created_at) <= ?';
+      saleParams.push(end_date);
+      returnParams.push(end_date);
+    }
+
+    const soldRows = db.prepare(`
+      SELECT p.id, p.name, COALESCE(SUM(si.quantity), 0) as sold_qty,
+        COALESCE(SUM(si.quantity * si.price), 0) as sold_amount
+      FROM sale_items si
+      JOIN sales s ON si.sale_id = s.id
+      JOIN products p ON si.product_id = p.id
+      ${saleWhere}
+      GROUP BY p.id
+    `).all(...saleParams);
+
+    const returnedRows = db.prepare(`
+      SELECT p.id, p.name, COALESCE(SUM(ri.quantity), 0) as returned_qty,
+        COALESCE(SUM(ri.quantity * ri.price), 0) as refund_amount
+      FROM return_items ri
+      JOIN returns r ON ri.return_id = r.id
+      JOIN products p ON ri.product_id = p.id
+      ${returnWhere}
+      GROUP BY p.id
+    `).all(...returnParams);
+
+    const products = new Map();
+    soldRows.forEach(row => products.set(row.id, {
+      id: row.id,
+      name: row.name,
+      sold_qty: row.sold_qty || 0,
+      sold_amount: round2(row.sold_amount || 0),
+      returned_qty: 0,
+      refund_amount: 0
+    }));
+    returnedRows.forEach(row => {
+      const current = products.get(row.id) || {
+        id: row.id,
+        name: row.name,
+        sold_qty: 0,
+        sold_amount: 0,
+        returned_qty: 0,
+        refund_amount: 0
+      };
+      current.returned_qty = row.returned_qty || 0;
+      current.refund_amount = round2(row.refund_amount || 0);
+      products.set(row.id, current);
+    });
+
+    const data = Array.from(products.values())
+      .map(row => ({
+        ...row,
+        return_rate: row.sold_qty > 0 ? round2((row.returned_qty / row.sold_qty) * 100) : 0
+      }))
+      .filter(row => row.returned_qty > 0 || row.return_rate > 0)
+      .sort((a, b) => b.return_rate - a.return_rate || b.returned_qty - a.returned_qty)
+      .slice(0, parseInt(limit));
+
+    res.json(data);
+  } catch (err) {
+    console.error('获取商品退货率失败:', err);
+    res.status(500).json({ error: '获取商品退货率失败' });
+  }
+});
+
+// 会员贡献分析（按会员等级/非会员聚合销售贡献）
+router.get('/members/contribution', (req, res) => {
+  try {
+    const { start_date, end_date } = req.query;
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (start_date) {
+      where += ' AND DATE(s.created_at) >= ?';
+      params.push(start_date);
+    }
+    if (end_date) {
+      where += ' AND DATE(s.created_at) <= ?';
+      params.push(end_date);
+    }
+
+    const rows = db.prepare(`
+      SELECT COALESCE(m.level, '非会员') as segment,
+        COUNT(*) as order_count,
+        COUNT(DISTINCT s.member_id) as buyer_count,
+        COALESCE(SUM(s.total), 0) as total_amount
+      FROM sales s
+      LEFT JOIN members m ON s.member_id = m.id
+      ${where}
+      GROUP BY COALESCE(m.level, '非会员')
+      ORDER BY total_amount DESC
+    `).all(...params);
+
+    const totalAmount = rows.reduce((sum, row) => sum + (row.total_amount || 0), 0);
+    const data = rows.map(row => ({
+      segment: row.segment,
+      order_count: row.order_count || 0,
+      buyer_count: row.buyer_count || 0,
+      total_amount: round2(row.total_amount || 0),
+      avg_order: row.order_count > 0 ? round2(row.total_amount / row.order_count) : 0,
+      share: totalAmount > 0 ? round2((row.total_amount / totalAmount) * 100) : 0
+    }));
+
+    res.json(data);
+  } catch (err) {
+    console.error('获取会员贡献分析失败:', err);
+    res.status(500).json({ error: '获取会员贡献分析失败' });
   }
 });
 

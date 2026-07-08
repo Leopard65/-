@@ -79,6 +79,83 @@
       </el-tab-pane>
 
       <!-- 库存报表 -->
+      <el-tab-pane label="异常雷达" name="radar">
+        <div class="metric-grid">
+          <MetricCard label="销售高峰" :value="radarSummary.peakHour" tone="primary">
+            <template #icon><el-icon><Calendar /></el-icon></template>
+          </MetricCard>
+          <MetricCard label="退货商品" :value="formatNumber(radarSummary.returnProductCount)" tone="danger">
+            <template #icon><el-icon><RefreshLeft /></el-icon></template>
+          </MetricCard>
+          <MetricCard label="最高退货率" :value="`${radarSummary.maxReturnRate}%`" tone="warning">
+            <template #icon><el-icon><TrendCharts /></el-icon></template>
+          </MetricCard>
+          <MetricCard label="主力客群" :value="radarSummary.topMemberSegment" tone="accent">
+            <template #icon><el-icon><Tickets /></el-icon></template>
+          </MetricCard>
+        </div>
+
+        <SectionPanel title="时段销售热力">
+          <template #actions>
+            <span class="range-hint">{{ reportRangeText }}</span>
+          </template>
+          <div v-if="hourlySales.length" class="hour-grid">
+            <div
+              v-for="item in hourlySales"
+              :key="item.hour"
+              class="hour-cell"
+              :style="hourCellStyle(item)"
+            >
+              <span>{{ item.label }}</span>
+              <strong class="num">{{ item.order_count }}</strong>
+              <small>{{ formatMoney(item.total_amount) }}</small>
+            </div>
+          </div>
+          <EmptyState v-else description="所选区间暂无时段销售数据" />
+        </SectionPanel>
+
+        <el-row :gutter="20" style="margin-top:20px">
+          <el-col :span="13">
+            <SectionPanel title="商品退货率排行">
+              <el-table :data="productReturnRates" stripe size="small" max-height="360">
+                <el-table-column type="index" label="#" width="46" />
+                <el-table-column prop="name" label="商品" min-width="140" show-overflow-tooltip />
+                <el-table-column prop="sold_qty" label="销量" width="80" align="right" />
+                <el-table-column prop="returned_qty" label="退货" width="80" align="right" />
+                <el-table-column label="退货率" width="100" align="right">
+                  <template #default="{ row }">
+                    <el-tag :type="row.return_rate >= 10 ? 'danger' : 'warning'" effect="light">{{ row.return_rate }}%</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="退款额" width="110" align="right">
+                  <template #default="{ row }"><span class="num amount--danger">{{ formatMoney(row.refund_amount) }}</span></template>
+                </el-table-column>
+              </el-table>
+              <EmptyState v-if="!productReturnRates.length" description="所选区间暂无退货商品" />
+            </SectionPanel>
+          </el-col>
+          <el-col :span="11">
+            <SectionPanel title="会员贡献分析">
+              <el-table :data="memberContribution" stripe size="small" max-height="360">
+                <el-table-column prop="segment" label="客群" min-width="100" />
+                <el-table-column prop="order_count" label="订单" width="76" align="right" />
+                <el-table-column label="销售额" width="110" align="right">
+                  <template #default="{ row }"><span class="num amount">{{ formatMoney(row.total_amount) }}</span></template>
+                </el-table-column>
+                <el-table-column label="客单价" width="110" align="right">
+                  <template #default="{ row }"><span class="num">{{ formatMoney(row.avg_order) }}</span></template>
+                </el-table-column>
+                <el-table-column label="占比" width="82" align="right">
+                  <template #default="{ row }">{{ row.share }}%</template>
+                </el-table-column>
+              </el-table>
+              <EmptyState v-if="!memberContribution.length" description="暂无会员贡献数据" />
+            </SectionPanel>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+
+      <!-- 库存报表 -->
       <el-tab-pane label="库存报表" name="inventory">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -262,7 +339,7 @@ echarts.use([LineChart, BarChart, PieChart, TooltipComponent, LegendComponent, G
 
 const route = useRoute()
 const router = useRouter()
-const tabOptions = new Set(['sales', 'inventory', 'profit', 'members'])
+const tabOptions = new Set(['sales', 'radar', 'inventory', 'profit', 'members'])
 const normalizeTab = (tab) => {
   const value = Array.isArray(tab) ? tab[0] : tab
   return tabOptions.has(value) ? value : 'sales'
@@ -282,6 +359,11 @@ const salesSummary = ref({})
 // 库存数据
 const inventoryWarning = ref([])
 const inventoryValue = ref([])
+
+// 异常雷达
+const hourlySales = ref([])
+const productReturnRates = ref([])
+const memberContribution = ref([])
 
 // 利润数据
 const profitData = ref([])
@@ -332,6 +414,7 @@ const reportParams = () => {
 
 const reloadCurrentRangeData = () => {
   if (activeTab.value === 'sales') loadSalesData()
+  if (activeTab.value === 'radar') loadRadarData()
   if (activeTab.value === 'profit') loadProfitData()
 }
 
@@ -356,7 +439,22 @@ const handleExportWeeklyReport = async () => {
       reportsApi.getPaymentStats(params),
       reportsApi.getGrossProfit(params)
     ])
-    exportBusinessWeeklyReport({ range: weeklyRange, daily, products, categories, payments, profit })
+    const [hourly, returnRates, memberContributionRows] = await Promise.all([
+      reportsApi.getHourlySales(params),
+      reportsApi.getProductReturnRates({ ...params, limit: 20 }),
+      reportsApi.getMemberContribution(params)
+    ])
+    exportBusinessWeeklyReport({
+      range: weeklyRange,
+      daily,
+      products,
+      categories,
+      payments,
+      profit,
+      hourly,
+      returnRates,
+      memberContribution: memberContributionRows
+    })
     ElMessage.success('经营周报已导出')
   } catch (e) {
     console.error('导出经营周报失败:', e)
@@ -574,8 +672,52 @@ const scrollToFocusedPanel = () => {
   })
 }
 
+const radarSummary = computed(() => {
+  const peak = hourlySales.value.reduce((best, item) => (
+    item.total_amount > (best?.total_amount || 0) ? item : best
+  ), null)
+  const topReturn = productReturnRates.value[0]
+  const topMember = memberContribution.value[0]
+
+  return {
+    peakHour: peak && peak.order_count > 0 ? peak.label : '--',
+    returnProductCount: productReturnRates.value.length,
+    maxReturnRate: topReturn?.return_rate || 0,
+    topMemberSegment: topMember?.segment || '--'
+  }
+})
+
+const maxHourlyAmount = computed(() =>
+  Math.max(0, ...hourlySales.value.map(item => Number(item.total_amount || 0)))
+)
+
+const hourCellStyle = (item) => {
+  const max = maxHourlyAmount.value
+  const ratio = max > 0 ? Math.max(0.08, item.total_amount / max) : 0
+  return {
+    '--hour-alpha': ratio.toFixed(2)
+  }
+}
+
+const loadRadarData = async () => {
+  try {
+    const params = reportParams()
+    const [hourly, returns, contribution] = await Promise.all([
+      reportsApi.getHourlySales(params),
+      reportsApi.getProductReturnRates({ ...params, limit: 20 }),
+      reportsApi.getMemberContribution(params)
+    ])
+    hourlySales.value = hourly
+    productReturnRates.value = returns
+    memberContribution.value = contribution
+  } catch (e) {
+    console.error('加载异常雷达失败:', e)
+  }
+}
+
 const loadTabData = (tab) => {
   if (tab === 'sales') loadSalesData()
+  else if (tab === 'radar') loadRadarData()
   else if (tab === 'inventory') loadInventoryData()
   else if (tab === 'profit') loadProfitData()
   else if (tab === 'members') loadMemberData()
@@ -645,6 +787,34 @@ watch(
   font-family: var(--font-data);
 }
 
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.hour-cell {
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) calc(var(--hour-alpha) * 45%), var(--border-color-light));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary) calc(var(--hour-alpha) * 24%), #fff);
+}
+
+.hour-cell span,
+.hour-cell small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.hour-cell strong {
+  color: var(--text-primary);
+  font-size: 20px;
+}
+
 /* 图表容器统一高度，避免抖动 */
 .chart { width: 100%; height: 320px; }
 .chart--tall { height: 360px; }
@@ -660,4 +830,16 @@ watch(
 .rfm-count { font-size: 24px; font-weight: bold; color: var(--text-primary); margin: 4px 0; }
 .rfm-count small { font-size: 13px; font-weight: normal; color: var(--text-secondary); }
 .rfm-total { font-size: 12px; color: var(--text-secondary); }
+
+@media (max-width: 900px) {
+  .hour-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .hour-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 </style>

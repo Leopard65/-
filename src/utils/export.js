@@ -81,7 +81,17 @@ export function exportSales(sales) {
 /**
  * 导出经营周报（多工作表 Excel）
  */
-export function exportBusinessWeeklyReport({ range, daily = [], products = [], categories = [], payments = [], profit = [] }) {
+export function exportBusinessWeeklyReport({
+  range,
+  daily = [],
+  products = [],
+  categories = [],
+  payments = [],
+  profit = [],
+  hourly = [],
+  returnRates = [],
+  memberContribution = []
+}) {
   const totalAmount = daily.reduce((sum, item) => sum + (item.total_amount || 0), 0);
   const totalRefund = daily.reduce((sum, item) => sum + (item.refund_amount || 0), 0);
   const netAmount = daily.reduce((sum, item) => sum + (item.net_amount ?? ((item.total_amount || 0) - (item.refund_amount || 0))), 0);
@@ -158,6 +168,38 @@ export function exportBusinessWeeklyReport({ range, daily = [], products = [], c
       item.gross_profit || 0
     ])
   ], [14, 14, 14, 14]);
+
+  addSheet('时段销售', [
+    ['时段', '订单数', '销售额'],
+    ...hourly.map(item => [
+      item.label || `${item.hour}:00`,
+      item.order_count || 0,
+      item.total_amount || 0
+    ])
+  ], [12, 10, 14]);
+
+  addSheet('商品退货率', [
+    ['商品', '销量', '退货量', '退货率', '退款额'],
+    ...returnRates.map(item => [
+      item.name,
+      item.sold_qty || 0,
+      item.returned_qty || 0,
+      `${item.return_rate || 0}%`,
+      item.refund_amount || 0
+    ])
+  ], [24, 10, 10, 10, 14]);
+
+  addSheet('会员贡献', [
+    ['客群', '订单数', '购买会员数', '销售额', '客单价', '销售占比'],
+    ...memberContribution.map(item => [
+      item.segment,
+      item.order_count || 0,
+      item.buyer_count || 0,
+      item.total_amount || 0,
+      item.avg_order || 0,
+      `${item.share || 0}%`
+    ])
+  ], [16, 10, 12, 14, 14, 12]);
 
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/octet-stream' });

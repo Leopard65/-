@@ -148,6 +148,12 @@ async function runChecks() {
   const rfm = await req('GET', '/reports/members/rfm', token);
   check('RFM 返回 4 分层 + 名单', rfm.status === 200 && Array.isArray(rfm.data.segments) && rfm.data.segments.length === 4 && Array.isArray(rfm.data.members), JSON.stringify(rfm.data).slice(0, 80));
   check('RFM 名单含烟测会员', (rfm.data.members || []).some(m => m.id === memberId));
+  const hourly = await req('GET', '/reports/sales/hourly', token);
+  check('时段销售返回24小时', hourly.status === 200 && Array.isArray(hourly.data) && hourly.data.length === 24);
+  const returnRates = await req('GET', '/reports/returns/products', token);
+  check('商品退货率返回数组', returnRates.status === 200 && Array.isArray(returnRates.data));
+  const memberContribution = await req('GET', '/reports/members/contribution', token);
+  check('会员贡献分析返回数组', memberContribution.status === 200 && Array.isArray(memberContribution.data));
 
   // ===== P3 商品导入 =====
   console.log('\n[P3] 商品批量导入');
