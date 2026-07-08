@@ -11,7 +11,7 @@ const ROLES = ['admin', 'cashier'];
 router.get('/', (req, res) => {
   try {
     const users = db.prepare(
-      'SELECT id, username, role, status, created_at, updated_at FROM users ORDER BY id'
+      'SELECT id, username, role, status, last_login_at, created_at, updated_at FROM users ORDER BY id'
     ).all();
     res.json(users);
   } catch (err) {

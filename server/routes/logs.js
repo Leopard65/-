@@ -5,13 +5,14 @@ const { getOperationLogs } = require('../utils/logger');
 // 获取操作日志（支持分页和筛选）
 router.get('/', (req, res) => {
   try {
-    const { page, pageSize, username, action, module, start_date, end_date } = req.query;
+    const { page, pageSize, username, action, module, risk_only, start_date, end_date } = req.query;
     const result = getOperationLogs({
       page: parseInt(page) || 1,
       pageSize: parseInt(pageSize) || 20,
       username,
       action,
       module,
+      riskOnly: risk_only === '1' || risk_only === 'true',
       startDate: start_date,
       endDate: end_date
     });

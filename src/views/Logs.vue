@@ -10,16 +10,31 @@
       <el-option label="恢复" value="restore" />
       <el-option label="审核通过" value="approve" />
       <el-option label="审核拒绝" value="reject" />
+      <el-option label="清理下架" value="clear" />
+      <el-option label="盘点" value="count" />
+      <el-option label="库存调整" value="adjust" />
+      <el-option label="报损" value="loss" />
     </el-select>
     <el-select v-model="filters.module" placeholder="模块" clearable style="width:120px" @change="load">
       <el-option label="认证" value="auth" />
       <el-option label="商品" value="products" />
       <el-option label="会员" value="members" />
+      <el-option label="会员等级" value="member_levels" />
       <el-option label="供应商" value="suppliers" />
       <el-option label="销售" value="sales" />
+      <el-option label="进货" value="purchases" />
       <el-option label="退换货" value="returns" />
       <el-option label="分类" value="categories" />
+      <el-option label="用户" value="users" />
+      <el-option label="批次" value="batches" />
+      <el-option label="库存" value="inventory" />
     </el-select>
+    <el-switch
+      v-model="filters.risk_only"
+      active-text="仅风险"
+      inactive-text="全部"
+      @change="load"
+    />
     <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:260px" @change="handleDateChange" />
   </FilterBar>
   <el-card>
@@ -35,6 +50,11 @@
       <el-table-column prop="module" label="模块" width="100">
         <template #default="{ row }">
           <el-tag type="info" effect="plain">{{ moduleText(row.module) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="risk_level" label="风险" width="90">
+        <template #default="{ row }">
+          <el-tag :type="riskType(row.risk_level)" effect="light">{{ riskText(row.risk_level) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="target_id" label="对象ID" width="80" />
@@ -79,7 +99,8 @@ const dateRange = ref(null)
 const filters = ref({
   username: '',
   action: '',
-  module: ''
+  module: '',
+  risk_only: false
 })
 
 const actionType = (action) => {
@@ -92,7 +113,10 @@ const actionType = (action) => {
     approve: 'success',
     reject: 'danger',
     import: 'primary',
-    clear: 'warning'
+    clear: 'warning',
+    count: 'primary',
+    adjust: 'warning',
+    loss: 'danger'
   }
   return map[action] || 'info'
 }
@@ -107,7 +131,10 @@ const actionText = (action) => {
     approve: '审核通过',
     reject: '审核拒绝',
     import: '导入',
-    clear: '清理下架'
+    clear: '清理下架',
+    count: '盘点',
+    adjust: '库存调整',
+    loss: '报损'
   }
   return map[action] || action
 }
@@ -124,10 +151,14 @@ const moduleText = (module) => {
     returns: '退换货',
     categories: '分类',
     users: '用户',
-    batches: '批次'
+    batches: '批次',
+    inventory: '库存'
   }
   return map[module] || module
 }
+
+const riskText = (risk) => ({ high: '高', medium: '中', normal: '普通' }[risk] || '普通')
+const riskType = (risk) => ({ high: 'danger', medium: 'warning', normal: 'info' }[risk] || 'info')
 
 const formatDetail = (detail) => {
   try {

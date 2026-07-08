@@ -113,6 +113,7 @@ db.exec(`
     password TEXT NOT NULL,
     role TEXT DEFAULT 'cashier',
     status INTEGER DEFAULT 1,
+    last_login_at TEXT,
     created_at TEXT DEFAULT (datetime('now','localtime')),
     updated_at TEXT DEFAULT (datetime('now','localtime'))
   );
@@ -183,6 +184,7 @@ db.exec(`
     action TEXT NOT NULL,
     module TEXT NOT NULL,
     target_id INTEGER,
+    risk_level TEXT DEFAULT 'normal',
     detail TEXT,
     ip TEXT,
     created_at TEXT DEFAULT (datetime('now','localtime')),
@@ -252,6 +254,16 @@ const userColumns = db.prepare("PRAGMA table_info(users)").all();
 if (!userColumns.some(c => c.name === 'status')) {
   db.exec("ALTER TABLE users ADD COLUMN status INTEGER DEFAULT 1");
   console.log('已为 users 表新增 status 字段');
+}
+if (!userColumns.some(c => c.name === 'last_login_at')) {
+  db.exec("ALTER TABLE users ADD COLUMN last_login_at TEXT");
+  console.log('已为 users 表新增 last_login_at 字段');
+}
+
+const logColumns = db.prepare("PRAGMA table_info(operation_logs)").all();
+if (!logColumns.some(c => c.name === 'risk_level')) {
+  db.exec("ALTER TABLE operation_logs ADD COLUMN risk_level TEXT DEFAULT 'normal'");
+  console.log('已为 operation_logs 表新增 risk_level 字段');
 }
 
 // 插入示例数据（仅在表为空时）

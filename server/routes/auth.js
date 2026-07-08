@@ -69,6 +69,7 @@ router.post('/login', (req, res) => {
 
     clearLoginFails(ipKey);
     const token = jwt.sign({ id: user.id, role: user.role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRES_IN });
+    db.prepare("UPDATE users SET last_login_at = datetime('now','localtime') WHERE id = ?").run(user.id);
 
     // 记录登录成功日志
     logOperation({

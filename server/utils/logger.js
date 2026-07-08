@@ -11,12 +11,26 @@ const db = require('../db');
  * @param {Object} [options.detail] - 操作详情
  * @param {string} [options.ip] - IP地址
  */
-function logOperation({ userId, username, action, module, targetId, detail, ip }) {
+function inferRiskLevel({ action, module, detail = {} }) {
+  if (module === 'auth' && action === 'login' && detail.success === false) return 'high';
+  if (['delete', 'clear', 'loss'].includes(action)) return 'high';
+  if (module === 'inventory' && ['count', 'adjust'].includes(action)) return 'medium';
+  if (module === 'users') {
+    if (detail.reset_password || detail.status === 0 || detail.role) return 'high';
+    return 'medium';
+  }
+  if (module === 'returns' && ['approve', 'reject'].includes(action)) return 'medium';
+  return 'normal';
+}
+
+function logOperation({ userId, username, action, module, targetId, detail, ip, riskLevel }) {
   try {
+    const safeDetail = detail || {};
+    const level = riskLevel || inferRiskLevel({ action, module, detail: safeDetail });
     db.prepare(`
-      INSERT INTO operation_logs (user_id, username, action, module, target_id, detail, ip)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(userId, username, action, module, targetId || null, JSON.stringify(detail || {}), ip || '');
+      INSERT INTO operation_logs (user_id, username, action, module, target_id, risk_level, detail, ip)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(userId, username, action, module, targetId || null, level, JSON.stringify(safeDetail), ip || '');
   } catch (err) {
     console.error('记录操作日志失败:', err);
   }
@@ -33,7 +47,7 @@ function logOperation({ userId, username, action, module, targetId, detail, ip }
  * @param {string} [options.startDate] - 开始日期
  * @param {string} [options.endDate] - 结束日期
  */
-function getOperationLogs({ page = 1, pageSize = 20, username, action, module, startDate, endDate }) {
+function getOperationLogs({ page = 1, pageSize = 20, username, action, module, riskOnly, startDate, endDate }) {
   let where = 'WHERE 1=1';
   const params = [];
 
@@ -48,6 +62,9 @@ function getOperationLogs({ page = 1, pageSize = 20, username, action, module, s
   if (module) {
     where += ' AND module = ?';
     params.push(module);
+  }
+  if (riskOnly) {
+    where += " AND risk_level != 'normal'";
   }
   if (startDate) {
     where += ' AND DATE(created_at) >= ?';

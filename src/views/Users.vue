@@ -20,6 +20,14 @@
           <StatusTag preset="userStatus" :value="row.status" />
         </template>
       </el-table-column>
+      <el-table-column label="账号风险" width="120">
+        <template #default="{ row }">
+          <el-tag :type="accountRisk(row).type" effect="light">{{ accountRisk(row).text }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="last_login_at" label="最近登录" width="180">
+        <template #default="{ row }">{{ row.last_login_at || '从未登录' }}</template>
+      </el-table-column>
       <el-table-column prop="created_at" label="创建时间" width="180" />
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
@@ -98,13 +106,31 @@ const load = async () => {
 
 const openDialog = (row) => {
   form.value = row
-    ? { id: row.id, username: row.username, role: row.role, password: '' }
+    ? { id: row.id, username: row.username, role: row.role, originalRole: row.role, password: '' }
     : { username: '', password: '', role: 'cashier' }
   dialogRef.value?.open(form.value)
 }
 
+const accountRisk = (row) => {
+  if (row.status === 0) return { text: '已禁用', type: 'info' }
+  if (!row.last_login_at) return { text: '从未登录', type: 'warning' }
+  const last = new Date(row.last_login_at.replace(' ', 'T')).getTime()
+  if (Number.isNaN(last)) return { text: '正常', type: 'success' }
+  const days = (Date.now() - last) / 86400000
+  if (days > 30) return { text: '久未登录', type: 'warning' }
+  return { text: '正常', type: 'success' }
+}
+
 const handleSave = async (formData) => {
   if (formData.id) {
+    const roleChanged = formData.role !== formData.originalRole
+    if (roleChanged || formData.password) {
+      const actions = [
+        roleChanged ? '修改角色' : '',
+        formData.password ? '重置密码' : ''
+      ].filter(Boolean).join('、')
+      await ElMessageBox.confirm(`确定对用户「${formData.username}」执行${actions}？`, '风险操作确认', { type: 'warning' })
+    }
     const payload = { role: formData.role }
     if (formData.password) payload.password = formData.password
     await usersApi.updateUser(formData.id, payload)

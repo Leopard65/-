@@ -123,6 +123,11 @@ async function runChecks() {
   check('被禁用账号旧 token 访问业务 403', (await req('GET', '/members', ctoken)).status === 403);
   check('不能禁用当前登录账号(400)', (await req('PUT', `/users/${adminId}`, token, { status: 0 })).status === 400);
   check('不能降级最后一个管理员(400)', (await req('PUT', `/users/${adminId}`, token, { role: 'cashier' })).status === 400);
+  const userList = await req('GET', '/users', token);
+  const adminUser = (userList.data || []).find(u => u.id === adminId);
+  check('用户列表包含最近登录时间', !!adminUser?.last_login_at);
+  const riskLogs = await req('GET', '/logs?risk_only=true&pageSize=100', token);
+  check('风险日志筛选返回高风险记录', riskLogs.status === 200 && (riskLogs.data.data || []).some(l => l.risk_level === 'high'));
 
   // ===== P3 会员分析 =====
   console.log('\n[P3] 会员分析接口');
