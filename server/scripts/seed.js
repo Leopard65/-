@@ -5,7 +5,7 @@
  *      让首页、列表、文章、轮播、仪表盘图表/回访提醒等都有内容可展示。
  * 用法：在 server 目录执行  npm run seed
  * 幂等：仅当 animals 表为空时才播种，避免重复或覆盖真实数据。
- * 图片：引用前端 client/public/seed/ 下的 SVG 占位图（同源 /seed/*.svg）。
+ * 图片：引用前端 client/public/seed/ 下的演示图片（同源 /seed/*.jpg 与少量文章 SVG）。
  */
 require('dotenv').config();
 const db = require('../config/db');
@@ -42,16 +42,16 @@ async function main() {
 
   // ===== 动物 =====
   const animals = [
-    ['小橘', 1, '橘猫', 'male', '约1岁', 4.2, '橘白', '健康，已驱虫', 1, 1, '亲人粘人，爱撒娇', '在小区门口被发现，亲人会蹭腿，适合有耐心的家庭。', '/seed/animal-cat-orange.svg', 'available', '阳光小区南门'],
-    ['雪球', 1, '英短', 'female', '约2岁', 3.8, '蓝白', '健康', 1, 1, '安静乖巧', '性格温顺，喜欢趴在窗边晒太阳，适合上班族。', '/seed/animal-cat-british.svg', 'available', '中心公园'],
-    ['大黄', 2, '金毛', 'male', '约3岁', 28.0, '金黄', '健康，已绝育', 1, 1, '温顺友善', '非常聪明，会握手坐下，对小孩友好。', '/seed/animal-dog-golden.svg', 'adopted', '城西工业园'],
-    ['短腿', 2, '柯基', 'female', '约1岁', 9.5, '三色', '健康', 1, 0, '元气满满', '活泼好动，喜欢追球，需要每天遛弯。', '/seed/animal-dog-corgi.svg', 'adopted', '河滨路'],
-    ['棉花', 3, '垂耳兔', 'female', '约8个月', 1.8, '白色', '健康', 0, 0, '软萌安静', '安静爱吃草，适合公寓饲养。', '/seed/animal-rabbit.svg', 'fostered', '大学城'],
-    ['团子', 4, '银狐仓鼠', 'male', '约5个月', 0.1, '银白', '健康', 0, 0, '小巧呆萌', '巴掌大的小家伙，夜间活跃。', '/seed/animal-hamster.svg', 'rescued', '步行街'],
-    ['花花', 1, '中华田园猫', 'female', '约1岁', 3.5, '狸花', '健康，待绝育', 1, 0, '机灵活泼', '会自己用猫砂，亲人，适合新手。', '/seed/animal-cat-grey.svg', 'available', '老城区菜场'],
-    ['旺财', 2, '中华田园犬', 'male', '约2岁', 15.0, '黄色', '健康，已绝育', 1, 1, '忠诚护家', '看家一流，认主，适合有院子的家庭。', '/seed/animal-dog-golden.svg', 'adopted', '城南村'],
-    ['豆豆', 2, '柯基', 'male', '约1岁', 8.5, '黄白', '健康，已接种', 1, 1, '亲人活泼', '活泼亲人，喜欢追球，适合喜欢狗狗的家庭。', '/seed/animal-dog-corgi.svg', 'available', '城东花园'],
-    ['跳跳', 3, '侏儒兔', 'female', '约6个月', 1.2, '灰色', '健康', 0, 0, '安静温顺', '安静好养，适合公寓和新手饲养。', '/seed/animal-rabbit.svg', 'available', '青年路'],
+    ['小橘', 1, '橘猫', 'male', '约1岁', 4.2, '橘白', '健康，已驱虫', 1, 1, '亲人粘人，爱撒娇', '在小区门口被发现，亲人会蹭腿，适合有耐心的家庭。', '/seed/animal-cat-orange.jpg', 'available', '阳光小区南门'],
+    ['雪球', 1, '英短', 'female', '约2岁', 3.8, '蓝白', '健康', 1, 1, '安静乖巧', '性格温顺，喜欢趴在窗边晒太阳，适合上班族。', '/seed/animal-cat-british.jpg', 'available', '中心公园'],
+    ['大黄', 2, '金毛', 'male', '约3岁', 28.0, '金黄', '健康，已绝育', 1, 1, '温顺友善', '非常聪明，会握手坐下，对小孩友好。', '/seed/animal-dog-golden.jpg', 'adopted', '城西工业园'],
+    ['短腿', 2, '柯基', 'female', '约1岁', 9.5, '三色', '健康', 1, 0, '元气满满', '活泼好动，喜欢追球，需要每天遛弯。', '/seed/animal-dog-corgi.jpg', 'adopted', '河滨路'],
+    ['棉花', 3, '垂耳兔', 'female', '约8个月', 1.8, '白色', '健康', 0, 0, '软萌安静', '安静爱吃草，适合公寓饲养。', '/seed/animal-rabbit.jpg', 'fostered', '大学城'],
+    ['团子', 4, '银狐仓鼠', 'male', '约5个月', 0.1, '银白', '健康', 0, 0, '小巧呆萌', '巴掌大的小家伙，夜间活跃。', '/seed/animal-hamster.jpg', 'rescued', '步行街'],
+    ['花花', 1, '中华田园猫', 'female', '约1岁', 3.5, '狸花', '健康，待绝育', 1, 0, '机灵活泼', '会自己用猫砂，亲人，适合新手。', '/seed/animal-cat-grey.jpg', 'available', '老城区菜场'],
+    ['旺财', 2, '中华田园犬', 'male', '约2岁', 15.0, '黄色', '健康，已绝育', 1, 1, '忠诚护家', '看家一流，认主，适合有院子的家庭。', '/seed/animal-dog-golden.jpg', 'adopted', '城南村'],
+    ['豆豆', 2, '柯基', 'male', '约1岁', 8.5, '黄白', '健康，已接种', 1, 1, '亲人活泼', '活泼亲人，喜欢追球，适合喜欢狗狗的家庭。', '/seed/animal-dog-corgi.jpg', 'available', '城东花园'],
+    ['跳跳', 3, '侏儒兔', 'female', '约6个月', 1.2, '灰色', '健康', 0, 0, '安静温顺', '安静好养，适合公寓和新手饲养。', '/seed/animal-rabbit.jpg', 'available', '青年路'],
   ];
   const animalId = {};
   for (const a of animals) {
@@ -92,9 +92,9 @@ async function main() {
 
   // 动物相册（多图演示）
   await db.execute('UPDATE animals SET images=? WHERE id=?',
-    [JSON.stringify(['/seed/animal-cat-orange.svg', '/seed/animal-cat-british.svg', '/seed/animal-cat-grey.svg']), animalId['小橘']])
+    [JSON.stringify(['/seed/animal-cat-orange.jpg', '/seed/animal-cat-british.jpg', '/seed/animal-cat-grey.jpg']), animalId['小橘']])
   await db.execute('UPDATE animals SET images=? WHERE id=?',
-    [JSON.stringify(['/seed/animal-dog-golden.svg', '/seed/animal-dog-corgi.svg']), animalId['大黄']])
+    [JSON.stringify(['/seed/animal-dog-golden.jpg', '/seed/animal-dog-corgi.jpg']), animalId['大黄']])
 
   // ===== 文章 =====
   const articles = [
@@ -112,9 +112,9 @@ async function main() {
 
   // ===== 轮播图 =====
   const banners = [
-    ['给它一个温暖的家', '/seed/banner-1.svg', 1],
-    ['让每个生命都被温柔以待', '/seed/banner-2.svg', 2],
-    ['爱心救助 在行动', '/seed/banner-3.svg', 3],
+    ['给它一个温暖的家', '/seed/banner-1-cat-window.jpg', 1],
+    ['让每个生命都被温柔以待', '/seed/banner-2-community-rescue.jpg', 2],
+    ['爱心救助 在行动', '/seed/banner-3-adoption-day.jpg', 3],
   ];
   for (const [title, img, sort] of banners) {
     await db.execute('INSERT INTO banners (title,image_url,link_url,sort_order,status) VALUES (?,?,"",?,1)', [title, img, sort]);
@@ -166,7 +166,7 @@ async function main() {
   await db.execute(
     `INSERT INTO adoption_followups (application_id,visit_date,content,animal_condition,next_visit_date,photos,operator_id)
      VALUES (?, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '上门回访，大黄适应良好，已熟悉新环境。', '健康活泼，体重正常', DATE_ADD(CURDATE(), INTERVAL 20 DAY), ?, ?)`,
-    [adA.insertId, JSON.stringify(['/seed/animal-dog-golden.svg']), adminId]
+    [adA.insertId, JSON.stringify(['/seed/animal-dog-golden.jpg']), adminId]
   );
 
   // B: 已通过满 40 天 + 无回访 -> 触发回访提醒

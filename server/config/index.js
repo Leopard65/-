@@ -24,7 +24,7 @@ module.exports = {
   },
 
   // 允许跨域的来源白名单（逗号分隔）。同源访问、服务端调用（无 Origin）始终放行。
-  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000')
     .split(',').map((s) => s.trim()).filter(Boolean),
 
   uploadDir: process.env.UPLOAD_DIR || 'uploads',
