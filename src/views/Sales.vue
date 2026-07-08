@@ -20,12 +20,17 @@
     <CheckoutPanel
       v-model:member-id="memberId"
       v-model:payment="payment"
+      v-model:cash-received="cashReceived"
       :members="members"
       :selected-member="selectedMember"
       :settlement="settlement"
       :cart-total="cartTotal"
+      :held-sales="heldSales"
       :disabled="!cart.length"
       @checkout="handleCheckout"
+      @hold="holdCurrentSale"
+      @resume-held="resumeHeldSale"
+      @remove-held="removeHeldSale"
     />
   </div>
 
@@ -83,6 +88,8 @@ const cart = ref([])
 const members = ref([])
 const memberId = ref(null)
 const payment = ref('cash')
+const cashReceived = ref(null)
+const heldSales = ref([])
 const recentSales = ref([])
 const salesPage = ref(1)
 const salesPageSize = ref(5)
@@ -96,6 +103,7 @@ const scanBuffer = ref('')
 let scanTimer = null
 const SCAN_TIMEOUT = 100 // 扫码枪输入间隔阈值（ms）
 const MIN_BARCODE_LENGTH = 4 // 最短条码长度
+const HELD_SALES_KEY = 'supermarket:held-sales:v1'
 
 /**
  * 扫码枪识别逻辑：
@@ -284,6 +292,101 @@ const removeCartItem = (index) => {
   cart.value.splice(index, 1)
 }
 
+const loadHeldSales = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(HELD_SALES_KEY) || '[]')
+    heldSales.value = Array.isArray(parsed) ? parsed : []
+  } catch {
+    heldSales.value = []
+    localStorage.removeItem(HELD_SALES_KEY)
+  }
+}
+
+const saveHeldSales = () => {
+  localStorage.setItem(HELD_SALES_KEY, JSON.stringify(heldSales.value))
+}
+
+const resetSaleDraft = () => {
+  cart.value = []
+  memberId.value = null
+  payment.value = 'cash'
+  cashReceived.value = null
+}
+
+const createHeldSale = (label) => ({
+  id: `H${Date.now()}`,
+  label,
+  cart: cart.value.map(item => ({ ...item })),
+  memberId: memberId.value,
+  payment: payment.value,
+  cashReceived: cashReceived.value,
+  quantity: cartTotal.value.quantity,
+  amount: settlement.value.payable,
+  createdAt: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+  rawCreatedAt: new Date().toISOString()
+})
+
+const holdCurrentSale = async () => {
+  if (!cart.value.length) {
+    ElMessage.warning('购物车为空，无法挂单')
+    return
+  }
+
+  const firstName = cart.value[0]?.name || '未命名商品'
+  const defaultLabel = `${firstName}${cart.value.length > 1 ? `等${cart.value.length}项` : ''}`
+  try {
+    const { value } = await ElMessageBox.prompt('为当前购物车设置挂单备注', '挂单', {
+      inputValue: defaultLabel,
+      inputPlaceholder: '例如：顾客去取商品',
+      confirmButtonText: '挂单',
+      cancelButtonText: '取消'
+    })
+    heldSales.value.unshift(createHeldSale((value || defaultLabel).trim()))
+    saveHeldSales()
+    resetSaleDraft()
+    ElMessage.success('已挂单')
+    focusSearch()
+  } catch {
+    // 用户取消
+  }
+}
+
+const resumeHeldSale = async (id) => {
+  const held = heldSales.value.find(item => item.id === id)
+  if (!held) return
+
+  if (cart.value.length) {
+    try {
+      await ElMessageBox.confirm('当前购物车未结算，取单会替换当前内容，是否继续？', '取单确认', { type: 'warning' })
+    } catch {
+      return
+    }
+  }
+
+  cart.value = held.cart.map(item => ({ ...item }))
+  memberId.value = held.memberId || null
+  payment.value = held.payment || 'cash'
+  cashReceived.value = held.cashReceived || null
+  heldSales.value = heldSales.value.filter(item => item.id !== id)
+  saveHeldSales()
+  ElMessage.success(`已取回挂单「${held.label}」`)
+  focusSearch()
+}
+
+const removeHeldSale = async (id) => {
+  const held = heldSales.value.find(item => item.id === id)
+  if (!held) return
+
+  try {
+    await ElMessageBox.confirm(`确定删除挂单「${held.label}」？`, '删除挂单', { type: 'warning' })
+    heldSales.value = heldSales.value.filter(item => item.id !== id)
+    saveHeldSales()
+    ElMessage.success('挂单已删除')
+  } catch {
+    // 用户取消
+  }
+}
+
 const loadSales = async () => {
   const res = await salesApi.getSales({ page: salesPage.value, pageSize: salesPageSize.value })
   recentSales.value = res.data
@@ -292,8 +395,17 @@ const loadSales = async () => {
 
 const handleCheckout = async () => {
   if (!cart.value.length) return
+  if (payment.value === 'cash' && cashReceived.value && Number(cashReceived.value) < Number(settlement.value.payable)) {
+    ElMessage.warning('现金实收不足，请确认收款金额')
+    return
+  }
   await ElMessageBox.confirm(`确认收取 ${formatMoney(settlement.value.payable)}？`, '结算确认', { type: 'success' })
   try {
+    const member = selectedMember.value
+    const receiptCashReceived = payment.value === 'cash' && cashReceived.value ? Number(cashReceived.value) : null
+    const receiptCashChange = receiptCashReceived != null
+      ? Math.round((receiptCashReceived - settlement.value.payable) * 100) / 100
+      : null
     const result = await salesApi.addSale({
       member_id: memberId.value || null,
       payment: payment.value,
@@ -304,7 +416,13 @@ const handleCheckout = async () => {
     const saleData = {
       ...result,
       items: cart.value,
-      member_name: memberId.value ? members.value.find(m => m.id === memberId.value)?.name : null,
+      payment: payment.value,
+      member_name: member?.name || null,
+      member_level: member?.level || null,
+      points: settlement.value.points,
+      savings: settlement.value.savings,
+      cash_received: receiptCashReceived,
+      cash_change: receiptCashChange,
       created_at: new Date().toISOString()
     }
 
@@ -321,8 +439,7 @@ const handleCheckout = async () => {
     }
 
     ElMessage.success('结算成功！')
-    cart.value = []
-    memberId.value = null
+    resetSaleDraft()
     // 刷新数据
     allProducts.value = (await productsApi.getProducts({ pageSize: 1000 })).data
     loadSales()
@@ -363,6 +480,12 @@ const handleCashierShortcut = (e) => {
     return true
   }
 
+  if (e.key === 'F4') {
+    e.preventDefault()
+    holdCurrentSale()
+    return true
+  }
+
   if (e.key === 'Escape') {
     if (!searchKeyword.value && !searchResults.value.length) return true
     e.preventDefault()
@@ -378,6 +501,7 @@ onMounted(async () => {
   try {
     allProducts.value = (await productsApi.getProducts({ pageSize: 1000 })).data
     members.value = (await membersApi.getMembers({ pageSize: 1000 })).data
+    loadHeldSales()
     loadSales()
   } catch (e) {
     console.error('加载数据失败:', e)

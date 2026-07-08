@@ -25,7 +25,7 @@ export function generateReceiptHTML(sale) {
 
   const items = sale.items || [];
   const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
-  const discountAmount = sale.originalTotal ? (sale.originalTotal - (sale.total || 0)) : 0;
+  const discountAmount = sale.savings != null ? sale.savings : (sale.originalTotal ? (sale.originalTotal - (sale.total || 0)) : 0);
   const receiptDate = sale.created_at ? new Date(sale.created_at) : new Date();
   const safePayment = paymentMap[sale.payment] || sale.payment || '-';
 
@@ -84,9 +84,25 @@ export function generateReceiptHTML(sale) {
             <span>会员:</span>
             <span>${escapeHtml(sale.member_name)}</span>
           </p>
+          ${sale.member_level ? `
+            <p style="display: flex; justify-content: space-between; margin: 3px 0;">
+              <span>等级:</span>
+              <span>${escapeHtml(sale.member_level)}</span>
+            </p>
+          ` : ''}
           <p style="display: flex; justify-content: space-between; margin: 3px 0;">
             <span>获得积分:</span>
             <span>+${escapeHtml(sale.points ?? Math.floor(sale.total || 0))}</span>
+          </p>
+        ` : ''}
+        ${sale.cash_received != null ? `
+          <p style="display: flex; justify-content: space-between; margin: 3px 0;">
+            <span>现金实收:</span>
+            <span>¥${toMoney(sale.cash_received)}</span>
+          </p>
+          <p style="display: flex; justify-content: space-between; margin: 3px 0;">
+            <span>找零:</span>
+            <span>¥${toMoney(sale.cash_change || 0)}</span>
           </p>
         ` : ''}
       </div>

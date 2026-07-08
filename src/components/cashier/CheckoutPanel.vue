@@ -1,19 +1,31 @@
 <script setup>
-import { Checked, Money } from '@element-plus/icons-vue'
+import { computed } from 'vue'
+import { Checked, Delete, Money, RefreshLeft } from '@element-plus/icons-vue'
 import { formatMoney } from '@/utils/format'
 import SectionPanel from '@/components/SectionPanel.vue'
 
-defineProps({
+const props = defineProps({
   members: { type: Array, default: () => [] },
   memberId: { type: [Number, String, null], default: null },
   payment: { type: String, default: 'cash' },
+  cashReceived: { type: [Number, String, null], default: null },
   selectedMember: { type: Object, default: null },
   settlement: { type: Object, required: true },
   cartTotal: { type: Object, required: true },
-  disabled: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false },
+  heldSales: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['update:memberId', 'update:payment', 'checkout'])
+const emit = defineEmits(['update:memberId', 'update:payment', 'update:cashReceived', 'checkout', 'hold', 'resumeHeld', 'removeHeld'])
+
+const cashChange = computed(() => {
+  const received = Number(props.cashReceived || 0)
+  const payable = Number(props.settlement.payable || 0)
+  if (received <= 0) return 0
+  return Math.round((received - payable) * 100) / 100
+})
+
+const isCashShort = computed(() => props.payment === 'cash' && Number(props.cashReceived || 0) > 0 && cashChange.value < 0)
 </script>
 
 <template>
@@ -21,6 +33,9 @@ const emit = defineEmits(['update:memberId', 'update:payment', 'checkout'])
     <template #title>
       <el-icon><Money /></el-icon>
       <span>结算</span>
+    </template>
+    <template #actions>
+      <el-button link type="warning" :disabled="disabled" @click="emit('hold')">挂单 F4</el-button>
     </template>
 
     <div class="settle-field">
@@ -57,6 +72,24 @@ const emit = defineEmits(['update:memberId', 'update:payment', 'checkout'])
       </el-radio-group>
     </div>
 
+    <div v-if="payment === 'cash'" class="settle-field">
+      <label>现金实收</label>
+      <el-input-number
+        :model-value="cashReceived"
+        :min="0"
+        :precision="2"
+        :step="1"
+        controls-position="right"
+        class="full-field"
+        placeholder="输入实收金额自动计算找零"
+        @update:model-value="emit('update:cashReceived', $event)"
+      />
+      <div class="cash-change" :class="{ 'is-short': isCashShort }">
+        <span>{{ isCashShort ? '仍差' : '找零' }}</span>
+        <strong class="num">{{ formatMoney(Math.abs(cashChange)) }}</strong>
+      </div>
+    </div>
+
     <div class="settle-box">
       <div class="settle-row">
         <span>商品数量</span>
@@ -83,6 +116,26 @@ const emit = defineEmits(['update:memberId', 'update:payment', 'checkout'])
     <el-button type="primary" size="large" class="checkout-btn" :icon="Checked" :disabled="disabled" @click="emit('checkout')">
       确认结算 · {{ formatMoney(settlement.payable) }}
     </el-button>
+
+    <div class="held-orders">
+      <div class="held-orders__head">
+        <span>挂单</span>
+        <small>{{ heldSales.length }} 单</small>
+      </div>
+      <div v-if="heldSales.length" class="held-orders__list">
+        <div v-for="order in heldSales" :key="order.id" class="held-order">
+          <div class="held-order__main">
+            <strong>{{ order.label }}</strong>
+            <small>{{ order.quantity }} 件 · {{ formatMoney(order.amount) }} · {{ order.createdAt }}</small>
+          </div>
+          <div class="held-order__actions">
+            <el-button :icon="RefreshLeft" circle size="small" type="primary" plain @click="emit('resumeHeld', order.id)" />
+            <el-button :icon="Delete" circle size="small" type="danger" plain @click="emit('removeHeld', order.id)" />
+          </div>
+        </div>
+      </div>
+      <div v-else class="held-orders__empty">暂无挂单</div>
+    </div>
   </SectionPanel>
 </template>
 
@@ -140,6 +193,26 @@ const emit = defineEmits(['update:memberId', 'update:payment', 'checkout'])
   width: 100%;
 }
 
+.cash-change {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 8px 10px;
+  color: var(--color-success);
+  background: var(--color-primary-light-9);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
+.cash-change.is-short {
+  color: var(--color-danger);
+  background: #fff1f0;
+}
+
+.cash-change strong {
+  font-size: 16px;
+}
+
 .settle-box {
   margin-bottom: 16px;
   padding: 16px;
@@ -192,5 +265,72 @@ const emit = defineEmits(['update:memberId', 'update:payment', 'checkout'])
   margin-top: auto;
   font-size: 17px;
   font-weight: 700;
+}
+
+.held-orders {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.held-orders__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.held-orders__head small,
+.held-orders__empty {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.held-orders__list {
+  display: grid;
+  gap: 8px;
+  max-height: 138px;
+  overflow-y: auto;
+}
+
+.held-order {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-muted);
+}
+
+.held-order__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.held-order__main strong,
+.held-order__main small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.held-order__main strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.held-order__main small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.held-order__actions {
+  display: flex;
+  gap: 6px;
 }
 </style>
