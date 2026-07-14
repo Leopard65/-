@@ -79,12 +79,17 @@ if (fs.existsSync(path.join(clientDist, 'index.html'))) {
 app.use(errorHandler);
 
 // ===== 启动服务 =====
-app.listen(config.port, () => {
-  console.log(`
+// 仅当作为主入口直接运行时才监听端口（npm start / node app.js）。
+// 被 require 引入时（如自动化测试用 supertest/内置 fetch 起进程内服务）不自动占用端口，
+// 由调用方决定何时 app.listen(0) 取随机空闲端口。
+if (require.main === module) {
+  app.listen(config.port, () => {
+    console.log(`
   🐾 流浪动物救助与领养管理系统后端已启动
   📡 地址: http://localhost:${config.port}
   📋 API 文档: http://localhost:${config.port}/api/health
   `);
-});
+  });
+}
 
 module.exports = app;

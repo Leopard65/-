@@ -8,7 +8,10 @@
     "dev": "nodemon app.js",
     "init-db": "node scripts/init-db.js",
     "seed": "node scripts/seed.js",
-    "self-check": "node scripts/self-check.js"
+    "self-check": "node scripts/self-check.js",
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:unit": "node --test \"test/unit/**/*.test.js\"",
+    "test:integration": "node --test \"test/integration/**/*.test.js\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
