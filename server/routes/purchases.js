@@ -12,28 +12,37 @@ router.get('/', (req, res) => {
 
     const total = db.prepare('SELECT COUNT(*) as count FROM purchases').get().count;
     const purchases = db.prepare(`
-      SELECT p.*, s.name as supplier_name,
-        GROUP_CONCAT(
-          pi.id || ',' || pi.product_id || ',' || pr.name || ',' || pi.quantity || ',' || pi.cost, ';'
-        ) as items_str
+      SELECT p.*, s.name as supplier_name
       FROM purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
-      LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
-      LEFT JOIN products pr ON pi.product_id = pr.id
-      GROUP BY p.id
       ORDER BY p.created_at DESC
       LIMIT ? OFFSET ?
     `).all(pageSize, offset);
 
-    // 解析 items_str 为数组
-    const data = purchases.map(p => ({
-      ...p,
-      items: p.items_str ? p.items_str.split(';').map(item => {
-        const [id, product_id, product_name, quantity, cost] = item.split(',');
-        return { id: +id, product_id: +product_id, product_name, quantity: +quantity, cost: +cost };
-      }) : []
-    }));
-    data.forEach(r => delete r.items_str);
+    // 明细单独查询后按 purchase_id 分组（避免 GROUP_CONCAT 拼接分隔符与商品名中的逗号/分号冲突）
+    const purchaseIds = purchases.map(p => p.id);
+    const itemsByPurchase = new Map();
+    if (purchaseIds.length) {
+      const placeholders = purchaseIds.map(() => '?').join(',');
+      const items = db.prepare(`
+        SELECT pi.id, pi.purchase_id, pi.product_id, pr.name AS product_name, pi.quantity, pi.cost
+        FROM purchase_items pi
+        LEFT JOIN products pr ON pi.product_id = pr.id
+        WHERE pi.purchase_id IN (${placeholders})
+      `).all(...purchaseIds);
+      items.forEach(it => {
+        if (!itemsByPurchase.has(it.purchase_id)) itemsByPurchase.set(it.purchase_id, []);
+        itemsByPurchase.get(it.purchase_id).push({
+          id: it.id,
+          product_id: it.product_id,
+          product_name: it.product_name,
+          quantity: it.quantity,
+          cost: it.cost
+        });
+      });
+    }
+
+    const data = purchases.map(p => ({ ...p, items: itemsByPurchase.get(p.id) || [] }));
 
     res.json({ data, total, page, pageSize });
   } catch (err) {
