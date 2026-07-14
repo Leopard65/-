@@ -29,29 +29,39 @@ router.get('/', (req, res) => {
 
     const total = db.prepare(`SELECT COUNT(*) as count FROM returns r ${where}`).get(...params).count;
     const returns = db.prepare(`
-      SELECT r.*, s.total as sale_total, s.payment, m.name as member_name,
-        GROUP_CONCAT(
-          ri.id || ',' || ri.product_id || ',' || p.name || ',' || ri.quantity || ',' || ri.price, ';'
-        ) as items_str
+      SELECT r.*, s.total as sale_total, s.payment, m.name as member_name
       FROM returns r
       LEFT JOIN sales s ON r.sale_id = s.id
       LEFT JOIN members m ON s.member_id = m.id
-      LEFT JOIN return_items ri ON r.id = ri.return_id
-      LEFT JOIN products p ON ri.product_id = p.id
       ${where}
-      GROUP BY r.id
       ORDER BY r.created_at DESC
       LIMIT ? OFFSET ?
     `).all(...params, pageSize, offset);
 
-    const data = returns.map(r => ({
-      ...r,
-      items: r.items_str ? r.items_str.split(';').map(item => {
-        const [id, product_id, product_name, quantity, price] = item.split(',');
-        return { id: +id, product_id: +product_id, product_name, quantity: +quantity, price: +price };
-      }) : []
-    }));
-    data.forEach(r => delete r.items_str);
+    // 明细单独查询后按 return_id 分组（避免 GROUP_CONCAT 拼接分隔符与商品名中的逗号/分号冲突）
+    const returnIds = returns.map(r => r.id);
+    const itemsByReturn = new Map();
+    if (returnIds.length) {
+      const placeholders = returnIds.map(() => '?').join(',');
+      const items = db.prepare(`
+        SELECT ri.id, ri.return_id, ri.product_id, p.name AS product_name, ri.quantity, ri.price
+        FROM return_items ri
+        LEFT JOIN products p ON ri.product_id = p.id
+        WHERE ri.return_id IN (${placeholders})
+      `).all(...returnIds);
+      items.forEach(it => {
+        if (!itemsByReturn.has(it.return_id)) itemsByReturn.set(it.return_id, []);
+        itemsByReturn.get(it.return_id).push({
+          id: it.id,
+          product_id: it.product_id,
+          product_name: it.product_name,
+          quantity: it.quantity,
+          price: it.price
+        });
+      });
+    }
+
+    const data = returns.map(r => ({ ...r, items: itemsByReturn.get(r.id) || [] }));
 
     res.json({ data, total, page, pageSize });
   } catch (err) {

@@ -13,28 +13,37 @@ router.get('/', (req, res) => {
 
     const total = db.prepare('SELECT COUNT(*) as count FROM sales').get().count;
     const sales = db.prepare(`
-      SELECT s.*, m.name as member_name,
-        GROUP_CONCAT(
-          si.id || ',' || si.product_id || ',' || p.name || ',' || si.quantity || ',' || si.price, ';'
-        ) as items_str
+      SELECT s.*, m.name as member_name
       FROM sales s
       LEFT JOIN members m ON s.member_id = m.id
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      LEFT JOIN products p ON si.product_id = p.id
-      GROUP BY s.id
       ORDER BY s.created_at DESC
       LIMIT ? OFFSET ?
     `).all(pageSize, offset);
 
-    // 解析 items_str 为数组
-    const data = sales.map(s => ({
-      ...s,
-      items: s.items_str ? s.items_str.split(';').map(item => {
-        const [id, product_id, product_name, quantity, price] = item.split(',');
-        return { id: +id, product_id: +product_id, product_name, quantity: +quantity, price: +price };
-      }) : []
-    }));
-    data.forEach(r => delete r.items_str);
+    // 明细单独查询后按 sale_id 分组（避免 GROUP_CONCAT 拼接分隔符与商品名中的逗号/分号冲突）
+    const saleIds = sales.map(s => s.id);
+    const itemsBySale = new Map();
+    if (saleIds.length) {
+      const placeholders = saleIds.map(() => '?').join(',');
+      const items = db.prepare(`
+        SELECT si.id, si.sale_id, si.product_id, p.name AS product_name, si.quantity, si.price
+        FROM sale_items si
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE si.sale_id IN (${placeholders})
+      `).all(...saleIds);
+      items.forEach(it => {
+        if (!itemsBySale.has(it.sale_id)) itemsBySale.set(it.sale_id, []);
+        itemsBySale.get(it.sale_id).push({
+          id: it.id,
+          product_id: it.product_id,
+          product_name: it.product_name,
+          quantity: it.quantity,
+          price: it.price
+        });
+      });
+    }
+
+    const data = sales.map(s => ({ ...s, items: itemsBySale.get(s.id) || [] }));
 
     res.json({ data, total, page, pageSize });
   } catch (err) {
