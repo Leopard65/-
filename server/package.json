@@ -7,7 +7,7 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "init-db": "node scripts/init-db.js",
-    "seed": "node scripts/seed.js",
+    "seed": "node scripts/seed.js && node scripts/seed-extended.js",
     "self-check": "node scripts/self-check.js",
     "test": "node --test \"test/**/*.test.js\"",
     "test:unit": "node --test \"test/unit/**/*.test.js\"",
