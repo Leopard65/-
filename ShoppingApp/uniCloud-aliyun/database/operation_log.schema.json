@@ -1,0 +1,55 @@
+{
+  "bsonType": "object",
+  "required": ["operator_id", "action", "target", "create_date"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "操作日志 ID"
+    },
+    "operator_id": {
+      "bsonType": "string",
+      "description": "操作人 ID"
+    },
+    "operator_name": {
+      "bsonType": "string",
+      "description": "操作人名称"
+    },
+    "operator_mobile": {
+      "bsonType": "string",
+      "description": "操作人手机号"
+    },
+    "action": {
+      "bsonType": "string",
+      "description": "操作动作"
+    },
+    "target": {
+      "bsonType": "string",
+      "description": "操作对象类型：goods / coupon / message / order / after_sale"
+    },
+    "target_id": {
+      "bsonType": "string",
+      "description": "操作对象 ID"
+    },
+    "before": {
+      "bsonType": "object",
+      "description": "操作前摘要"
+    },
+    "after": {
+      "bsonType": "object",
+      "description": "操作后摘要"
+    },
+    "remark": {
+      "bsonType": "string",
+      "description": "操作备注"
+    },
+    "create_date": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    }
+  }
+}

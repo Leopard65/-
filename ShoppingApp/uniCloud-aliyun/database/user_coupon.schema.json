@@ -1,0 +1,21 @@
+{
+  "bsonType": "object",
+  "required": ["user_id", "coupon_id", "status"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": { "description": "ID，系统自动生成" },
+    "user_id": { "bsonType": "string", "description": "用户 ID" },
+    "coupon_id": { "bsonType": "string", "description": "优惠券 ID" },
+    "status": { "bsonType": "string", "description": "状态：available/used/expired" },
+    "receive_time": { "bsonType": "timestamp", "description": "领取时间" },
+    "use_time": { "bsonType": "timestamp", "description": "使用时间" },
+    "order_id": { "bsonType": "string", "description": "关联订单 ID" },
+    "create_date": { "bsonType": "timestamp", "description": "创建时间" },
+    "update_date": { "bsonType": "timestamp", "description": "更新时间" }
+  }
+}

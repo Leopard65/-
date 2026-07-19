@@ -1,0 +1,89 @@
+{
+  "bsonType": "object",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "用户ID"
+    },
+    "username": {
+      "bsonType": "string",
+      "description": "用户名"
+    },
+    "mobile": {
+      "bsonType": "string",
+      "description": "手机号"
+    },
+    "nickname": {
+      "bsonType": "string",
+      "description": "昵称"
+    },
+    "avatar": {
+      "bsonType": "string",
+      "description": "头像"
+    },
+    "gender": {
+      "bsonType": "string",
+      "description": "性别"
+    },
+    "birthday": {
+      "bsonType": "string",
+      "description": "生日"
+    },
+    "role": {
+      "bsonType": "array",
+      "description": "角色：admin/operator/member",
+      "items": {
+        "bsonType": "string"
+      }
+    },
+    "roles": {
+      "bsonType": "array",
+      "description": "兼容角色字段",
+      "items": {
+        "bsonType": "string"
+      }
+    },
+    "password_salt": {
+      "bsonType": "string",
+      "description": "密码盐"
+    },
+    "password_hash": {
+      "bsonType": "string",
+      "description": "密码哈希"
+    },
+    "status": {
+      "bsonType": "int",
+      "description": "状态：0-正常，2-注销申请中，3-已停用"
+    },
+    "account_status": {
+      "bsonType": "string",
+      "description": "账号状态：active/cancel_requested/disabled/demo_cancel_requested"
+    },
+    "account_cancel_request": {
+      "bsonType": "object",
+      "description": "账号注销申请记录"
+    },
+    "privacy_settings": {
+      "bsonType": "object",
+      "description": "隐私授权偏好"
+    },
+    "register_date": {
+      "bsonType": "timestamp",
+      "description": "注册时间"
+    },
+    "create_date": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    },
+    "update_date": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

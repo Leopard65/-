@@ -1,0 +1,6 @@
+{
+  "name": "xc-auth",
+  "version": "1.0.0",
+  "description": "Lightweight demo auth adapter for Xinchao Shopping App",
+  "main": "index.js"
+}

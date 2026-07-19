@@ -1,0 +1,116 @@
+{
+  "bsonType": "object",
+  "required": ["name", "price", "status"],
+  "permission": {
+    "read": true,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "商品 ID"
+    },
+    "name": {
+      "bsonType": "string",
+      "description": "商品名称",
+      "trim": true,
+      "maxLength": 200
+    },
+    "subtitle": {
+      "bsonType": "string",
+      "description": "商品副标题",
+      "trim": true,
+      "maxLength": 200
+    },
+    "price": {
+      "bsonType": "double",
+      "description": "商品价格",
+      "minimum": 0
+    },
+    "original_price": {
+      "bsonType": "double",
+      "description": "划线价",
+      "minimum": 0
+    },
+    "image": {
+      "bsonType": "string",
+      "description": "商品主图"
+    },
+    "images": {
+      "bsonType": "array",
+      "description": "商品轮播图",
+      "items": {
+        "bsonType": "string"
+      }
+    },
+    "category_id": {
+      "bsonType": "string",
+      "description": "一级分类 ID"
+    },
+    "sub_category_id": {
+      "bsonType": "string",
+      "description": "二级分类 ID"
+    },
+    "brand": {
+      "bsonType": "string",
+      "description": "品牌"
+    },
+    "stock": {
+      "bsonType": "int",
+      "description": "总库存",
+      "minimum": 0
+    },
+    "sales": {
+      "bsonType": "int",
+      "description": "销量",
+      "minimum": 0
+    },
+    "status": {
+      "bsonType": "int",
+      "description": "状态：0 下架，1 上架",
+      "enum": [0, 1]
+    },
+    "is_new": {
+      "bsonType": "bool",
+      "description": "是否新品"
+    },
+    "is_hot": {
+      "bsonType": "bool",
+      "description": "是否热销"
+    },
+    "is_recommend": {
+      "bsonType": "int",
+      "description": "是否推荐：0 否，1 是",
+      "enum": [0, 1]
+    },
+    "tags": {
+      "bsonType": "array",
+      "description": "商品标签",
+      "items": {
+        "bsonType": "string"
+      }
+    },
+    "detail": {
+      "bsonType": "string",
+      "description": "商品详情"
+    },
+    "sort": {
+      "bsonType": "int",
+      "description": "排序值，越小越靠前",
+      "minimum": 0
+    },
+    "last_operator_id": {
+      "bsonType": "string",
+      "description": "最近一次运营操作人 ID"
+    },
+    "create_date": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    },
+    "update_date": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

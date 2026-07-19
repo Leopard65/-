@@ -1,0 +1,74 @@
+{
+  "pages": [
+    { "path": "pages/index/index", "style": { "navigationBarTitleText": "薪超购物", "enablePullDownRefresh": true } },
+    { "path": "pages/category/category", "style": { "navigationBarTitleText": "分类" } },
+    { "path": "pages/cart/cart", "style": { "navigationBarTitleText": "购物车" } },
+    { "path": "pages/my/my", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/login/login", "style": { "navigationBarTitleText": "登录" } },
+    { "path": "pages/login/register", "style": { "navigationBarTitleText": "注册" } },
+    { "path": "pages/product/list", "style": { "navigationBarTitleText": "商品列表", "enablePullDownRefresh": true } },
+    { "path": "pages/product/detail", "style": { "navigationBarTitleText": "商品详情" } },
+    { "path": "pages/order/confirm", "style": { "navigationBarTitleText": "确认订单" } },
+    { "path": "pages/order/list", "style": { "navigationBarTitleText": "我的订单", "enablePullDownRefresh": true } },
+    { "path": "pages/order/detail", "style": { "navigationBarTitleText": "订单详情" } },
+    { "path": "pages/order/pay", "style": { "navigationBarTitleText": "收银台" } },
+    { "path": "pages/order/pay-result", "style": { "navigationBarTitleText": "支付结果" } },
+    { "path": "pages/address/list", "style": { "navigationBarTitleText": "收货地址" } },
+    { "path": "pages/address/edit", "style": { "navigationBarTitleText": "编辑地址" } },
+    { "path": "pages/aftersale/apply", "style": { "navigationBarTitleText": "申请售后" } },
+    { "path": "pages/aftersale/list", "style": { "navigationBarTitleText": "售后列表" } },
+    { "path": "pages/evaluate/evaluate", "style": { "navigationBarTitleText": "评价" } },
+    { "path": "pages/search/search", "style": { "navigationBarTitleText": "搜索" } },
+    { "path": "pages/coupon/coupon", "style": { "navigationBarTitleText": "优惠券" } },
+    { "path": "pages/collect/collect", "style": { "navigationBarTitleText": "我的收藏" } },
+    { "path": "pages/message/message", "style": { "navigationBarTitleText": "消息中心" } },
+    { "path": "pages/settings/settings", "style": { "navigationBarTitleText": "设置" } },
+    { "path": "pages/account/security", "style": { "navigationBarTitleText": "账号与安全" } },
+    { "path": "pages/account/privacy", "style": { "navigationBarTitleText": "隐私设置" } },
+    { "path": "pages/account/cancel", "style": { "navigationBarTitleText": "账号注销" } },
+    { "path": "pages/legal/privacy", "style": { "navigationBarTitleText": "隐私政策" } },
+    { "path": "pages/legal/agreement", "style": { "navigationBarTitleText": "用户协议" } },
+    { "path": "pages/about/about", "style": { "navigationBarTitleText": "关于薪超" } },
+    { "path": "pages/dev/cloud-init", "style": { "navigationBarTitleText": "云端初始化" } },
+    { "path": "pages/dev/diagnostics", "style": { "navigationBarTitleText": "运行诊断", "enablePullDownRefresh": true } },
+    { "path": "pages/admin/ops", "style": { "navigationBarTitleText": "运营中心", "enablePullDownRefresh": true } }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "薪超购物",
+    "navigationBarBackgroundColor": "#f7f5f0",
+    "backgroundColor": "#f7f5f0"
+  },
+  "tabBar": {
+    "color": "#8a928d",
+    "selectedColor": "#2f5d50",
+    "borderStyle": "white",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/category/category",
+        "iconPath": "static/tabbar/category.png",
+        "selectedIconPath": "static/tabbar/category-active.png",
+        "text": "分类"
+      },
+      {
+        "pagePath": "pages/cart/cart",
+        "iconPath": "static/tabbar/cart.png",
+        "selectedIconPath": "static/tabbar/cart-active.png",
+        "text": "购物车"
+      },
+      {
+        "pagePath": "pages/my/my",
+        "iconPath": "static/tabbar/my.png",
+        "selectedIconPath": "static/tabbar/my-active.png",
+        "text": "我的"
+      }
+    ]
+  }
+}

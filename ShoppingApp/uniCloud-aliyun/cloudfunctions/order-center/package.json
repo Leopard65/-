@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "xc-auth": "file:../common/xc-auth"
+  }
+}

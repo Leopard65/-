@@ -1,0 +1,25 @@
+{
+  "bsonType": "object",
+  "required": ["user_id", "order_id", "score"],
+  "permission": {
+    "read": true,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": { "description": "ID，系统自动生成" },
+    "user_id": { "bsonType": "string", "description": "用户 ID" },
+    "order_id": { "bsonType": "string", "description": "订单 ID" },
+    "goods_id": { "bsonType": "string", "description": "商品 ID" },
+    "goods_list": { "bsonType": "array", "description": "评价商品快照" },
+    "user_name": { "bsonType": "string", "description": "展示昵称" },
+    "score": { "bsonType": "int", "description": "评分 1-5", "minimum": 1, "maximum": 5 },
+    "star": { "bsonType": "int", "description": "兼容字段：评分 1-5", "minimum": 1, "maximum": 5 },
+    "content": { "bsonType": "string", "description": "评价内容", "maxLength": 500 },
+    "images": { "bsonType": "array", "description": "图片列表", "items": { "bsonType": "string" } },
+    "is_anonymous": { "bsonType": "bool", "description": "是否匿名" },
+    "create_date": { "bsonType": "timestamp", "description": "创建时间" },
+    "update_date": { "bsonType": "timestamp", "description": "更新时间" }
+  }
+}

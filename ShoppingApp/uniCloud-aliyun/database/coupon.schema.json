@@ -1,0 +1,80 @@
+{
+  "bsonType": "object",
+  "required": ["title", "amount", "status"],
+  "permission": {
+    "read": true,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "优惠券 ID"
+    },
+    "title": {
+      "bsonType": "string",
+      "description": "优惠券名称",
+      "trim": true,
+      "maxLength": 80
+    },
+    "amount": {
+      "bsonType": "double",
+      "description": "优惠金额",
+      "minimum": 0
+    },
+    "threshold": {
+      "bsonType": "double",
+      "description": "使用门槛",
+      "minimum": 0
+    },
+    "status": {
+      "bsonType": "string",
+      "description": "状态：available 可用，expired 停用或过期"
+    },
+    "start_time": {
+      "bsonType": "timestamp",
+      "description": "开始时间"
+    },
+    "end_time": {
+      "bsonType": "timestamp",
+      "description": "结束时间"
+    },
+    "expire": {
+      "bsonType": "string",
+      "description": "展示用到期日期"
+    },
+    "total_quantity": {
+      "bsonType": "int",
+      "description": "发放总量，0 表示不限量",
+      "minimum": 0
+    },
+    "per_user_limit": {
+      "bsonType": "int",
+      "description": "每人限领数量",
+      "minimum": 0
+    },
+    "received_count": {
+      "bsonType": "int",
+      "description": "已领取数量",
+      "minimum": 0
+    },
+    "used_count": {
+      "bsonType": "int",
+      "description": "已使用数量",
+      "minimum": 0
+    },
+    "sort": {
+      "bsonType": "int",
+      "description": "排序值，越小越靠前",
+      "minimum": 0
+    },
+    "create_date": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    },
+    "update_date": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "bsonType": "object",
+  "required": ["title", "content", "type"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "消息 ID"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "description": "接收用户 ID，all 表示全体用户"
+    },
+    "type": {
+      "bsonType": "string",
+      "description": "消息类型：order / promo / system"
+    },
+    "title": {
+      "bsonType": "string",
+      "description": "消息标题",
+      "trim": true,
+      "maxLength": 80
+    },
+    "content": {
+      "bsonType": "string",
+      "description": "消息内容",
+      "trim": true,
+      "maxLength": 500
+    },
+    "link": {
+      "bsonType": "string",
+      "description": "跳转链接"
+    },
+    "status": {
+      "bsonType": "string",
+      "description": "发布状态：draft / published / archived"
+    },
+    "is_read": {
+      "bsonType": "bool",
+      "description": "是否已读"
+    },
+    "read": {
+      "bsonType": "bool",
+      "description": "兼容字段：是否已读"
+    },
+    "read_count": {
+      "bsonType": "int",
+      "description": "已读统计",
+      "minimum": 0
+    },
+    "create_date": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    },
+    "update_date": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

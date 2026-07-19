@@ -1,0 +1,55 @@
+{
+  "bsonType": "object",
+  "required": ["goods_id", "price", "stock"],
+  "permission": {
+    "read": true,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "SKU ID"
+    },
+    "goods_id": {
+      "bsonType": "string",
+      "description": "商品 ID"
+    },
+    "spec_values": {
+      "bsonType": "string",
+      "description": "规格值，例如：颜色:雾白,尺码:M"
+    },
+    "price": {
+      "bsonType": "double",
+      "description": "SKU 价格",
+      "minimum": 0
+    },
+    "stock": {
+      "bsonType": "int",
+      "description": "SKU 库存",
+      "minimum": 0
+    },
+    "image": {
+      "bsonType": "string",
+      "description": "SKU 图片"
+    },
+    "status": {
+      "bsonType": "int",
+      "description": "状态：0 停用，1 启用",
+      "enum": [0, 1]
+    },
+    "sort": {
+      "bsonType": "int",
+      "description": "排序值，越小越靠前",
+      "minimum": 0
+    },
+    "create_date": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    },
+    "update_date": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}
