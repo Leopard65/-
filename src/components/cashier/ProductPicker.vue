@@ -26,6 +26,15 @@ const focusSearch = () => {
 
 const isSellable = (product) => product.status === 1 && product.stock > 0
 const isLowStock = (product) => product.min_stock != null && product.stock > 0 && product.stock <= product.min_stock
+const thumbColors = ['#176b4d', '#c08423', '#3b6fe0', '#8b5cdd', '#c95050', '#227a8a']
+
+const productInitial = (name) => String(name || '?').trim().slice(0, 1).toUpperCase() || '?'
+const productThumbStyle = (product) => {
+  const seed = String(product.name || product.barcode || product.id || '')
+  const sum = Array.from(seed).reduce((total, char) => total + char.charCodeAt(0), 0)
+  return { backgroundColor: thumbColors[sum % thumbColors.length] }
+}
+
 const productStatusText = (product) => {
   if (product.status !== 1) return '已下架'
   if (product.stock <= 0) return '缺货'
@@ -76,10 +85,18 @@ defineExpose({ focusSearch })
           :class="{ 'is-low': isLowStock(product) }"
           @click="emit('add', product)"
         >
-          <span class="quick-name">{{ product.name }}</span>
-          <span class="quick-meta">
-            <strong class="num">{{ formatMoney(product.price) }}</strong>
-            <small>库存 {{ product.stock }}{{ product.unit }}</small>
+          <span class="product-thumb">
+            <img v-if="product.image" :src="product.image" :alt="product.name" class="product-thumb__image" />
+            <span v-else class="product-thumb__placeholder" :style="productThumbStyle(product)">
+              {{ productInitial(product.name) }}
+            </span>
+          </span>
+          <span class="quick-content">
+            <span class="quick-name">{{ product.name }}</span>
+            <span class="quick-meta">
+              <strong class="num">{{ formatMoney(product.price) }}</strong>
+              <small>库存 {{ product.stock }}{{ product.unit }}</small>
+            </span>
           </span>
         </button>
       </div>
@@ -100,6 +117,12 @@ defineExpose({ focusSearch })
           :disabled="!isSellable(product)"
           @click="emit('add', product)"
         >
+          <span class="product-thumb product-thumb--sm">
+            <img v-if="product.image" :src="product.image" :alt="product.name" class="product-thumb__image" />
+            <span v-else class="product-thumb__placeholder" :style="productThumbStyle(product)">
+              {{ productInitial(product.name) }}
+            </span>
+          </span>
           <span class="result-main">
             <span class="result-name">{{ product.name }}</span>
             <span class="result-stock">库存 {{ product.stock }}{{ product.unit }}</span>
@@ -179,10 +202,10 @@ defineExpose({ focusSearch })
 .quick-card {
   min-width: 0;
   min-height: 78px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
   padding: 9px 10px;
   cursor: pointer;
   text-align: left;
@@ -201,6 +224,14 @@ defineExpose({ focusSearch })
 .quick-card.is-low {
   border-color: color-mix(in srgb, var(--color-warning) 38%, var(--border-color-light));
   background: linear-gradient(180deg, #fff, var(--bg-warm));
+}
+
+.quick-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .quick-name {
@@ -238,7 +269,6 @@ defineExpose({ focusSearch })
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 9px 11px;
   cursor: pointer;
@@ -271,6 +301,7 @@ defineExpose({ focusSearch })
 }
 
 .result-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -301,5 +332,44 @@ defineExpose({ focusSearch })
   align-items: flex-end;
   flex-direction: column;
   gap: 6px;
+}
+
+.product-thumb,
+.product-thumb__image,
+.product-thumb__placeholder {
+  width: 44px;
+  height: 44px;
+}
+
+.product-thumb {
+  flex: 0 0 auto;
+}
+
+.product-thumb--sm,
+.product-thumb--sm .product-thumb__image,
+.product-thumb--sm .product-thumb__placeholder {
+  width: 38px;
+  height: 38px;
+}
+
+.product-thumb__image,
+.product-thumb__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+.product-thumb__image {
+  object-fit: cover;
+  border: 1px solid var(--border-color-light);
+  background: var(--bg-muted);
+}
+
+.product-thumb__placeholder {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: var(--font-data);
 }
 </style>

@@ -2,6 +2,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const config = require('./config');
+const demoCatalog = require('./demo-catalog');
 
 // DB_PATH 为相对路径时相对于 server/ 目录解析（默认仍为 server/supermarket.db）
 const dbPath = path.isAbsolute(config.DB_PATH)
@@ -270,37 +271,34 @@ if (!logColumns.some(c => c.name === 'risk_level')) {
 const count = db.prepare('SELECT COUNT(*) as c FROM categories').get().c;
 if (count === 0) {
   const insertCategory = db.prepare('INSERT INTO categories (name) VALUES (?)');
-  const cats = ['食品饮料', '日用百货', '生鲜水果', '粮油调味', '零食糖果'];
+  const cats = demoCatalog.categories;
   const catIds = cats.map(name => insertCategory.run(name).lastInsertRowid);
+  const catIdByName = Object.fromEntries(cats.map((name, index) => [name, catIds[index]]));
 
   const insertProduct = db.prepare(
-    'INSERT INTO products (name, barcode, category_id, price, cost, stock, min_stock, unit) VALUES (?,?,?,?,?,?,?,?)'
+    'INSERT INTO products (name, barcode, category_id, price, cost, stock, min_stock, unit, image) VALUES (?,?,?,?,?,?,?,?,?)'
   );
-  const products = [
-    ['可口可乐 330ml', '6901234567890', catIds[0], 3.5, 2.0, 100, 20, '瓶'],
-    ['农夫山泉 550ml', '6901234567891', catIds[0], 2.0, 1.0, 200, 30, '瓶'],
-    ['伊利纯牛奶', '6901234567892', catIds[0], 5.8, 3.5, 80, 15, '盒'],
-    ['舒肤佳香皂', '6901234567893', catIds[1], 8.9, 5.0, 50, 10, '块'],
-    ['维达纸巾', '6901234567894', catIds[1], 12.9, 7.0, 60, 10, '提'],
-    ['红富士苹果', '6901234567895', catIds[2], 6.8, 3.0, 150, 20, '斤'],
-    ['金龙鱼调和油', '6901234567896', catIds[3], 59.9, 40.0, 30, 5, '桶'],
-    ['老干妈辣酱', '6901234567897', catIds[3], 9.9, 6.0, 80, 15, '瓶'],
-    ['乐事薯片', '6901234567898', catIds[4], 7.9, 4.0, 120, 20, '袋'],
-    ['德芙巧克力', '6901234567899', catIds[4], 15.9, 9.0, 60, 10, '盒'],
-  ];
-  products.forEach(p => insertProduct.run(...p));
+  demoCatalog.products.forEach(p => insertProduct.run(
+    p.name,
+    p.barcode,
+    catIdByName[p.category] || null,
+    p.price,
+    p.cost,
+    p.stock,
+    p.min_stock,
+    p.unit,
+    p.image
+  ));
 
   const insertSupplier = db.prepare(
     'INSERT INTO suppliers (name, contact, phone, address) VALUES (?,?,?,?)'
   );
-  insertSupplier.run('华润万家批发部', '张经理', '13800001111', '北京市朝阳区');
-  insertSupplier.run('百事可乐经销商', '李经理', '13800002222', '北京市海淀区');
+  demoCatalog.suppliers.forEach(s => insertSupplier.run(s.name, s.contact, s.phone, s.address));
 
   const insertMember = db.prepare(
     'INSERT INTO members (name, phone, points, total_spent) VALUES (?,?,?,?)'
   );
-  insertMember.run('王小明', '13900001111', 200, 1580.5);
-  insertMember.run('李芳', '13900002222', 50, 320.0);
+  demoCatalog.members.forEach(m => insertMember.run(m.name, m.phone, m.points, m.total_spent));
 
   console.log('示例数据已插入');
 }

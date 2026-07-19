@@ -13,6 +13,7 @@
  */
 
 const db = require('./db');
+const demoCatalog = require('./demo-catalog');
 
 // ---------- 小工具 ----------
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -61,15 +62,53 @@ const clear = db.transaction(() => {
 clear();
 console.log('已清空：销售 / 进货 / 退货 / 批次 / 操作日志');
 
-// ---------- 2. 补充会员（让会员分析更丰富）----------
-const extraMembers = [
-  ['赵敏', '13900003333'],
-  ['孙强', '13900004444'],
-  ['周婷', '13900005555'],
-  ['吴磊', '13900006666'],
-];
-const insMember = db.prepare('INSERT OR IGNORE INTO members (name, phone) VALUES (?, ?)');
-extraMembers.forEach(([n, p]) => insMember.run(n, p));
+// ---------- 2. 补齐演示目录（分类 / 商品 / 供应商 / 会员 / 图片）----------
+const ensureDemoCatalog = db.transaction(() => {
+  const insertCategory = db.prepare('INSERT OR IGNORE INTO categories (name) VALUES (?)');
+  demoCatalog.categories.forEach(name => insertCategory.run(name));
+  const categoryMap = new Map(db.prepare('SELECT id, name FROM categories').all().map(row => [row.name, row.id]));
+
+  const insertProduct = db.prepare(`
+    INSERT OR IGNORE INTO products (name, barcode, category_id, price, cost, stock, min_stock, unit, image, status)
+    VALUES (?,?,?,?,?,?,?,?,?,1)
+  `);
+  const updateProductMedia = db.prepare(`
+    UPDATE products
+    SET image = ?,
+        status = 1,
+        category_id = COALESCE(category_id, ?),
+        min_stock = CASE WHEN min_stock IS NULL OR min_stock = 0 THEN ? ELSE min_stock END,
+        unit = COALESCE(unit, ?)
+    WHERE barcode = ?
+  `);
+
+  demoCatalog.products.forEach((p) => {
+    const categoryId = categoryMap.get(p.category) || null;
+    insertProduct.run(
+      p.name,
+      p.barcode,
+      categoryId,
+      p.price,
+      p.cost,
+      p.stock,
+      p.min_stock,
+      p.unit,
+      p.image
+    );
+    updateProductMedia.run(p.image, categoryId, p.min_stock, p.unit, p.barcode);
+  });
+
+  const findSupplier = db.prepare('SELECT id FROM suppliers WHERE phone = ? OR name = ? LIMIT 1');
+  const insertSupplier = db.prepare('INSERT INTO suppliers (name, contact, phone, address) VALUES (?,?,?,?)');
+  demoCatalog.suppliers.forEach((s) => {
+    if (!findSupplier.get(s.phone, s.name)) insertSupplier.run(s.name, s.contact, s.phone, s.address);
+  });
+
+  const insertMember = db.prepare('INSERT OR IGNORE INTO members (name, phone, points, total_spent) VALUES (?,?,?,?)');
+  demoCatalog.members.forEach(m => insertMember.run(m.name, m.phone, m.points, m.total_spent));
+});
+ensureDemoCatalog();
+console.log('已补齐：演示目录商品 / 分类 / 供应商 / 会员 / 图片');
 
 // ---------- 3. 基础数据快照 ----------
 const products = db.prepare('SELECT * FROM products WHERE status = 1').all();
